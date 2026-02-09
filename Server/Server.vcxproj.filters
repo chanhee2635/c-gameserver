@@ -1,0 +1,184 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="소스 파일\Main">
+      <UniqueIdentifier>{3f10cbae-bd2f-45f4-84a1-3e18ca468d80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Protocol">
+      <UniqueIdentifier>{359e20df-b64c-4637-a47e-dddf225fbdc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Protocol\Proto">
+      <UniqueIdentifier>{d887c0cf-8d83-42c7-ba23-6bd8768e811a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Utils">
+      <UniqueIdentifier>{41d97c11-a1fd-481d-b9e7-b9de733dfa55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\GameContents">
+      <UniqueIdentifier>{1276728e-61b3-4bf9-87dc-53f704a69c64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\GameContents\Object">
+      <UniqueIdentifier>{86e0f2c4-88d2-4b93-ac1e-a366d36450c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\GameContents\Room">
+      <UniqueIdentifier>{dd2d13c8-4230-47b9-9857-44866e5a3342}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Packet">
+      <UniqueIdentifier>{8239b60b-868f-48b8-8637-9e016313663f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\DB">
+      <UniqueIdentifier>{7625f8db-d822-4891-9741-c4cfb66a2b25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Data">
+      <UniqueIdentifier>{974d4c1b-f357-4009-a0a7-691b76811af4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Navigation">
+      <UniqueIdentifier>{6c5f8780-493b-4d33-b900-0560a55b132b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GameSession.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="Server.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="GameSession_game.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>소스 파일\GameContents\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Room.cpp">
+      <Filter>소스 파일\GameContents\Room</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientPacketHandler.cpp">
+      <Filter>소스 파일\Packet</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>소스 파일\GameContents\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Creature.cpp">
+      <Filter>소스 파일\GameContents\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Monster.cpp">
+      <Filter>소스 파일\GameContents\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="RedisManager.cpp">
+      <Filter>소스 파일\DB</Filter>
+    </ClCompile>
+    <ClCompile Include="DataManager.cpp">
+      <Filter>소스 파일\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Struct.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="DBManager.cpp">
+      <Filter>소스 파일\DB</Filter>
+    </ClCompile>
+    <ClCompile Include="GameScene.cpp">
+      <Filter>소스 파일\GameContents\Room</Filter>
+    </ClCompile>
+    <ClCompile Include="Zone.cpp">
+      <Filter>소스 파일\GameContents\Room</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>소스 파일\GameContents\Room</Filter>
+    </ClCompile>
+    <ClCompile Include="Enums.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="NavigationManager.cpp">
+      <Filter>소스 파일\Navigation</Filter>
+    </ClCompile>
+    <ClCompile Include="IdGenerator.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Enum.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="Game.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameSession.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>소스 파일\GameContents\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Room.h">
+      <Filter>소스 파일\GameContents\Room</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientPacketHandler.h">
+      <Filter>소스 파일\Packet</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>소스 파일\GameContents\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Creature.h">
+      <Filter>소스 파일\GameContents\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Monster.h">
+      <Filter>소스 파일\GameContents\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="RedisManager.h">
+      <Filter>소스 파일\DB</Filter>
+    </ClInclude>
+    <ClInclude Include="DataManager.h">
+      <Filter>소스 파일\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Struct.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="DBManager.h">
+      <Filter>소스 파일\DB</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScene.h">
+      <Filter>소스 파일\GameContents\Room</Filter>
+    </ClInclude>
+    <ClInclude Include="Zone.h">
+      <Filter>소스 파일\GameContents\Room</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>소스 파일\GameContents\Room</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="NavigationManager.h">
+      <Filter>소스 파일\Navigation</Filter>
+    </ClInclude>
+    <ClInclude Include="IdGenerator.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Enum.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="Game.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Common\protoc-3.21.12-win64\bin\Game.proto">
+      <Filter>소스 파일\Protocol\Proto</Filter>
+    </None>
+    <None Include="..\Common\protoc-3.21.12-win64\bin\GenPackets.bat">
+      <Filter>소스 파일\Protocol\Proto</Filter>
+    </None>
+    <None Include="cpp.hint" />
+    <None Include="..\Common\protoc-3.21.12-win64\bin\Enum.proto">
+      <Filter>소스 파일\Protocol\Proto</Filter>
+    </None>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,6 @@
+{
+  "data": [
+    { "id": 101, "level": 1, "name": "얼룩진유령", "maxHp": 50,  "attack": 15, "defense": 1, "rewardExp": 50, "speed": 1.0, "searchRange": 8.0, "maxSearchRange": 13.0, "attackRange": 1.3, "attackSpeed": 2.0},
+    { "id": 102, "level": 3, "name": "굶주린유령", "maxHp": 100,  "attack": 25, "defense": 3, "rewardExp": 100, "speed": 1.1, "searchRange": 10.0, "maxSearchRange": 16.0, "attackRange": 1.5, "attackSpeed": 2.0}
+  ]
+}

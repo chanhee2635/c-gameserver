@@ -1,0 +1,8 @@
+{
+  "data": [
+    { "id": 1, "name": "전사", "prefabPath": "Player/Warrior", "maxCombo": 3},
+    { "id": 2, "name": "도적", "prefabPath": "Player/Thief", "maxCombo": 3},
+    { "id": 101, "name": "얼룩진유령", "prefabPath": "Monster/LightGhost", "maxCombo": 1},
+    { "id": 102, "name": "굶주린유령", "prefabPath": "Monster/DarkGhost", "maxCombo": 1}
+  ]
+} 

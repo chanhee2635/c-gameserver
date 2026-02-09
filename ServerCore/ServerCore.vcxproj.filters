@@ -1,0 +1,265 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="소스 파일\Main">
+      <UniqueIdentifier>{3a80be5b-4eb7-492a-ad60-7c519d0b637d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Network">
+      <UniqueIdentifier>{1a8323a5-6c8a-4f7a-ac60-ee069f33ccce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Thread">
+      <UniqueIdentifier>{fe7815cc-36d5-43dc-be18-1813585c0729}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Utils">
+      <UniqueIdentifier>{73da07fa-56b1-4320-aed7-91dec6e7e711}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Memory">
+      <UniqueIdentifier>{f843c4c7-4c7b-43c2-8bf1-312c0700f582}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Job">
+      <UniqueIdentifier>{a8bfd18f-7406-4e5f-aa20-b1eea58297ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\DB">
+      <UniqueIdentifier>{864fbc2f-0165-4aa4-9abb-68f2e9a6996b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Log">
+      <UniqueIdentifier>{95dbdbde-e482-49b7-8265-8c02c671c1f7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreGlobal.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreMacro.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="CorePch.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreTLS.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadManager.h">
+      <Filter>소스 파일\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketUtils.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="IocpCore.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="IocpEvent.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Listener.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="NetAddress.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="RecvBuffer.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="SendBuffer.h">
+      <Filter>소스 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="BufferWriter.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="BufferReader.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Lock.h">
+      <Filter>소스 파일\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="DeadLockProfiler.h">
+      <Filter>소스 파일\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="RefCounting.h">
+      <Filter>소스 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Allocator.h">
+      <Filter>소스 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory.h">
+      <Filter>소스 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Container.h">
+      <Filter>소스 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryPool.h">
+      <Filter>소스 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectPool.h">
+      <Filter>소스 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeCast.h">
+      <Filter>소스 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Job.h">
+      <Filter>소스 파일\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="JobQueue.h">
+      <Filter>소스 파일\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="LockQueue.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalQueue.h">
+      <Filter>소스 파일\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="JobTimer.h">
+      <Filter>소스 파일\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="DBConnection.h">
+      <Filter>소스 파일\DB</Filter>
+    </ClInclude>
+    <ClInclude Include="DBConnectionPool.h">
+      <Filter>소스 파일\DB</Filter>
+    </ClInclude>
+    <ClInclude Include="DBBind.h">
+      <Filter>소스 파일\DB</Filter>
+    </ClInclude>
+    <ClInclude Include="FileUtils.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ConsoleLog.h">
+      <Filter>소스 파일\Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfigManager.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="DBService.h">
+      <Filter>소스 파일\DB</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="CoreGlobal.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="CoreMacro.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="CorePch.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="CoreTLS.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadManager.cpp">
+      <Filter>소스 파일\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="SocketUtils.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="IocpCore.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="IocpEvent.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Listener.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="NetAddress.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Service.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="RecvBuffer.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="SendBuffer.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="BufferReader.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="BufferWriter.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Lock.cpp">
+      <Filter>소스 파일\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="DeadLockProfiler.cpp">
+      <Filter>소스 파일\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="RefCounting.cpp">
+      <Filter>소스 파일\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Allocator.cpp">
+      <Filter>소스 파일\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory.cpp">
+      <Filter>소스 파일\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryPool.cpp">
+      <Filter>소스 파일\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Job.cpp">
+      <Filter>소스 파일\Job</Filter>
+    </ClCompile>
+    <ClCompile Include="JobQueue.cpp">
+      <Filter>소스 파일\Job</Filter>
+    </ClCompile>
+    <ClCompile Include="LockQueue.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalQueue.cpp">
+      <Filter>소스 파일\Job</Filter>
+    </ClCompile>
+    <ClCompile Include="JobTimer.cpp">
+      <Filter>소스 파일\Job</Filter>
+    </ClCompile>
+    <ClCompile Include="DBConnection.cpp">
+      <Filter>소스 파일\DB</Filter>
+    </ClCompile>
+    <ClCompile Include="DBConnectionPool.cpp">
+      <Filter>소스 파일\DB</Filter>
+    </ClCompile>
+    <ClCompile Include="DBBind.cpp">
+      <Filter>소스 파일\DB</Filter>
+    </ClCompile>
+    <ClCompile Include="FileUtils.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleLog.cpp">
+      <Filter>소스 파일\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ConfigManager.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="DBService.cpp">
+      <Filter>소스 파일\DB</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

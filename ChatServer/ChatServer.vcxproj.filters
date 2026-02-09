@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="소스 파일\Protocol">
+      <UniqueIdentifier>{de056898-a22b-482d-8270-cb221459d325}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Protocol\Proto">
+      <UniqueIdentifier>{fcc3e434-0f7d-42d2-b9b1-20aaa0779332}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ChatServer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ChatSession.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="RedisManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SessionManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Enum.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="Chat.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientPacketHandler.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Zone.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ChatSession.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="RedisManager.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Enum.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="Chat.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientPacketHandler.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionManager.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Zone.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Common\protoc-3.21.12-win64\bin\Chat.proto">
+      <Filter>소스 파일\Protocol\Proto</Filter>
+    </None>
+    <None Include="..\Common\protoc-3.21.12-win64\bin\Enum.proto">
+      <Filter>소스 파일\Protocol\Proto</Filter>
+    </None>
+    <None Include="..\Common\protoc-3.21.12-win64\bin\GenPackets.bat">
+      <Filter>소스 파일\Protocol\Proto</Filter>
+    </None>
+  </ItemGroup>
+</Project>

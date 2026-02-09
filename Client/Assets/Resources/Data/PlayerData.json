@@ -1,0 +1,24 @@
+{
+  "data": [
+    { "id": 1, "level": 1,  "maxHp": 120, "maxMp": 30,  "reqExp": 0,    "attack": 10, "defense": 8,  "speed": 2.0, "attackRange": 3.0, "attackSpeed": 1.0, "attackAngle": 100.0 },
+    { "id": 1, "level": 2,  "maxHp": 150, "maxMp": 35,  "reqExp": 100,  "attack": 13, "defense": 10, "speed": 2.0, "attackRange": 3.0, "attackSpeed": 1.0, "attackAngle": 100.0 },
+    { "id": 1, "level": 3,  "maxHp": 190, "maxMp": 40,  "reqExp": 250,  "attack": 17, "defense": 13, "speed": 2.0, "attackRange": 3.0, "attackSpeed": 1.2, "attackAngle": 100.0 },
+    { "id": 1, "level": 4,  "maxHp": 240, "maxMp": 45,  "reqExp": 500,  "attack": 22, "defense": 17, "speed": 2.2, "attackRange": 3.0, "attackSpeed": 1.2, "attackAngle": 100.0 },
+    { "id": 1, "level": 5,  "maxHp": 300, "maxMp": 50,  "reqExp": 900,  "attack": 28, "defense": 22, "speed": 2.2, "attackRange": 3.0, "attackSpeed": 1.4, "attackAngle": 100.0 },
+    { "id": 1, "level": 6,  "maxHp": 370, "maxMp": 55,  "reqExp": 1500, "attack": 35, "defense": 28, "speed": 2.2, "attackRange": 3.5, "attackSpeed": 1.4, "attackAngle": 100.0 },
+    { "id": 1, "level": 7,  "maxHp": 450, "maxMp": 60,  "reqExp": 2400, "attack": 43, "defense": 35, "speed": 2.4, "attackRange": 3.5, "attackSpeed": 1.6, "attackAngle": 100.0 },
+    { "id": 1, "level": 8,  "maxHp": 540, "maxMp": 65,  "reqExp": 3600, "attack": 52, "defense": 43, "speed": 2.4, "attackRange": 3.5, "attackSpeed": 1.6, "attackAngle": 100.0 },
+    { "id": 1, "level": 9,  "maxHp": 640, "maxMp": 70,  "reqExp": 5200, "attack": 62, "defense": 52, "speed": 2.4, "attackRange": 3.5, "attackSpeed": 1.8, "attackAngle": 100.0 },
+    { "id": 1, "level": 10, "maxHp": 750, "maxMp": 75,  "reqExp": 7500, "attack": 75, "defense": 65, "speed": 2.6, "attackRange": 3.5, "attackSpeed": 1.8, "attackAngle": 100.0 },
+    { "id": 2, "level": 1,  "maxHp": 80,  "maxMp": 50,  "reqExp": 0,    "attack": 10, "defense": 4,  "speed": 2.2, "attackRange": 2.0, "attackSpeed": 1.0, "attackAngle": 90.0  },
+    { "id": 2, "level": 2,  "maxHp": 100, "maxMp": 60,  "reqExp": 100,  "attack": 19, "defense": 6,  "speed": 2.2, "attackRange": 2.0, "attackSpeed": 1.0, "attackAngle": 90.0  },
+    { "id": 2, "level": 3,  "maxHp": 130, "maxMp": 70,  "reqExp": 250,  "attack": 24, "defense": 8,  "speed": 2.2, "attackRange": 2.0, "attackSpeed": 1.2, "attackAngle": 90.0  },
+    { "id": 2, "level": 4,  "maxHp": 170, "maxMp": 80,  "reqExp": 500,  "attack": 30, "defense": 11, "speed": 2.4, "attackRange": 2.0, "attackSpeed": 1.2, "attackAngle": 90.0  },
+    { "id": 2, "level": 5,  "maxHp": 220, "maxMp": 95,  "reqExp": 900,  "attack": 37, "defense": 15, "speed": 2.4, "attackRange": 2.0, "attackSpeed": 1.4, "attackAngle": 90.0  },
+    { "id": 2, "level": 6,  "maxHp": 280, "maxMp": 110, "reqExp": 1500, "attack": 45, "defense": 20, "speed": 2.4, "attackRange": 2.5, "attackSpeed": 1.4, "attackAngle": 90.0  },
+    { "id": 2, "level": 7,  "maxHp": 350, "maxMp": 130, "reqExp": 2400, "attack": 55, "defense": 26, "speed": 2.6, "attackRange": 2.5, "attackSpeed": 1.6, "attackAngle": 90.0  },
+    { "id": 2, "level": 8,  "maxHp": 430, "maxMp": 155, "reqExp": 3600, "attack": 67, "defense": 33, "speed": 2.6, "attackRange": 2.5, "attackSpeed": 1.6, "attackAngle": 90.0  },
+    { "id": 2, "level": 9,  "maxHp": 520, "maxMp": 185, "reqExp": 5200, "attack": 81, "defense": 41, "speed": 2.6, "attackRange": 2.5, "attackSpeed": 1.8, "attackAngle": 90.0  },
+    { "id": 2, "level": 10, "maxHp": 630, "maxMp": 220, "reqExp": 7500, "attack": 98, "defense": 50, "speed": 2.8, "attackRange": 2.5, "attackSpeed": 1.8, "attackAngle": 90.0  }
+  ]
+}
