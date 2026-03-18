@@ -1,0 +1,92 @@
+{
+  "Global": {
+    "DB": {
+      "ConnectionString": "Driver={MySQL ODBC 9.4 Unicode Driver};Server=127.0.0.1;Port = 3306;Database = portfolio;Uid = root;PWD = 1234;"
+    },
+    "Redis": {
+      "Ip": "127.0.0.1",
+      "Port": 6379,
+      "PoolSize": 10
+    }
+  },
+  "LoginServer": {
+    "Info": {
+      "Id": 1000,
+      "Name": "LoginServer"
+    },
+    "Network": {
+      "Ip": "127.0.0.1",
+      "Port": 7778,
+      "AcceptCount": 10
+    },
+    "Buffer": {
+      "RecvBufferSize": 4096,
+      "RecvBufferCount": 10
+    },
+    "Performance": {
+      "WorkerThreadCount": 1,
+      "DBThreadCount": 1,
+      "LogicWorkedTick": 64,
+      "DBWorkedTick": 64,
+      "MaxSessionCount": 10000
+    }
+  },
+  "ChatServer": {
+    "Info": {
+      "Id": 2000,
+      "Name": "ChatServer"
+    },
+    "Network": {
+      "Ip": "127.0.0.1",
+      "Port": 7779,
+      "AcceptCount": 10
+    },
+    "Buffer": {
+      "RecvBufferSize": 4096,
+      "RecvBufferCount": 10
+    },
+    "Performance": {
+      "WorkerThreadCount": 1,
+      "DBThreadCount": 1,
+      "LogicWorkedTick": 64,
+      "DBWorkedTick": 64,
+      "MaxSessionCount": 10000
+    }
+  },
+  "GameServer": {
+    "Info": {
+      "Id": 1,
+      "Name": "GameServer_1"
+    },
+    "Network": {
+      "Ip": "127.0.0.1",
+      "Port": 7777,
+      "AcceptCount": 100
+    },
+    "Buffer": {
+      "RecvBufferSize": 65535,
+      "RecvBufferCount": 10
+    },
+    "Performance": {
+      "WorkerThreadCount": 2,
+      "DBThreadCount": 1,
+      "LogicWorkedTick": 64,
+      "DBWorkedTick": 64,
+      "MaxSessionCount": 10000
+    }
+  },
+  "Logic": {
+    "UpdateTick": 100,
+    "DamageTick": 200,
+    "DeadTick": 3000,
+    "SearchTick": 1000,
+    "FlushTick": 100,
+    "MonitorTick": 10000,
+    "RedisTick": 5000
+  },
+  "World": {
+    "MapSize": 500,
+    "ZoneSize": 50,
+    "SceneCount": 2
+  }
+}
