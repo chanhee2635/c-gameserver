@@ -1,5 +1,10 @@
 # --- [Visual Studio / C++ 항목] ---
 .vs/
+Video/ 
+Common/
+Intermediate/
+Libraries/
+NavDataGenerator/
 Debug/
 Release/
 x64/
@@ -16,6 +21,7 @@ x86/
 *.aps
 *.ncb
 *.cache
+*.zip
 bin/
 obj/
 
@@ -50,4 +56,5 @@ MemoryCaptures/
 Thumbs.db
 
 # Config 파일
-config.json"Video/" 
+config.json
+
