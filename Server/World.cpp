@@ -10,8 +10,6 @@
 #include "RedisManager.h"
 #include "ConfigManager.h"
 
-shared_ptr<World> GWorld = make_shared<World>();
-
 void World::Init()
 {
 	_config = GConfigManager->GetWorld();
@@ -45,6 +43,7 @@ void World::CreateZone()
 
 	// 컨테이너 크기를 미리 확보하여 재할당 오버헤드 방지
 	_zones.reserve(totalZoneCount);
+
 	for (int32 z = 0; z < zoneCount; ++z)
 	{
 		for (int32 x = 0; x < zoneCount; ++x)
@@ -64,6 +63,13 @@ void World::CreateZone()
 			zone->SetScene(_scenes[sceneIdx]);
 		}
 	}
+
+	for (ZoneRef& zone : _zones)
+	{
+		Vector<ZoneRef> adjacent = GetAdjacentZones(zone->GetPos());
+		std::sort(adjacent.begin(), adjacent.end(), [](const ZoneRef& a, const ZoneRef& b) {return a->GetId() < b->GetId();});
+		zone->SetAdjacentZones(adjacent);
+	}
 }
 
 void World::CreateMoveTable()
@@ -71,7 +77,6 @@ void World::CreateMoveTable()
 	int32 zoneCount = _config.mapSize / _config.zoneSize;
 	int32 totalZoneCount = zoneCount * zoneCount;
 
-	_moveTable.assign(totalZoneCount, Vector<MoveResultRef>(totalZoneCount, nullptr));
 	for (int32 oldId = 0; oldId < totalZoneCount; ++oldId)
 	{
 		for (int32 newId = 0; newId < totalZoneCount; ++newId)
@@ -83,22 +88,16 @@ void World::CreateMoveTable()
 
 			ZoneRef oldZone = GetZoneById(oldId);
 			ZoneRef newZone = GetZoneById(newId);
-			if (oldZone == nullptr || newZone == nullptr) continue;
 
-			_moveTable[oldId][newId] = GetMoveResult(oldZone, newZone);
+			_moveTable[oldId][newId] = GetCalculateMoveResult(oldZone, newZone);
 		}
 	}
 }
 
 MoveResultRef World::GetCalculateMoveResult(ZoneRef oldZone, ZoneRef newZone)
 {
-	Vector<ZoneRef> oldAdjacentZones = GetAdjacentZones(oldZone->GetPos());
-	Vector<ZoneRef> newAdjacentZones = GetAdjacentZones(newZone->GetPos());
-
-	// 투 포인터 알고리즘을 위한 정렬
-	auto compare = [](const ZoneRef& a, const ZoneRef& b) { return a->GetId() < b->GetId(); };
-	std::sort(oldAdjacentZones.begin(), oldAdjacentZones.end(), compare);
-	std::sort(newAdjacentZones.begin(), newAdjacentZones.end(), compare);
+	Vector<ZoneRef> oldAdjacentZones = oldZone->GetAdjacentZones();
+	Vector<ZoneRef> newAdjacentZones = newZone->GetAdjacentZones();
 
 	MoveResultRef result = MakeShared<MoveResult>();
 	auto itOld = oldAdjacentZones.begin();
@@ -116,12 +115,10 @@ MoveResultRef World::GetCalculateMoveResult(ZoneRef oldZone, ZoneRef newZone)
 		else
 		{
 			result->keepZones.push_back(*itOld);
-			++itOld;
-			++itNew;
+			++itOld; ++itNew;
 		}
 	}
 
-	// 한쪽 리스트가 먼저 끝난 경우 남은 항목 정리
 	while (itOld != oldAdjacentZones.end()) result->leaveZones.push_back(*itOld++);
 	while (itNew != newAdjacentZones.end()) result->enterZones.push_back(*itNew++);
 
@@ -135,10 +132,12 @@ MoveResultRef World::GetMoveResult(ZoneRef oldZone, ZoneRef newZone)
 	int32 oldId = oldZone->GetId();
 	int32 newId = newZone->GetId();
 
-	if (oldId < _moveTable.size() && newId < _moveTable.size())
+	auto outerIt = _moveTable.find(oldId);
+	if (outerIt != _moveTable.end())
 	{
-		if (_moveTable[oldId][newId])
-			return _moveTable[oldId][newId];
+		auto innerIt = outerIt->second.find(newId);
+		if (innerIt != outerIt->second.end() && innerIt->second)
+			return innerIt->second;
 	}
 
 	return GetCalculateMoveResult(oldZone, newZone);
@@ -173,12 +172,12 @@ void World::SpawnMonsters()
 	}
 }
 
-void World::PlayerEnterToGame(GameSessionRef session, SummaryDataRef summary, StatData stat)
+void World::PlayerEnterToGame(GameSessionRef session, PlayerSummaryData summary, PlayerLoadData loadData)
 {
 	if (session == nullptr) return;
 
 	PlayerRef player = MakeShared<Player>();
-	player->Init(summary, stat);
+	player->Init(summary, loadData);
 	player->SetSession(session);
 	session->SetPlayer(player);
 
@@ -186,64 +185,90 @@ void World::PlayerEnterToGame(GameSessionRef session, SummaryDataRef summary, St
 	GRedisManager->SetPlayerInfo(player->GetObjectId(), Utils::ws2s(player->GetName()), GConfigManager->GetGame().port);
 
 	Protocol::S_EnterGame packet;
-	auto* info = packet.mutable_myplayer();
-	player->MakeObjectInfo(*info);
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-	session->Send(sendBuffer);
+	packet.set_success(true);
+	player->MakeObjectInfo(*packet.mutable_my_player());
+	session->Send(ClientPacketHandler::MakeSendBuffer(packet));
 }
 
 void World::EnterCreature(CreatureRef creature)
 {
 	if (creature == nullptr) return;
 	ZoneRef mainZone = GetZoneByPos(creature->GetPos());
+	if (mainZone == nullptr) return;
 	GameSceneRef mainScene = mainZone->GetScene();
+	if (mainScene == nullptr) return;
+
+	creature->SetZone(mainZone);
 	creature->SetGameScene(mainScene);
 
-	auto adjacentZones = GWorld->GetAdjacentZones(creature->GetPos());
+	auto adjacentZones = mainZone->GetAdjacentZones();
 	Map<GameSceneRef, Vector<ZoneRef>> sceneGroups;
 	for (ZoneRef zone : adjacentZones)
-	{
-		if (GameSceneRef scene = zone->GetScene())
-			sceneGroups[scene].push_back(zone);
-	}
+		sceneGroups[zone->GetScene()].push_back(zone);
 
-	for (auto& item : sceneGroups)
+	for (auto& [scene, zones] : sceneGroups)
 	{
-		GameSceneRef scene = item.first;
-		Vector<ZoneRef> zones = item.second;
-		scene->DoAsync(&GameScene::HandleVisionEnter, creature, zones);
-	}
+		scene->DoAsync([scene, zones, creature, mainZone]() {
 
-	mainScene->DoAsync([mainZone, creature]() {
-		mainZone->Enter(creature);
-	});
+			for (ZoneRef zone : zones)
+			{
+				if (zone == mainZone)
+					zone->Enter(creature);
+				zone->AddPendingSpawn(creature);
+			}
+
+			if (creature->GetObjectType() == GameObjectType::Player)
+			{
+				Protocol::S_UpdateScene packet;
+				PlayerRef player = static_pointer_cast<Player>(creature);
+				for (ZoneRef zone : zones)
+					zone->MakeSpawnPacket(player, packet);
+				if (packet.spawns_size() > 0)
+					player->Send(ClientPacketHandler::MakeSendBuffer(packet));
+			}
+		});
+	}
 }
 
 void World::LeaveCreature(CreatureRef creature)
 {
 	if (creature == nullptr) return;
-
-	ZoneRef mainZone = GetZoneByPos(creature->GetPos());
+	ZoneRef mainZone = creature->GetZone();
+	if (mainZone == nullptr) return;
 	GameSceneRef mainScene = mainZone->GetScene();
+	if (mainScene == nullptr) return;
 
-	auto adjacentZones = GWorld->GetAdjacentZones(creature->GetPos());
+	creature->SetZone(nullptr);
+
+	auto adjacentZones = mainZone->GetAdjacentZones();
 	Map<GameSceneRef, Vector<ZoneRef>> sceneGroups;
 	for (ZoneRef zone : adjacentZones)
-	{
-		if (GameSceneRef scene = zone->GetScene())
-			sceneGroups[scene].push_back(zone);
-	}
+		sceneGroups[zone->GetScene()].push_back(zone);
 
 	for (auto& item : sceneGroups)
 	{
 		GameSceneRef scene = item.first;
 		Vector<ZoneRef> zones = item.second;
-		scene->DoAsync(&GameScene::HandleVisionLeave, creature, zones);
-	}
 
-	mainScene->DoAsync([mainZone, creature]() {
-		mainZone->Leave(creature);
-	});
+		scene->DoAsync([scene, zones, creature, mainZone]() {
+			for (ZoneRef zone : zones)
+			{
+				if (zone == mainZone)
+					zone->Leave(creature);
+				zone->AddPendingDespawn(creature->GetObjectId());
+			}
+
+			if (creature->GetObjectType() == GameObjectType::Player)
+			{
+				Protocol::S_UpdateScene packet;
+				PlayerRef player = static_pointer_cast<Player>(creature);
+				for (ZoneRef zone : zones)
+					zone->MakeDespawnPacket(player->GetObjectId(), packet);
+				if (packet.despawns_size() > 0)
+					player->Send(ClientPacketHandler::MakeSendBuffer(packet));
+			}
+		});
+	}
 }
 
 ZoneRef World::GetZoneByPos(Vector3 pos)

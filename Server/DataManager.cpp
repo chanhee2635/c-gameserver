@@ -25,7 +25,7 @@ bool DataManager::LoadPrefabData()
 {
 	_prefabData.clear();
 
-	std::ifstream file("../Client/Assets/Resources/Data/PrefabData.json");
+	std::ifstream file("../../Client/Assets/Resources/Data/PrefabData.json");
 	if (!file.is_open()) return false;
 
 	json prefabData;
@@ -43,6 +43,16 @@ bool DataManager::LoadPrefabData()
 		data.prefabPath = Utils::s2ws(s2);
 		data.maxCombo = item["maxCombo"];
 
+		data.comboHitDelays.resize(data.maxCombo + 1, 0);
+		if (item.contains("comboHitDelays"))
+		{
+			const auto& delays = item["comboHitDelays"];
+			for (int i = 0; i <= data.maxCombo && i < (int)delays.size(); ++i)
+				data.comboHitDelays[i] = delays[i];
+		}
+
+		data.deathDuration = item["deathDuration"];
+
 		_prefabData[data.id] = data;
 	}
 
@@ -53,7 +63,7 @@ bool DataManager::LoadPlayerData()
 {
 	_playerData.clear();
 
-	std::ifstream file("../Client/Assets/Resources/Data/PlayerData.json");
+	std::ifstream file("../../Client/Assets/Resources/Data/PlayerData.json");
 	if (!file.is_open()) return false;
 
 	json playerData;
@@ -85,7 +95,7 @@ bool DataManager::LoadMonsterData()
 {
 	_monsterData.clear();
 
-	std::ifstream file("../Client/Assets/Resources/Data/MonsterData.json");
+	std::ifstream file("../../Client/Assets/Resources/Data/MonsterData.json");
 	if (!file.is_open()) return false;
 
 	json monsterData;
@@ -118,7 +128,7 @@ bool DataManager::LoadSpawnData()
 {
 	_spawnData.clear();
 
-	std::ifstream file("../Client/Assets/Resources/Data/PlayerSpawnData.json");
+	std::ifstream file("../../Client/Assets/Resources/Data/PlayerSpawnData.json");
 	if (!file.is_open()) return false;
 
 	json spawnJson;
@@ -143,7 +153,7 @@ bool DataManager::LoadMonsterSpawnData()
 {
 	_monsterSpawnList.clear();
 
-	std::ifstream file("../Client/Assets/Resources/Data/MonsterSpawnData.json");
+	std::ifstream file("../../Client/Assets/Resources/Data/MonsterSpawnData.json");
 	if (!file.is_open()) return false;
 
 	json spawnJson;
@@ -216,6 +226,14 @@ int32 DataManager::GetMaxCombo(int32 templateId)
 		return 0;
 
 	return data->maxCombo;
+}
+
+int32 DataManager::GetDeathDuration(int32 templateId)
+{
+	const PrefabData* data = GetPrefabData(templateId);
+	if (data == nullptr)
+		return 0;
+	return data->deathDuration;
 }
 
 SpawnData* DataManager::GetNearestSpawnData(Vector3 playerPos)

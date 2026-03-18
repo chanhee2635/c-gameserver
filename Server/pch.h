@@ -24,6 +24,7 @@
 
 #include "Enums.h"
 #include "Struct.h"
+#include "GameUtil.h"
 
 #define USING_SHARED_PTR(name) using name##Ref = std::shared_ptr<class name>;
 USING_SHARED_PTR(GameSession);
@@ -35,5 +36,11 @@ USING_SHARED_PTR(Room);
 USING_SHARED_PTR(World);
 USING_SHARED_PTR(GameScene);
 USING_SHARED_PTR(Zone);
-USING_SHARED_PTR(SummaryData);
+USING_SHARED_PTR(MoveJob);
 USING_SHARED_PTR(MoveResult);
+
+class DBManager;
+class World;
+
+extern std::shared_ptr<DBManager>			GDBManager;
+extern std::shared_ptr<World>				GWorld;

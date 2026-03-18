@@ -11,7 +11,7 @@ class World : public JobQueue
 public:
 	void Init();
 	void Start();
-	void PlayerEnterToGame(GameSessionRef session, SummaryDataRef summary, StatData stat);
+	void PlayerEnterToGame(GameSessionRef session, PlayerSummaryData summary, PlayerLoadData loadData);
 	void EnterCreature(CreatureRef creature);
 	void LeaveCreature(CreatureRef creature);
 	ZoneRef GetZoneByPos(Vector3 pos);
@@ -61,8 +61,6 @@ private:
 
 	Vector<GameSceneRef> _scenes;
 	Vector<ZoneRef> _zones;
-	Vector<Vector<MoveResultRef>> _moveTable;
+	unordered_map<int32, unordered_map<int32, MoveResultRef>> _moveTable;
 };
-
-extern shared_ptr<World> GWorld;
 

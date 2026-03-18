@@ -21,4 +21,3 @@ private:
 	int32 _totalZoneCount;
 };
 
-extern std::unique_ptr<SessionManager> GSessionManager;

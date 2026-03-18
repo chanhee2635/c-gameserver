@@ -22,11 +22,14 @@
     <ClCompile Include="ServerPacketHandler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Game.pb.cc">
-      <Filter>소스 파일\Protocol</Filter>
+    <ClCompile Include="DummyUser.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Login.pb.cc">
-      <Filter>소스 파일\Protocol</Filter>
+    <ClCompile Include="GameSession.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ChatSession.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Chat.pb.cc">
       <Filter>소스 파일\Protocol</Filter>
@@ -37,14 +40,11 @@
     <ClCompile Include="Enum.pb.cc">
       <Filter>소스 파일\Protocol</Filter>
     </ClCompile>
-    <ClCompile Include="DummyUser.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Game.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
     </ClCompile>
-    <ClCompile Include="GameSession.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="ChatSession.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Login.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -54,21 +54,6 @@
     <ClInclude Include="ServerPacketHandler.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Enum.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="Game.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="Login.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="Chat.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="Client.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
     <ClInclude Include="ChatSession.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
@@ -77,6 +62,21 @@
     </ClInclude>
     <ClInclude Include="GameSession.h">
       <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Chat.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="Client.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="Enum.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="Game.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="Login.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

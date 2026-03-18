@@ -48,7 +48,6 @@ bool C_ChatHandler(PacketSessionRef& session, Protocol::C_Chat& pkt)
 	packet.set_msg(pkt.msg());
 	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
 
-	// 일반, 서버를 나눠 진행 (TODO: 귓속말)
 	if (pkt.toserver())
 		GSessionManager->Broadcast(sendBuffer);
 	else

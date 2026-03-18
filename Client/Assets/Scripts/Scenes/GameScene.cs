@@ -10,13 +10,17 @@ public class GameScene : BaseScene
     protected override void Init()
     {
         base.Init();
-
         SceneType = Define.Scene.Game;
-
-        Managers.Network.Send(new C_LoadCompleted());
-        Managers.Object.MyPlayerSpawn();
-
         _sceneUI = Managers.UI.ShowSceneUI<UI_GameScene>();
+    }
+
+    public void OnEnterGame(ObjectInfo myPlayerInfo)
+    {
+        Managers.Object.SpawnMyPlayer(myPlayerInfo);
+
+        _sceneUI.SetMyPlayerInfo();
+
+        Managers.Network.ConnectToChatServer();
     }
 
     public override void Clear()

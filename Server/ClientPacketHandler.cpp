@@ -1,8 +1,9 @@
 #include "pch.h"
 #include "ClientPacketHandler.h"
-#include "Player.h"
 #include "GameSession.h"
+#include "Player.h"
 #include "GameScene.h"
+#include "DBManager.h"
 
 PacketHandlerFunc GPacketHandler[UINT16_MAX];
 
@@ -22,14 +23,14 @@ bool C_AuthTokenHandler(PacketSessionRef& session, Protocol::C_AuthToken& pkt)
 bool C_CreatePlayerHandler(PacketSessionRef& session, Protocol::C_CreatePlayer& pkt)
 {
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
-	gameSession->Handle_C_CreatePlayer(pkt.templateid(), pkt.name());
+	gameSession->Handle_C_CreatePlayer(pkt.template_id(), pkt.name());
 	return true;
 }
 
 bool C_EnterGameHandler(PacketSessionRef& session, Protocol::C_EnterGame& pkt)
 {
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
-	gameSession->Handle_C_EnterGame(Utils::s2ws(pkt.playername()));
+	gameSession->Handle_C_EnterGame(Utils::s2ws(pkt.name()));
 	return true;
 }
 
@@ -43,15 +44,7 @@ bool C_LoadCompletedHandler(PacketSessionRef& session, Protocol::C_LoadCompleted
 bool C_MoveHandler(PacketSessionRef& session, Protocol::C_Move& pkt)
 {
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
-	
-	PlayerRef player = gameSession->GetPlayer();
-	if (player == nullptr) return false;
-
-	GameSceneRef scene = player->GetGameScene();
-	if (scene == nullptr) return false;
-
-	scene->DoAsync(&GameScene::HandlePlayerMove, player, pkt.pos());
-
+	gameSession->Handle_C_Move(pkt);
 	return true;
 }
 
@@ -66,9 +59,11 @@ bool C_AttackHandler(PacketSessionRef& session, Protocol::C_Attack& pkt)
 	if (scene == nullptr) return false;
 
 	float yaw = pkt.yaw();
-	int32 comboIndex = pkt.comboindex();
-	scene->DoAsync([player, yaw, comboIndex]() {
-		player->HandleAttack(yaw, comboIndex);
+	int32 comboIndex = pkt.combo_index();
+	Vector3 clientPos = GameUtil::ToServer(pkt.pos());
+
+	scene->DoAsync([player, yaw, comboIndex, clientPos]() {
+		player->HandleAttack(yaw, comboIndex, clientPos);
 	}); 
 
 	return true;
@@ -78,19 +73,41 @@ bool C_ReviveHandler(PacketSessionRef& session, Protocol::C_Revive& pkt)
 {
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
 	PlayerRef player = gameSession->GetPlayer();
-	if (player == nullptr || player->IsDead() == false) return false;
+	if (player == nullptr || !player->IsDead()) return false;
 
 	GameSceneRef scene = player->GetGameScene();
 	if (scene == nullptr) return false;
 
-	player->GetGameScene()->DoAsync(&GameScene::HandleRevive, player, pkt.iscurrentpos());
+	bool isCurrentPos = pkt.is_current_pos();
+	scene->DoAsync([scene, player, isCurrentPos]() {
+		scene->HandleRevive(player, isCurrentPos);
+	});
 
 	return true;
 }
 
 bool C_QuitHandler(PacketSessionRef& session, Protocol::C_Quit& pkt)
 {
-	session->Disconnect(L"QuitButton");
+	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
+	PlayerRef player = gameSession->GetPlayer();
+
+	if (player == nullptr)
+	{
+		session->Disconnect(L"Quit");
+		return true;
+	}
+
+	uint64  dbId = player->GetPlayerDbId();
+	int32   hp = player->GetHp();
+	int32   mp = player->GetMp();     
+	int64   exp = player->GetExp();   
+	Vector3 pos = player->GetPos();
+	float   yaw = player->GetYaw();
+
+	GDBManager->DoAsync([dbId, hp, mp, exp, pos, yaw, session]() {
+		GDBManager->SavePlayerInfo(dbId, hp, mp, exp, pos, yaw);
+		session->Disconnect(L"Quit");  
+	});
 
 	return true;
 }

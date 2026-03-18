@@ -1,25 +1,19 @@
-﻿using Protocol;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class ObjectManager
 {
-    public bool IsSceneActive { get; private set; } = false;
-    public ObjectInfo MyPlayerInfo { get; set; }
-    public MyPlayerController MyPlayer { get; private set; }
-    public List<SummaryInfo> Summaries { get; private set; } = new List<SummaryInfo>();
-
-    Dictionary<ulong, GameObject> _objects = new Dictionary<ulong, GameObject>();
-
+    // 시야 변수
     float _checkInterval = 0.2f;
     float _lastCheckTime = 0f;
     float _viewDistance = 30.0f;
 
+    public MyPlayerController MyPlayer { get; private set; }
+    Dictionary<ulong, GameObject> _objects = new Dictionary<ulong, GameObject>();
+    Dictionary<ulong, CreatureController> _controllers = new Dictionary<ulong, CreatureController>();
     public void Update()
     {
         if (MyPlayer == null) return;
-
         if (Time.time < _lastCheckTime + _checkInterval) return;
         _lastCheckTime = Time.time;
 
@@ -30,99 +24,97 @@ public class ObjectManager
 
             float distSq = (MyPlayer.transform.position - go.transform.position).sqrMagnitude;
             bool shouldActive = distSq <= (_viewDistance * _viewDistance);
-
             if (go.activeSelf != shouldActive)
                 go.SetActive(shouldActive);
         }
     }
 
-    public GameObject FindById(ulong id)
+    public void SpawnMyPlayer(Protocol.ObjectInfo info)
     {
-        GameObject go = null;
-        if (_objects.TryGetValue(id, out go))
-            return go;
-        return null;
+        PrefabData data = Managers.Data.PrefabDataDict[info.Summary.TemplateId];
+        Vector3 position = GetSpawnPosition(info.PosInfo);
+        Quaternion rotation = Quaternion.Euler(0, info.PosInfo.Yaw, 0);
+
+        GameObject go = Managers.Resource.Instantiate(data.myPrefabPath, position, rotation);
+        go.SetActive(true);
+
+        MyPlayerController mpc = go.GetOrAddComponent<MyPlayerController>();
+        mpc.SetInfo(info, position, rotation);
+        MyPlayer = mpc;
+
+        _objects[info.Summary.ObjectId] = go;
+        _controllers[info.Summary.ObjectId] = mpc;
     }
 
-    public bool IsMyPlayer(ulong id)
-    {
-        if (MyPlayer == null) return false;
-        return MyPlayer.ObjectId == id;
-    }
 
-    public void HandleDespawn(ulong objectId)
+    public void AddObject(Protocol.ObjectInfo info)
     {
-        RemoveObject(objectId);
-    }
-
-    public void MyPlayerSpawn()
-    {
-        AddObject(MyPlayerInfo);
-    }
-
-    public void AddObject(ObjectInfo info)
-    {
-        if (_objects.TryGetValue(info.Summary.ObjectId, out GameObject go))
-            return;
+        if (_objects.ContainsKey(info.Summary.ObjectId)) return;
 
         PrefabData data = Managers.Data.PrefabDataDict[info.Summary.TemplateId];
-        go = Managers.Resource.Instantiate(data.prefabPath);
-        if (MyPlayer != null && go != MyPlayer.gameObject)
+        Vector3 position = GetSpawnPosition(info.PosInfo);
+        Quaternion rotation = Quaternion.Euler(0, info.PosInfo.Yaw, 0);
+        
+        GameObject go = Managers.Resource.Instantiate(data.prefabPath, position, rotation);
+        _objects[info.Summary.ObjectId] = go;
+
+        BaseController controller = null;
+        switch (info.Summary.ObjectType) {
+            case Protocol.GameObjectType.Player: controller = go.GetOrAddComponent<PlayerController>(); break;
+            case Protocol.GameObjectType.Monster: controller = go.GetOrAddComponent<MonsterController>(); break;
+        }
+        if (controller != null)
+        {
+            controller.SetInfo(info, position, rotation);
+            if (controller is CreatureController cc)
+                _controllers[info.Summary.ObjectId] = cc;
+        }
+        if (MyPlayer != null)
         {
             float distSq = (MyPlayer.transform.position - go.transform.position).sqrMagnitude;
             go.SetActive(distSq <= _viewDistance * _viewDistance);
         }
-        _objects.TryAdd(info.Summary.ObjectId, go);
-
-        switch (info.Summary.ObjectType)
-        {
-            case GameObjectType.Player:
-            {
-                if (MyPlayerInfo.Summary.ObjectId == info.Summary.ObjectId)
-                {
-                    go.SetActive(true);
-                    MyPlayerController mpc = go.GetOrAddComponent<MyPlayerController>();
-                    mpc.SetInfo(info);
-                    MyPlayer = mpc;
-                }
-                else
-                {
-                    PlayerController pc = go.GetOrAddComponent<PlayerController>();
-                    pc.SetInfo(info);
-                }
-                break;
-            }
-            case GameObjectType.Monster:
-            {
-                MonsterController mc = go.GetOrAddComponent<MonsterController>();
-                mc.SetInfo(info);
-                break;
-            }
-        }
     }
 
-    private void RemoveObject(ulong objectId)
+    public void RemoveObject(ulong objectId)
     {
+        if (MyPlayer != null && MyPlayer.GetObjectId() == objectId) return;
+
         if (_objects.TryGetValue(objectId, out GameObject obj))
         {
             _objects.Remove(objectId);
+            _controllers.Remove(objectId);
             Managers.Resource.Destroy(obj);
         }
     }
+    public GameObject FindById(ulong id)
+    {
+        _objects.TryGetValue(id, out GameObject go);
+        return go;
+    }
+
+    public CreatureController FindControllerById(ulong id)
+    {
+        _controllers.TryGetValue(id, out CreatureController cc);
+        return cc;
+    }
+
+    public bool IsMyPlayer(ulong id) => MyPlayer != null && MyPlayer.GetObjectId() == id;
 
     public void Clear()
     {
-        MyPlayerInfo = null;
         MyPlayer = null;
-        Summaries.Clear();
         foreach (GameObject obj in _objects.Values)
             Managers.Resource.Destroy(obj);
-
         _objects.Clear();
+        _controllers.Clear();
     }
 
-    public void AddPlayerSummary(SummaryInfo summary)
+    Vector3 GetSpawnPosition(Protocol.PosInfo posInfo)
     {
-        Summaries.Add(summary);
+        Vector3 pos = new Vector3(posInfo.Pos.X, posInfo.Pos.Y, posInfo.Pos.Z);
+        if (Physics.Raycast(pos + Vector3.up * 20f, Vector3.down, out RaycastHit hit, 40f, LayerMask.GetMask("Ground")))
+            pos.y = hit.point.y;
+        return pos;
     }
 }

@@ -4,10 +4,7 @@
 class LoginSession : public PacketSession
 {
 public:
-	~LoginSession()
-	{
-		cout << "~LoginSession" << endl;
-	}
+	~LoginSession(){}
 
 	virtual void OnConnected() override;
 	// 패킷 데이터가 전부 도착했을 때 호출

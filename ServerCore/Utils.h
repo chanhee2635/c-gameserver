@@ -114,6 +114,9 @@ struct LogicConfig
 	uint64 damageTick;
 	uint64 deadTick;
 	uint64 searchTick;
+	uint64 flushTick;
+	uint64 monitorTick;
+	uint64 redisTick;
 };
 
 struct WorldConfig

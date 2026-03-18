@@ -95,7 +95,6 @@ bool RedisManager::CheckPlayer(uint64 playerId, ChatSessionRef session)
 		session->SetPlayerId(playerId);
 		session->SetName(name);
 
-		std::cout << "Chat Server Auth Success: " << playerId << std::endl;
 		return true;
 	}
 
@@ -119,6 +118,8 @@ void RedisManager::SubscribeRedis()
 		while (true)
 		{
 			sub.consume();
+
+			this_thread::sleep_for(1ms);
 		}
 	}
 	catch (const Error& e)

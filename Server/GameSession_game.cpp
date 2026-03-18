@@ -5,6 +5,7 @@
 #include "RedisManager.h"
 #include "DBManager.h"
 #include "World.h"
+#include "GameScene.h"
 
 void GameSession::Handle_C_AuthToken(string token)
 {
@@ -12,59 +13,90 @@ void GameSession::Handle_C_AuthToken(string token)
 
 	GDBManager->DoAsyncPush([self, token]() {
 		auto val = GRedisManager->Get<uint64>(token);
-		if (!val.has_value())
-		{
-			cout << "로그인 정보 없음!" << endl;
-			return;
-		}
+		if (!val.has_value()) return;
 
 		uint64 accountDbId = val.value();
-		Vector<SummaryDataRef> summaries;
-		if (GDBManager->GetPlayerInfo(accountDbId, OUT summaries))
-		{
-			GWorld->DoAsyncPush([self, accountDbId, summaries = std::move(summaries)]() mutable {
-				self->accountDbId = accountDbId;
-				self->SendObjectSummaries(std::move(summaries));
-			});
-		}
+		Vector<PlayerSummaryData> summaries;
+		if (GDBManager->GetPlayerInfo(accountDbId, OUT summaries) == false) return;
+		
+		GWorld->DoAsyncPush([self, accountDbId, summaries = std::move(summaries)]() mutable {
+			if (self->IsConnected() == false) return;
+			self->SetAccountDbId(accountDbId);
+			self->SendSummaries(std::move(summaries));
+		});
 	});
+}
+
+void GameSession::SendSummaries(Vector<PlayerSummaryData> summaries)
+{
+	Protocol::S_PlayerList packet;
+	for (PlayerSummaryData& summary : summaries)
+	{
+		auto* info = packet.add_players();
+		info->set_db_id(summary.dbId);
+		info->set_name(Utils::ws2s(summary.name));
+		info->set_level(summary.level);
+		info->set_template_id(summary.templateId);
+		AddSummary(std::move(summary));
+	}
+	Send(ClientPacketHandler::MakeSendBuffer(packet));
 }
 
 void GameSession::Handle_C_CreatePlayer(int32 templateId, string name)
 {
-	// 아이디 유효성 확인
 	GameSessionRef self = static_pointer_cast<GameSession>(shared_from_this());
 	GDBManager->DoAsyncPush([self, templateId, name]() {
-		SummaryDataRef summary = MakeShared<SummaryData>();
-		if (GDBManager->CheckDuplicatedPlayerName(self->accountDbId, templateId, name, OUT summary))
-		{
-			GWorld->DoAsyncPush([self, summary = std::move(summary)]() mutable {
-				self->SendAddPlayerSummary(std::move(summary));
-			});
-		}
+		PlayerSummaryData summary;
+		bool success = GDBManager->CreatePlayer(self->GetAccountDbId(), templateId, name, OUT summary);
+
+		GWorld->DoAsyncPush([self, success, summary = std::move(summary)]() mutable {
+			if (self->IsConnected() == false) return;
+
+			Protocol::S_CreatePlayer packet;
+			packet.set_success(success);
+			if (success)
+			{
+				auto* info = packet.mutable_player();
+				info->set_db_id(summary.dbId);
+				info->set_name(Utils::ws2s(summary.name));
+				info->set_level(summary.level);
+				info->set_template_id(summary.templateId);
+				self->AddSummary(std::move(summary));
+			}
+			else
+				packet.set_reason(Utils::ws2s(L"이미 사용 중인 닉네임입니다."));
+
+			self->Send(ClientPacketHandler::MakeSendBuffer(packet));
+		});
 	});
 }
 
 void GameSession::Handle_C_EnterGame(wstring playerName)
 {
 	auto it = _summaries.find(playerName);
-	if (it == _summaries.end())
-	{
-		// TODO: 로그 + 킥!
-		return;
-	}
+	if (it == _summaries.end()) return;
 
 	GameSessionRef self = static_pointer_cast<GameSession>(shared_from_this());
-	SummaryDataRef summary = it->second;
-	uint64 playerDbId = summary->objectId;
+	const PlayerSummaryData summary = it->second;
+	uint64 playerDbId = summary.dbId;
+
 	GDBManager->DoAsyncPush([self, summary, playerDbId]() {
-		StatData stat;
-		if (GDBManager->GetPlayerDetailInfo(playerDbId, stat))
+		PlayerLoadData loadData;
+		if (GDBManager->GetPlayerDetailInfo(playerDbId, OUT loadData) == false)
 		{
-			GWorld->DoAsyncPush([self, summary, stat = std::move(stat)]() mutable {
-				GWorld->PlayerEnterToGame(self, summary, std::move(stat));
+			GWorld->DoAsyncPush([self]() {
+				if (self->IsConnected() == false) return;
+				Protocol::S_EnterGame packet;
+				packet.set_success(false);
+				self->Send(ClientPacketHandler::MakeSendBuffer(packet));
 			});
+			return;
 		}
+
+		GWorld->DoAsyncPush([self, summary = std::move(summary), loadData = std::move(loadData)]() mutable {
+			if (self->IsConnected() == false) return;
+			GWorld->PlayerEnterToGame(self, std::move(summary), std::move(loadData));
+		});
 	});
 }
 
@@ -76,43 +108,19 @@ void GameSession::Handle_C_LoadCompleted()
 	GWorld->EnterCreature(player);
 }
 
-//void GameSession::Handle_C_Move(Protocol::PosInfo pos)
-//{
-//	PlayerRef player = GetPlayer();
-//	if (player == nullptr) return;
-//
-//	GameSceneRef scene = player->GetGameScene();
-//	if (scene == nullptr) return;
-//
-//	scene->MovePlayer(player, pos);
-//}
-
-
-void GameSession::SendObjectSummaries(Vector<SummaryDataRef> summaries)
+void GameSession::Handle_C_Move(Protocol::C_Move& packet)
 {
-	Protocol::S_PlayerList packet;
-	for (SummaryDataRef summary : summaries)
-	{
-		summary->ToPacket(packet.add_summaries());
-		_summaries.insert({ summary->name, summary });
-	}
+	PlayerRef player = GetPlayer();
+	if (!player) return;
 
-	Send(ClientPacketHandler::MakeSendBuffer(packet));
+	GameSceneRef scene = player->GetGameScene();
+	if (!scene) return;
+
+	MoveJobRef job = MakeShared<MoveJob>();
+	job->objectId = player->GetObjectId();
+	job->pos = GameUtil::ToServer(packet.pos_info().pos());
+	job->yaw = packet.pos_info().yaw();
+	job->state = (CreatureState)packet.pos_info().state();
+
+	scene->PushMoveJob(job);
 }
-
-void GameSession::SendAddPlayerSummary(SummaryDataRef summary)
-{
-	Protocol::S_CreatePlayer packet;
-	if (summary->objectId == 0) // 실패
-	{
-		packet.set_success(false);
-	}
-	else
-	{
-		packet.set_success(true);
-		summary->ToPacket(packet.mutable_summary());
-		_summaries.insert({ summary->name, std::move(summary) });
-	}
-	Send(ClientPacketHandler::MakeSendBuffer(packet));
-}
-

@@ -24,10 +24,9 @@ public class ServerSession : PacketSession
     {
         Debug.Log($"OnConnected : {endPoint}");
 
-        /*PacketManager.Instance.CustomHandler = (s, m, i) =>
-        {
-            PacketQueue.Instance.Push(i, m);
-        };*/
+        C_AuthToken packet = new C_AuthToken();
+        packet.Token = Managers.Network.Token;
+        Managers.Network.Send(packet);
     }
 
     public override void OnDisconnected(EndPoint endPoint)

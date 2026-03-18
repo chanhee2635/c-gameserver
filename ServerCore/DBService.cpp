@@ -26,6 +26,7 @@ void DBService::Start(int32 threadCount, uint64 workedTick)
 			{
 				LEndDBTickCount = ::GetTickCount64() + _workedTick;
 				ThreadManager::DoDBQueueWork();
+				this_thread::sleep_for(1ms);
 			}
 			DestroyTLS();
 		});

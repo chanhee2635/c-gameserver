@@ -1,19 +1,16 @@
-using Protocol;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class BaseController : MonoBehaviour
 {
-    public ulong ObjectId { get; set; }
-    protected int TemplateId { get; set; }
-    protected GameObjectType GameobjectType { get; set; }
+    protected ulong                   _objectId;
+    protected Protocol.GameObjectType _objectType;
 
-    public void SetInfo(ulong objectId, int templateId, GameObjectType type)
+    public ulong                   GetObjectId() => _objectId;
+    public Protocol.GameObjectType GetObjectType() => _objectType;
+
+    public virtual void SetInfo(Protocol.ObjectInfo info, Vector3 position, Quaternion rotation)
     {
-        ObjectId = objectId;
-        TemplateId = templateId;
-        GameobjectType = type;
+        _objectId   = info.Summary.ObjectId;
+        _objectType = info.Summary.ObjectType;
     }
 }

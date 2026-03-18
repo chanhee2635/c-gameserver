@@ -2,5 +2,5 @@
 
 ClientServiceRef GGameService = nullptr;
 ClientServiceRef GChatService = nullptr;
-IocpCoreRef GIocpCore = MakeShared<IocpCore>();
+IocpCoreRef GIocpCore = nullptr;
 vector<DummyUserRef> GUsers;

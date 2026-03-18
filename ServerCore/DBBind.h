@@ -30,7 +30,8 @@ public:
 
 	bool Execute()
 	{
-		ASSERT_CRASH(Validate());
+		bool validate = Validate();
+		ASSERT_CRASH(validate);
 		return _dbConnection.Execute(_query);
 	}
 

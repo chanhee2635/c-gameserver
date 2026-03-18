@@ -4,6 +4,7 @@
 #include "RedisManager.h"
 #include "Service.h"
 #include "ThreadManager.h"
+#include "SessionManager.h"
 
 void DoWorkerJob(ChatServiceRef& service, uint64 workedTick)
 {
@@ -11,7 +12,7 @@ void DoWorkerJob(ChatServiceRef& service, uint64 workedTick)
 	{
 		LEndTickCount = ::GetTickCount64() + workedTick;
 
-		service->GetIocpCore()->Dispatch(10);
+		service->GetIocpCore()->Dispatch(1);
 
 		// 예약된 일감 처리
 		ThreadManager::DistributeReservedJobs();
@@ -23,10 +24,14 @@ void DoWorkerJob(ChatServiceRef& service, uint64 workedTick)
 
 int main()
 {
+	GSessionManager = make_unique<SessionManager>();
+
 	SocketUtils::Init();
 
-	if (GConfigManager->LoadConfig("../Common/config.json"))
+	if (GConfigManager->LoadConfig("../../Common/config.json") == false)
 	{
+		std::wcout << "Config Load Failed!" << std::endl;
+		return 0;
 	}
 
 	auto serverConfig = GConfigManager->GetChat();
@@ -39,7 +44,10 @@ int main()
 		MakeShared<ChatSession>
 	);
 
-	ASSERT_CRASH(service->Start());
+	GSessionManager->Start();
+
+	bool isStarted = service->Start();
+	ASSERT_CRASH(isStarted);
 
 	GThreadManager->Launch([]() {
 		GRedisManager->SubscribeRedis();
@@ -53,7 +61,7 @@ int main()
 			});
 	}
 
-	uint64 nextMonitorTick = ::GetTickCount64() + 1000;
+	/*uint64 nextMonitorTick = ::GetTickCount64() + 1000;
 
 	while (GIsRunning)
 	{
@@ -66,7 +74,7 @@ int main()
 		}
 
 		this_thread::sleep_for(10ms);
-	}
+	}*/
 
 	GThreadManager->Join();
 	SocketUtils::Clear();

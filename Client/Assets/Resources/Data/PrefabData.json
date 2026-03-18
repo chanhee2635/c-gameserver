@@ -1,8 +1,8 @@
 {
   "data": [
-    { "id": 1, "name": "전사", "prefabPath": "Player/Warrior", "maxCombo": 3},
-    { "id": 2, "name": "도적", "prefabPath": "Player/Thief", "maxCombo": 3},
-    { "id": 101, "name": "얼룩진유령", "prefabPath": "Monster/LightGhost", "maxCombo": 1},
-    { "id": 102, "name": "굶주린유령", "prefabPath": "Monster/DarkGhost", "maxCombo": 1}
+    { "id": 1, "name": "전사", "prefabPath": "Player/Warrior", "myPrefabPath": "MyPlayer/Warrior", "maxCombo": 3, "comboDurations": [0, 0.76, 0.66, 2.26],"comboHitDelays": [0, 400, 300, 533], "deathDuration": 10000},
+    { "id": 2, "name": "도적", "prefabPath": "Player/Thief", "myPrefabPath": "MyPlayer/Thief", "maxCombo": 3, "comboDurations": [0, 0.5, 0.33, 0.93],"comboHitDelays": [0, 266, 166, 166], "deathDuration": 10000},
+    { "id": 101, "name": "얼룩진유령", "prefabPath": "Monster/LightGhost", "maxCombo": 1, "comboDurations": [0, 1.33],"comboHitDelays": [0, 700], "deathDuration": 4533},
+    { "id": 102, "name": "굶주린유령", "prefabPath": "Monster/DarkGhost", "maxCombo": 1, "comboDurations": [0, 1.33],"comboHitDelays": [0, 700], "deathDuration": 4533}
   ]
 } 

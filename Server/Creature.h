@@ -4,37 +4,38 @@
 class Creature : public GameObject
 {
 public:
-	Creature() {};
+	Creature() = default;
 	virtual ~Creature() = default;
 
-	int32 GetLevel() { return _summary->level; }
-	virtual int32 GetDamage() = 0;
-	virtual int32 GetDefense() = 0;
-	virtual uint64 GetAttackTick() = 0;
-	void SetPosInfo(Vector3 pos, Protocol::PosInfo posInfo);
-	CreatureState GetState() const { return _stats.state; }
-	void SetState(CreatureState state);
-	void SetState(Protocol::CreatureState state) { SetState(static_cast<CreatureState>(state)); }
-	void SetPos(Vector3 pos) { _stats.pos = pos; }
-	void SetYaw(float yaw) { _stats.yaw = yaw; }
-	float GetYaw() { return _stats.yaw; }
-	void SetIsRun(bool isRun) { _stats.isRun = isRun; }
-	int32 GetHp() { return _stats.hp; }
-	void SetHp(int32 hp) { _stats.hp = hp; }
-	std::wstring GetName() { return _summary->name; }
+	CreatureState	GetState() const { return _state; }
+	void			SetState(CreatureState state) { _state = state; }
+	bool			IsDead()   const { return _hp <= 0 || _state == CreatureState::Dead; }
 
+	ZoneRef GetZone() { return _zone.lock(); }
+	void	SetZone(ZoneRef zone) { _zone = zone; }
 
-	bool CanAttack(int32 comboIndex, uint64 currentTick);
-	void SetAttackTick(uint64 tick);
-	int32 CalculateDamage(CreatureRef target);
-	void OnDamage(int32 damage);
-	bool IsDead();
+	bool IsDirty()	const { return _isDirty; }
+	void SetDirty(bool flag) { _isDirty = flag; }
 
-	void MakePosInfo(OUT Protocol::PosInfo& info);
-	void MakeObjectInfo(OUT Protocol::ObjectInfo& info);
+	void MakePosInfo(Protocol::PosInfo& info) const override;
+	void MakeStatInfo(Protocol::StatInfo& info) const override;
+
+	virtual float GetAttackSpeed() const { return 1.0f; }
+	uint64 GetHitDelay(int32 comboIndex) const;
+	virtual int32 GetDefense() const { return 0; }
+	int32 GetHp() const { return _hp; }
+	int32 TakeDamage(int32 incomingAttack);
 
 protected:
-	int32 _maxCombo = 0;
-	uint64 _lastAttackTick = 0;
+	virtual void OnDead() {}
+
+	CreatureState _state	= CreatureState::Idle;
+	int32		  _hp		= 0;
+	float		  _speed	= 0.f;
+
+	int32	_maxCombo = 0;
+	bool	_isDirty = false;
+
+	weak_ptr<Zone>	_zone;
 };
 

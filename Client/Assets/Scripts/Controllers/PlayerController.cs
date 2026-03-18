@@ -1,21 +1,23 @@
-using Protocol;
-using System;
+using UnityEngine;
 
 public class PlayerController : CreatureController
 {
-    public override void SetInfo(ObjectInfo info)
-    {
-        base.SetInfo(info);
+    protected int _mp;
+    protected int _maxMp;
 
-        PlayerData data = Managers.Data.PlayerDataDict[(TemplateId, Level)];
-        MaxHp = data.maxHp;
-        Speed = data.speed;
-        Name = info.Summary.Name;
+    public override void SetInfo(Protocol.ObjectInfo info, Vector3 position, Quaternion rotation)
+    {
+        base.SetInfo(info, position, rotation);
+
+        _mp = info.StatInfo.Mp;
+        _maxMp = Managers.Data.GetMaxMp(_templateId, Level);
 
         SetUI();
     }
 
-    public void SetLevel(int level)
+    public float GetMpRatio() => _maxMp > 0 ? (float)_mp / _maxMp : 0f;
+
+    /*public void SetLevel(int level)
     {
         Level = level;
         PlayerData data = Managers.Data.PlayerDataDict[(TemplateId, Level)];
@@ -28,5 +30,5 @@ public class PlayerController : CreatureController
         SetPosInfo(posInfo);
         Hp = hp;
         _anim.SetBool("IsDead", false);
-    }
+    }*/
 }

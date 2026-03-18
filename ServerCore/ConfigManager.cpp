@@ -47,6 +47,9 @@ bool ConfigManager::LoadConfig(const std::string& path)
         _logic.damageTick = j["Logic"]["DamageTick"];
         _logic.deadTick = j["Logic"]["DeadTick"];
         _logic.searchTick = j["Logic"]["SearchTick"];
+        _logic.flushTick = j["Logic"]["FlushTick"];
+        _logic.monitorTick = j["Logic"]["MonitorTick"];
+        _logic.redisTick = j["Logic"]["RedisTick"];
 
         _world.mapSize = j["World"]["MapSize"];
         _world.zoneSize = j["World"]["ZoneSize"];

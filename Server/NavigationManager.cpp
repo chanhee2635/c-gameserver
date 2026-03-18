@@ -181,8 +181,8 @@ bool NavigationManager::CanMoveTo(Vector3 startPos, Vector3 endPos)
 	_navQuery->findNearestPoly(sPos, _halfExtents, &_filter, &startPoly, startPt);
 	if (startPoly == 0) return false;
 
-	float ePos[3] = { endPos.x ,endPos.y, endPos.z };
 	float t = 0;
+	float ePos[3] = { endPos.x ,endPos.y, endPos.z };
 	float hitNormal[3];
 	dtPolyRef polys[20];
 	int nPolys;

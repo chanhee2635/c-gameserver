@@ -2,6 +2,7 @@
 using Protocol;
 using ServerCore;
 using System;
+using System.Collections;
 using System.Net;
 using UnityEngine;
 
@@ -22,13 +23,37 @@ internal class ChatServerSession : PacketSession
 
     public override void OnConnected(EndPoint endPoint)
     {
-        PacketManager.Instance.CustomHandler = (s, m, i) =>
+        if (Managers.Object.MyPlayer == null)
         {
-            PacketQueue.Instance.Push(i, m);
-        };
+            Debug.Log("MyPlayer Null");
+            CoroutineHelper.Start(RetryLogin());
+            return;
+        }
 
+        SendChatLogin();
+    }
+
+    IEnumerator RetryLogin()
+    {
+        float timeout = 2.0f;
+        float elapsed = 0f;
+
+        while (Managers.Object.MyPlayer == null && elapsed < timeout)
+        {
+            yield return new WaitForSeconds(0.01f);
+            elapsed += 0.01f;
+        }
+
+        if (Managers.Object.MyPlayer != null)
+            SendChatLogin();
+        else
+            Debug.LogWarning("[ChatServerSession] MyPlayer timeout");
+    }
+
+    void SendChatLogin()
+    {
         C_ChatLogin packet = new C_ChatLogin();
-        packet.PlayerId = Managers.Object.MyPlayerInfo.Summary.ObjectId;
+        packet.PlayerId = Managers.Object.MyPlayer.GetObjectId();
         Managers.Network.SendToChat(packet);
     }
 

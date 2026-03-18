@@ -10,6 +10,7 @@
 #include "ConfigManager.h"
 #include "RedisManager.h"
 #include "DBService.h"
+#include "DBManager.h"
 
 void DoWorkerJob(ServerServiceRef& service, uint64 workedTick)
 {
@@ -17,12 +18,10 @@ void DoWorkerJob(ServerServiceRef& service, uint64 workedTick)
 	{
 		LEndTickCount = ::GetTickCount64() + workedTick;
 
-		service->GetIocpCore()->Dispatch(10);
+		service->GetIocpCore()->Dispatch(1);
 
-		// 예약된 일감 처리
 		ThreadManager::DistributeReservedJobs();
 
-		// 글로벌 큐
 		ThreadManager::DoGlobalQueueWork();
 	}
 }
@@ -30,6 +29,7 @@ void DoWorkerJob(ServerServiceRef& service, uint64 workedTick)
 void UpdateServerStatusLoop(ServerServiceRef& service) {
 
 	auto config = GConfigManager->GetGame();
+	auto logicConfig = GConfigManager->GetLogic();
 	string key = "Server:" + to_string(config.port);
 
 	uint64 nextMonitorTick = 0;
@@ -39,11 +39,11 @@ void UpdateServerStatusLoop(ServerServiceRef& service) {
 	{
 		uint64 currentTick = ::GetTickCount64();
 
-		if (currentTick >= nextMonitorTick)
-		{
-			Utils::PrintServerStatus(service);
-			nextMonitorTick = currentTick + 1000;
-		}
+		//if (currentTick >= nextMonitorTick)
+		//{
+		//	//Utils::PrintServerStatus(service);
+		//	nextMonitorTick = currentTick + logicConfig.monitorTick;
+		//}
 
 		if (currentTick >= nextRedisTick)
 		{
@@ -57,7 +57,7 @@ void UpdateServerStatusLoop(ServerServiceRef& service) {
 						std::to_string(config.maxSessionCount);
 
 			GRedisManager->SaveServerStatus(key, info, 10);
-			nextRedisTick = currentTick + 5000;
+			nextRedisTick = currentTick + logicConfig.redisTick;
 		}
 
 		this_thread::sleep_for(10ms);
@@ -66,9 +66,12 @@ void UpdateServerStatusLoop(ServerServiceRef& service) {
 
 int main()
 {
+	GDBManager = make_shared<DBManager>();
+	GWorld = make_shared<World>();
+
 	SocketUtils::Init();
 
-	if (GConfigManager->LoadConfig("../Common/config.json") == false)
+	if (GConfigManager->LoadConfig("../../Common/config.json") == false)
 	{
 		std::wcout << "Config Load Failed!" << std::endl;
 		return 0;
@@ -93,7 +96,7 @@ int main()
 		return 0;
 	}
 
-	if (GNavigationManager->LoadNavMesh("../NavDataGenerator/SceneNavMesh.nav") == false)
+	if (GNavigationManager->LoadNavMesh("../../NavDataGenerator/SceneNavMesh.nav") == false)
 	{
 		std::wcout << "NavMesh Load Failed!" << endl;
 		return 0;
@@ -110,7 +113,9 @@ int main()
 	);
 
 	GDBService->Start(serverConfig.dbThreadCount, serverConfig.dbWorkedTick);
-	ASSERT_CRASH(service->Start());
+
+	bool isStarted = service->Start();
+	ASSERT_CRASH(isStarted);
 
 	GWorld->Start();
 

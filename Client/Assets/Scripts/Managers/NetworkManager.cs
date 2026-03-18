@@ -40,7 +40,7 @@ public class NetworkManager
     public void ConnectToChatServer()
     {
         IPAddress ipAddr = IPAddress.Parse("127.0.0.1");
-        IPEndPoint endPoint = new IPEndPoint(ipAddr, 9999);
+        IPEndPoint endPoint = new IPEndPoint(ipAddr, 7779);
 
         Connector connector = new Connector();
         connector.Connect(endPoint, () => { return _chatServerSession; }, 1);

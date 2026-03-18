@@ -9,32 +9,15 @@ using UnityEngine.UI;
 
 public class UI_CreatePlayerPopup : UI_Popup
 {
-    int chooseClass = 1;
+    int _chooseTemplateId = -1;
 
-    enum Buttons
-    {
-        WarriorBtn,
-        ThiefBtn,
-        CreateBtn,
-        ExitBtn
-    }
-
-    enum Texts
-    {
-        WarriorChk,
-        ThiefChk,
-        NamePlaceholder
-    }
-
-    enum InputFields
-    {
-        NameInput,
-    }
+    enum Buttons { WarriorBtn, ThiefBtn, CreateBtn, ExitBtn }
+    enum Texts { WarriorChk, ThiefChk, NamePlaceholder }
+    enum InputFields { NameInput }
 
     protected override void Init()
     {
         base.Init();
-
         Bind<TextMeshProUGUI>(typeof(Texts));
         Bind<TMP_InputField>(typeof(InputFields));
         Bind<Button>(typeof(Buttons));
@@ -45,26 +28,23 @@ public class UI_CreatePlayerPopup : UI_Popup
         GetButton((int)Buttons.ExitBtn).gameObject.BindEvent(OnClickExitButton);
     }
 
-    public void OnClickWarriorButton(PointerEventData evt)
+    void SelectClass(int templateId)
     {
-        GetText((int)Texts.WarriorChk).text = "●";
-        GetText((int)Texts.ThiefChk).text = "";
-        chooseClass = 1;
-    }
-
-    public void OnClickThiefButton(PointerEventData evt)
-    {
-        GetText((int)Texts.ThiefChk).text = "●";
+        _chooseTemplateId = templateId;
         GetText((int)Texts.WarriorChk).text = "";
-        chooseClass = 2;
+        GetText((int)Texts.ThiefChk).text = "";
+
+        PrefabData data = Managers.Data.PrefabDataDict[templateId];
+        if (templateId == 1) GetText((int)Texts.WarriorChk).text = "●";
+        else if (templateId == 2) GetText((int)Texts.ThiefChk).text = "●";
     }
 
+    public void OnClickWarriorButton(PointerEventData evt) { SelectClass(1); }
+    public void OnClickThiefButton(PointerEventData evt) { SelectClass(2); }
     public void OnClickCreateButton(PointerEventData evt)
     {
-        // class 값에 이상한 값을 보낼 때
-        if (chooseClass < 1 || chooseClass > 2) return;
+        if (_chooseTemplateId == -1) return;
 
-        // TODO : 정규표현식
         string name = GetInputField((int)InputFields.NameInput).text;
         if (string.IsNullOrEmpty(name))
         {
@@ -73,8 +53,8 @@ public class UI_CreatePlayerPopup : UI_Popup
         }
 
         C_CreatePlayer packet = new C_CreatePlayer();
-        packet.TemplateId = chooseClass;
-        packet.Name = GetInputField((int)InputFields.NameInput).text;
+        packet.TemplateId = _chooseTemplateId;
+        packet.Name = name;
         Managers.Network.Send(packet);
     }
 

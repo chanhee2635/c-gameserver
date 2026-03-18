@@ -5,9 +5,14 @@
 #include "Zone.h"
 #include "World.h"
 #include "ClientPacketHandler.h"
-#include "DataManager.h"
-#include "NavigationManager.h"
 #include "ConfigManager.h"
+#include "DataManager.h"
+#include "RedisManager.h"
+
+GameScene::GameScene()
+{
+	_updateTick = GConfigManager->GetLogic().updateTick;
+}
 
 void GameScene::AddZone(ZoneRef zone)
 {
@@ -16,316 +21,352 @@ void GameScene::AddZone(ZoneRef zone)
 
 void GameScene::Update()
 {
-	for (ZoneRef zone : _zones)
+	UpdateObjects();
+	CollectMoveNotices();
+	DispatchNotices();
+	BroadcastScene();
+
+	DoTimer(_updateTick, &GameScene::Update);
+}
+
+
+void GameScene::UpdateObjects()
+{
+	_movingCreatures.clear();
+	_jobsCache.clear();
+	_moveJobs.PopAll(OUT _jobsCache);
+
+	for (MoveJobRef job : _jobsCache)
 	{
-		for (auto it = zone->_monsters.begin(); it != zone->_monsters.end();)
+		auto it = _players.find(job->objectId);
+		if (it != _players.end())
 		{
-			auto curIt = it++;
-			MonsterRef monster = curIt->second;
-			if (monster)
-				monster->Update();
+			PlayerRef& player = it->second;
+			player->HandleMoveJob(job);
+			if (player->IsDirty())
+			{
+				CollectMovingCreature(player);
+			}
 		}
 	}
 
-	DoTimer(GConfigManager->GetLogic().updateTick, &GameScene::Update);
-}
-
-void GameScene::HandlePlayerMove(PlayerRef player, Protocol::PosInfo posInfo)
-{
-	Vector3 oldPos = player->GetPos();
-	Vector3 newPos = Vector3(posInfo.x(), posInfo.y(), posInfo.z());
-
-	// NavMesh 위인지 확인
-	Vector3 correctedPos;
-	if (GNavigationManager->IsValidLocation(newPos, correctedPos) == false)
+	for (auto& [id, monster] : _monsters)
 	{
-		return;
-	}
-
-	// 속도 핵 감지
-	float actualDeltaTime = (::GetTickCount64() / 1000.0f) - player->GetLastMoveTime();
-	float maxDist = player->GetSpeed() * actualDeltaTime * 1.5f;
-	float distance = Vector3::DistanceSquared(oldPos, newPos);
-	if (distance > maxDist * maxDist)
-	{
-		return;
-	}
-	
-	player->SetPosInfo(correctedPos, posInfo);
-
-	HandleMove(player, oldPos, newPos);
-
-}
-
-void GameScene::HandleMove(CreatureRef creature, Vector3 oldPos, Vector3 newPos)
-{
-	ZoneRef oldZone = GWorld->GetZoneByPos(oldPos);
-	ZoneRef newZone = GWorld->GetZoneByPos(newPos);
-	if (oldZone == nullptr || newZone == nullptr) return;
-
-	if (oldZone != newZone)
-	{
-		HandleMoveZone(creature, oldZone, newZone);
-	}
-	else
-	{
-		Protocol::S_Move packet;
-		packet.set_objectid(creature->GetObjectId());
-		auto pos = packet.mutable_pos();
-		creature->MakePosInfo(*pos);
-		auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-		BroadcastAround(newPos, sendBuffer, creature->GetObjectId());
+		if (monster->IsDead()) continue;
+		monster->Update();
+		if (monster->IsDirty())
+			CollectMovingCreature(monster);
 	}
 }
 
-void GameScene::HandleMoveZone(CreatureRef creature, ZoneRef oldZone, ZoneRef newZone)
+void GameScene::CollectMovingCreature(const CreatureRef& creature)
 {
-	if (creature == nullptr || oldZone == nullptr || newZone == nullptr) return;
-
-	MoveResultRef result = GWorld->GetMoveResult(oldZone, newZone);
-	if (result == nullptr) return;
-
-	HandleVisionLeave(creature, result->leaveZones);
-	oldZone->Leave(creature);
-
-	auto newScene = newZone->GetScene();
-	newScene->DoAsync([newScene, creature, newZone, result]() 
-	{
-		creature->SetGameScene(newZone->GetScene());
-		newScene->HandleVisionEnter(creature, result->enterZones);
-		newZone->Enter(creature);
-
-		Protocol::S_Move packet;
-		packet.set_objectid(creature->GetObjectId());
-		auto pos = packet.mutable_pos();
-		creature->MakePosInfo(*pos);
-		auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-		newScene->BroadcastToZones(result->keepZones, sendBuffer, creature->GetObjectId());
-	});
+	_movingCreatures.push_back(creature);
+	creature->SetDirty(false);
 }
 
-void GameScene::HandleVisionEnter(CreatureRef creature, Vector<ZoneRef> zones)
+void GameScene::CollectMoveNotices()
 {
-	if (creature == nullptr) return;
+	_movingCreaturesSnapshot.clear();
+	_movingCreaturesSnapshot.swap(_movingCreatures);
+	_sceneNotices.clear();
 
-	if (creature->GetObjectType() == GameObjectType::Player)
+	for (CreatureRef& creature : _movingCreaturesSnapshot)
 	{
-		// 나에게 먼저 주변 정보를 보낸다.
-		PlayerRef player = static_pointer_cast<Player>(creature);
+		ZoneRef oldZone = creature->GetZone();
+		if (oldZone == nullptr) 
+			continue;
 
-		Protocol::S_Spawn packet;
-		for (ZoneRef zone : zones)
-			zone->MakeSpawnPacket(packet);
+		Vector3 pos = creature->GetPos();
+		ZoneRef newZone = GWorld->GetZoneByPos(pos);
+		if (newZone == nullptr) 
+			continue;
 
-		if (packet.infos_size() != 0)
+		if (oldZone == newZone)
 		{
-			auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-			player->Send(sendBuffer);
+			const auto& adjacentZones = oldZone->GetAdjacentZones();
+			for (ZoneRef zone : adjacentZones)
+				_sceneNotices[zone->GetScene()].push_back({ creature, zone, VisionType::Move });
 		}
-	}
-
-	HandleSpawn(creature, zones);
-}
-
-void GameScene::HandleSpawn(CreatureRef creature, Vector<ZoneRef> zones)
-{
-	if (creature == nullptr) return;
-
-	Protocol::S_Spawn packet;
-	auto info = packet.add_infos();
-	creature->MakeObjectInfo(*info);
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-	BroadcastToZones(zones, sendBuffer, creature->GetObjectId());
-}
-
-void GameScene::HandleVisionLeave(CreatureRef creature, Vector<ZoneRef> zones)
-{
-	if (creature == nullptr) return;
-
-	HandleDespawn(creature, zones);
-
-	if (creature->GetObjectType() == GameObjectType::Player)
-	{
-		// 나에게 주변 정보를 보낸다.
-		PlayerRef player = static_pointer_cast<Player>(creature);
-		Protocol::S_Despawn packet;
-		for (ZoneRef zone : zones)
-			zone->MakeDespawnPacket(packet);
-
-		if (packet.objectids_size() != 0)
+		else
 		{
-			auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-			player->Send(sendBuffer);
+			HandleZoneChange(creature, oldZone, newZone);
 		}
 	}
 }
 
-void GameScene::HandleDespawn(CreatureRef creature, Vector<ZoneRef> zones)
+void GameScene::HandleZoneChange(CreatureRef creature, ZoneRef oldZone, ZoneRef newZone)
 {
-	if (creature == nullptr) return;
+	GameSceneRef oldScene = oldZone->GetScene();
+	GameSceneRef newScene = newZone->GetScene();
+	bool isSceneChanged = (oldScene != newScene);
 
-	Protocol::S_Despawn packet;
-	packet.add_objectids(creature->GetObjectId());
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-	BroadcastToZones(zones, sendBuffer, creature->GetObjectId());
-}
+	oldZone->Leave(creature, isSceneChanged);
 
-void GameScene::HandleRevive(PlayerRef player, bool currentPosRevive)
-{
-	if (player == nullptr || player->IsDead() == false) return;
-
-	ZoneRef oldZone = GWorld->GetZoneByPos(player->GetPos());  // 지속적인 계산은 조금이라도 무리가 될 수 있기에 플레이어도 Zone을 들고 있어야할 듯
-
-	// 플레이어의 정보를 저장
-	if (!currentPosRevive)
+	if (isSceneChanged)
 	{
-		const SpawnData* spawnData = GDataManager->GetNearestSpawnData(player->GetPos());
-		if (spawnData)
-		{
-			player->SetPos(spawnData->pos);
-			player->SetYaw(spawnData->yaw);
-		}
-	}
-	player->SetRevive();
-	
-	ZoneRef newZone = GWorld->GetZoneByPos(player->GetPos());
-
-	if (oldZone == nullptr || newZone == nullptr) return;
-
-	if (oldZone != newZone)
-	{
-		HandleReviveZone(player, oldZone, newZone);
-	}
-	else
-	{
-		Protocol::S_Revive packet;
-		packet.set_objectid(player->GetObjectId());
-		packet.set_hp(player->GetHp());
-		auto info = packet.mutable_posinfo();
-		player->MakePosInfo(*info);
-		BroadcastAround(player->GetPos(), ClientPacketHandler::MakeSendBuffer(packet));
-	}
-}
-
-void GameScene::HandleReviveZone(PlayerRef player, ZoneRef oldZone, ZoneRef newZone)
-{
-	if (player == nullptr || oldZone == nullptr || newZone == nullptr) return;
-
-	MoveResultRef result = GWorld->GetMoveResult(oldZone, newZone);
-	if (result == nullptr) return;
-
-	HandleVisionLeave(player, result->leaveZones);
-	oldZone->Leave(player);
-
-	auto newScene = newZone->GetScene();
-	newScene->DoAsync([newScene, player, newZone, result]()
-	{
-		player->SetGameScene(newZone->GetScene());
-		newScene->HandleVisionEnter(player, result->enterZones);
-		newZone->Enter(player);
-
-		Protocol::S_Revive packet;
-		packet.set_objectid(player->GetObjectId());
-		packet.set_hp(player->GetHp());
-		auto info = packet.mutable_posinfo();
-		player->MakePosInfo(*info);
-		auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-		newScene->BroadcastToZones(result->keepZones, sendBuffer);
-	});
-}
-
-void GameScene::PlayerAttack(PlayerRef player, Vector<ZoneRef> zones)
-{
-	if (player == nullptr) return;
-
-	Vector<MonsterRef> targets;
-	for (ZoneRef zone : zones)
-	{
-		for (auto& item : zone->_monsters)
-		{
-			MonsterRef monster = item.second;
-			if (player->InAttackRange(monster))
-				monster->GetGameScene()->DoTimer(DAMAGE_TICK, &GameScene::ApplyDamage, (CreatureRef)player, (CreatureRef)monster);
-		}
-	}
-}
-
-void GameScene::ApplyDamage(CreatureRef attacker, CreatureRef target)
-{
-	if (attacker == nullptr || target == nullptr || target->IsDead()) return;
-
-	if (target->GetGameScene().get() != this)
-	{
-		target->GetGameScene()->DoAsync(&GameScene::ApplyDamage, attacker, target);
-		return;
-	}
-
-	int32 damage = attacker->CalculateDamage(target);
-	target->OnDamage(damage);
-
-	Protocol::S_ChangeHp packet;
-	packet.set_objectid(target->GetObjectId());
-	packet.set_hp(target->GetHp());
-	packet.set_damage(damage);
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-	BroadcastAround(target->GetPos(), sendBuffer);
-
-	if (target->IsDead())
-		HandleDead(attacker, target);
-}
-
-void GameScene::HandleDead(CreatureRef attacker, CreatureRef target)
-{
-	if (target == nullptr || target->IsDead() == false) return;
-
-	Protocol::S_Die packet;
-	packet.set_objectid(target->GetObjectId());
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-	BroadcastAround(target->GetPos(), sendBuffer);
-
-	target->SetState(CreatureState::Dead);
-
-	if (target->GetObjectType() == GameObjectType::Player)
-	{
-		// TODO: 패널티
-		// 경험치 하락?
-	}
-	else if (target->GetObjectType() == GameObjectType::Monster)
-	{
-		MonsterRef monster = static_pointer_cast<Monster>(target);
-
-		if (attacker->GetObjectType() == GameObjectType::Player)
-		{
-			PlayerRef player = static_pointer_cast<Player>(attacker);
-			int32 rewardExp = monster->GetConfig()->rewardExp;
-			player->GetGameScene()->DoAsync([player, rewardExp]() {
-				player->AddExp(rewardExp);
-			});
-		}
-
-		ZoneRef zone = GWorld->GetZoneByPos(target->GetPos());
-		DoTimer(DEAD_TICK, [monster]() {
-			GWorld->LeaveCreature(monster);
-		}); 
-		DoTimer(monster->GetRespawnTick(), [monster]() {
-			monster->Reset();
-			GWorld->EnterCreature(monster);
+		creature->SetZone(newZone);
+		newScene->DoAsyncPush([newZone, newScene, creature]() {
+			newZone->Enter(creature, true);
+			creature->SetGameScene(newScene);
 		});
 	}
+	else
+	{
+		creature->SetZone(newZone);
+		newZone->Enter(creature, false);
+	}
+
+	MoveResultRef moveTable = GWorld->GetMoveResult(oldZone, newZone);
+	if (moveTable == nullptr) return;
+
+	for (ZoneRef zone : moveTable->enterZones)
+		_sceneNotices[zone->GetScene()].push_back({ creature, zone, VisionType::Spawn });
+	for (ZoneRef zone : moveTable->leaveZones)
+		_sceneNotices[zone->GetScene()].push_back({ creature, zone, VisionType::Despawn });
+	for (ZoneRef zone : moveTable->keepZones)
+		_sceneNotices[zone->GetScene()].push_back({ creature, zone, VisionType::Move });
+}
+
+void GameScene::DispatchNotices()
+{
+	for (auto& [scene, notices] : _sceneNotices)
+	{
+		if (!scene || notices.empty()) continue;
+
+		if (scene.get() == this)
+		{
+			ProcessNotices(notices);
+		}
+		else
+		{
+			scene->DoAsyncPush([scene, moveNotices = std::move(notices)]() mutable {
+				scene->ProcessNotices(moveNotices);
+			});
+		}
+	}
+
+	_sceneNotices.clear();
+}
+
+void GameScene::ProcessNotices(const vector<MoveNotice>& notices)
+{
+	for (const auto& notice : notices)
+	{
+		ZoneRef zone = notice.targetZone;
+		CreatureRef creature = notice.mover;
+
+		switch (notice.type)
+		{
+		case VisionType::Spawn:
+			zone->AddPendingSpawn(creature);
+			if (creature->GetObjectType() == GameObjectType::Player)
+			{
+				PlayerRef player = static_pointer_cast<Player>(creature);
+				Protocol::S_UpdateScene packet;
+				zone->MakeSpawnPacket(player, packet);
+				if (packet.spawns_size() > 0)
+					player->Send(ClientPacketHandler::MakeSendBuffer(packet));
+			}
+			break;
+		case VisionType::Despawn:
+			zone->AddPendingDespawn(creature->GetObjectId());
+			if (creature->GetObjectType() == GameObjectType::Player)
+			{
+				PlayerRef player = static_pointer_cast<Player>(creature);
+				Protocol::S_UpdateScene packet;
+				zone->MakeDespawnPacket(player->GetObjectId(), packet);
+				if (packet.despawns_size() > 0)
+					player->Send(ClientPacketHandler::MakeSendBuffer(packet));
+			}
+			break;
+		case VisionType::Move:
+			zone->AddPendingMove(notice.mover);
+			break;
+		}
+	}
+}
+
+void GameScene::BroadcastScene()
+{
+	for (ZoneRef& zone : _zones)
+	{
+		if (!zone->IsEmpty())
+		{
+			if (zone->IsActive())
+			{
+				Protocol::S_UpdateScene packet;
+				zone->FillUpdatePacket(packet);
+
+				const int32 MAX_MOVES_PER_PACKET = 30;
+				if (packet.moves_size() > MAX_MOVES_PER_PACKET)
+				{
+					Protocol::S_UpdateScene splitPacket;
+					splitPacket.mutable_spawns()->CopyFrom(packet.spawns());
+					splitPacket.mutable_despawns()->CopyFrom(packet.despawns());
+
+					for (int32 i = 0; i < packet.moves_size(); i++)
+					{
+						splitPacket.add_moves()->CopyFrom(packet.moves(i));
+						if (splitPacket.moves_size() >= MAX_MOVES_PER_PACKET)
+						{
+							BroadcastToZone(zone, ClientPacketHandler::MakeSendBuffer(splitPacket));
+							splitPacket.clear_moves();
+							splitPacket.clear_spawns();
+							splitPacket.clear_despawns();
+						}
+					}
+					if (splitPacket.moves_size() > 0 || splitPacket.spawns_size() > 0)
+						BroadcastToZone(zone, ClientPacketHandler::MakeSendBuffer(splitPacket));
+				}
+				else if (packet.moves_size() > 0 || packet.spawns_size() > 0 || packet.despawns_size() > 0)
+				{
+					BroadcastToZone(zone, ClientPacketHandler::MakeSendBuffer(packet));
+				}
+			}
+			zone->ClearPending();
+		}
+	}
+}
+
+
+void GameScene::BroadcastToZone(ZoneRef zone, SendBufferRef sendBuffer, uint64 exceptId)
+{
+	if (zone == nullptr || sendBuffer == nullptr) return;
+
+	for (auto& [id, player] : zone->_players)
+	{
+		if (id == exceptId) continue;
+		player->Send(sendBuffer);
+	}
+}
+
+void GameScene::BroadcastToAdjacentZones(ZoneRef zone, SendBufferRef sendBuffer, uint64 exceptId)
+{
+	if (zone == nullptr || sendBuffer == nullptr) return;
+
+	const Vector<ZoneRef>& adjacentZones = zone->GetAdjacentZones();
+
+	unordered_map<GameScene*, Vector<ZoneRef>> sceneGroups;
+	for (const ZoneRef& zone : adjacentZones)
+	{
+		GameSceneRef scene = zone->GetScene();
+		if (scene == nullptr) continue;
+		sceneGroups[scene.get()].push_back(zone);
+	}
+
+	for (auto& [scene, zones] : sceneGroups)
+	{
+		if (scene == this)
+		{
+			for (const ZoneRef& zone : zones)
+				BroadcastToZone(zone, sendBuffer, exceptId);
+		}
+		else
+		{
+			GameSceneRef targetScene = zones[0]->GetScene();
+			if (targetScene == nullptr) continue;
+
+			targetScene->DoAsyncPush([targetScene, zones, sendBuffer, exceptId]() {
+				for (const ZoneRef& zone : zones)
+					targetScene->BroadcastToZone(zone, sendBuffer, exceptId);
+			});
+		}
+	}
+}
+
+void GameScene::HandleAttackHitDetection(PlayerRef attacker, Vector3 attackPos, float yaw)
+{
+	ZoneRef myZone = attacker->GetZone();
+	if (myZone == nullptr) return;
+
+	float attackRange = attacker->GetAttackRange();
+	float halfAngleRad = (attacker->GetAttackAngle() * 0.5f) * (3.14159f / 180.f);
+	float cosHalfAngle = cosf(halfAngleRad);
+	float attackRangeSq = attackRange * attackRange;
+
+	float yawRad = yaw * (3.14159f / 180.f);
+	Vector3 forward = { sinf(yawRad), 0.f, cosf(yawRad) };
+
+	const Vector<ZoneRef>& adjacentZones = myZone->GetAdjacentZones();
+	for (const ZoneRef& zone : adjacentZones)
+	{
+		for (auto& [monsterId, monster] : zone->_monsters)
+		{
+			if (monster->IsDead()) continue;
+
+			Vector3 monsterPos = monster->GetPos();
+
+			Vector3 toMonster = { monsterPos.x - attackPos.x, 0.f, monsterPos.z - attackPos.z };
+			float distSq = toMonster.LengthSquared();
+			if (distSq > attackRangeSq) continue;
+
+			if (distSq > 0.001f)
+			{
+				Vector3 dir = toMonster;
+				dir.Normalize();
+				float dot = forward.Dot(dir);
+				if (dot < cosHalfAngle) continue;  // 공격 각도 밖
+			}
+
+			int32 rawDamage = attacker->GetAttack();
+			int32 actualDamage = monster->TakeDamage(rawDamage);
+			int32 remainHp = monster->GetHp();
+
+			Protocol::S_ChangeHp hpPkt;
+			hpPkt.set_object_id(monsterId);
+			hpPkt.set_hp(remainHp);
+			hpPkt.set_damage(-actualDamage);
+			BroadcastToAdjacentZones(myZone, ClientPacketHandler::MakeSendBuffer(hpPkt));
+
+			if (monster->IsDead())
+				attacker->GainExp(monster->GetRewardExp());
+		}
+	}
+}
+
+void GameScene::HandleRevive(PlayerRef player, bool isCurrentPos)
+{
+	if (player == nullptr || !player->IsDead()) return;
+
+	Vector3 revivePos;
+	if (isCurrentPos)
+		revivePos = player->GetPos();
+	else
+	{
+		SpawnData* nearest = GDataManager->GetNearestSpawnData(player->GetPos());
+		if (nearest == nullptr) return;
+		revivePos = nearest->pos;
+	}
+
+	player->Revive(revivePos);
+
+	Protocol::S_Revive pkt;
+	pkt.mutable_pos()->set_x(revivePos.x);
+	pkt.mutable_pos()->set_y(revivePos.y);
+	pkt.mutable_pos()->set_z(revivePos.z);
+	pkt.set_hp(player->GetHp());
+	pkt.set_max_hp(player->GetMaxHp());
+	player->Send(ClientPacketHandler::MakeSendBuffer(pkt));
+
+	GWorld->DoAsyncPush([player]() {
+		GWorld->LeaveCreature(player);
+	});
+	GWorld->DoTimer(1, [player]() {
+		GWorld->EnterCreature(player);
+	});
 }
 
 void GameScene::FindNearestPlayer(Vector<ZoneRef> zones, MonsterRef monster, Vector3 monsterPos)
 {
-	if (zones.size() == 0 || monster == nullptr) return;
+	if (monster == nullptr) return;
 
 	PlayerRef bestPlayer = nullptr;
 	float minDistSq = monster->GetSearchRangeSq();
-
-	for (ZoneRef zone : zones)
+	for (const ZoneRef& zone : zones)
 	{
-		for (auto& item : zone->_players)
+		for (auto& [id, player] : zone->_players)
 		{
-			PlayerRef player = item.second;
 			if (player->IsDead()) continue;
 
 			float distSq = (player->GetPos() - monsterPos).LengthSquared();
@@ -339,55 +380,37 @@ void GameScene::FindNearestPlayer(Vector<ZoneRef> zones, MonsterRef monster, Vec
 
 	if (bestPlayer != nullptr)
 	{
-		monster->GetGameScene()->DoAsync([monster, bestPlayer, minDistSq]() {
+		if (monster->GetGameScene().get() == this)
 			monster->HandleGatherResult(bestPlayer, minDistSq);
-		}); 
-	}
-}
-
-void GameScene::BroadcastToZone(ZoneRef zone, SendBufferRef sendBuffer, uint64 exceptId)
-{
-	if (zone == nullptr || sendBuffer == nullptr) return;
-
-	for (auto& item : zone->_players)
-	{
-		PlayerRef player = item.second;
-		if (player->GetObjectId() == exceptId) continue;
-
-		player->Send(sendBuffer);
-	}
-}
-
-void GameScene::BroadcastToZones(Vector<ZoneRef> zones, SendBufferRef sendBuffer, uint64 exceptId)
-{
-	Map<GameSceneRef, Vector<ZoneRef>> sceneGroups;
-	for (ZoneRef zone : zones)
-	{
-		if (GameSceneRef scene = zone->GetScene())
-			sceneGroups[scene].push_back(zone);
-	}
-
-	for (auto& item : sceneGroups)
-	{
-		GameSceneRef scene = item.first;
-		Vector<ZoneRef> groupZones = item.second;
-		if (scene.get() == this)
-		{
-			for (ZoneRef zone : groupZones)
-				BroadcastToZone(zone, sendBuffer, exceptId);
-		}
 		else
-		{
-			scene->DoAsync([scene, groupZones, sendBuffer, exceptId]() {
-				for (ZoneRef zone : groupZones)
-					scene->BroadcastToZone(zone, sendBuffer, exceptId);
-			});
-		}
+			monster->GetGameScene()->DoAsync([monster, bestPlayer, minDistSq]() {
+				monster->HandleGatherResult(bestPlayer, minDistSq);
+			}); 
 	}
 }
 
-void GameScene::BroadcastAround(Vector3 pos, SendBufferRef sendBuffer, uint64 exceptId)
+void GameScene::AddMonster(MonsterRef monster)
 {
-	auto adjacentZones = GWorld->GetAdjacentZones(pos);
-	BroadcastToZones(adjacentZones, sendBuffer, exceptId);
+	_monsters[monster->GetObjectId()] = monster;
 }
+
+void GameScene::RemoveMonster(uint64 objectId)
+{
+	_monsters.erase(objectId);
+}
+
+void GameScene::AddPlayer(PlayerRef player)
+{
+	_players[player->GetObjectId()] = player;
+}
+
+void GameScene::RemovePlayer(uint64 objectId)
+{
+	_players.erase(objectId);
+}
+
+void GameScene::PushMoveJob(MoveJobRef job)
+{
+	_moveJobs.Push(job);
+}
+

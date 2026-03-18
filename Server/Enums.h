@@ -2,16 +2,16 @@
 
 enum class CreatureState : uint8
 {
-	None = 0,
-	Idle = 1,
-	Moving = 2,
+	Idle = 0,
+	Moving = 1,
+	Sprinting = 2,
 	Attack = 3,
 	Dead = 4
 };
 
 enum class GameObjectType : uint8
 {
-	None = 0,
+	UnKnown = 0,
 	Player = 1,
 	Monster = 2
 };
@@ -26,5 +26,6 @@ enum
 enum class SpawnPoint
 {
 	BEGIN = 1,
+	CENTER = 3
 };
 

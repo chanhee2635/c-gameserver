@@ -3,25 +3,35 @@
 class GameObject : public enable_shared_from_this<GameObject>
 {
 public:
-	GameObject() {}
-	virtual ~GameObject() {}
+	GameObject() = default;
+	virtual ~GameObject() = default;
 
-	virtual void Init(uint64 objectId, Vector3 pos, float yaw);
+	uint64			GetObjectId()	const { return _objectId; }
+	GameObjectType	GetObjectType() const { return _objectType; }
+	const wstring&	GetName()		const { return _name; }
+	int32			GetLevel()		const { return _level; }
+	int32			GetTemplateId() const { return _templateId; }
 
-	uint64			GetObjectId() { return _summary->objectId; }
-	GameObjectType	GetObjectType() { return _summary->objectType; }
-	Vector3			GetPos() { return _stats.pos; }
-	float			GetYaw() { return _stats.yaw; }
-	const StatData&	GetStat() { return _stats; }
-	Vector3			GetForward();
+	Vector3	GetPos()	 const  { return _pos; }
+	void	SetPos(Vector3 pos) { _pos = pos; }
 
-	void SetGameScene(GameSceneRef gameScene) { _gameScene = gameScene; }
-	GameSceneRef GetGameScene() { return _gameScene.lock(); }
+	void			SetGameScene(GameSceneRef gameScene) { _gameScene = gameScene; }
+	GameSceneRef	GetGameScene()						 { return _gameScene.lock(); }
+
+	void MakeSummaryInfo(Protocol::ObjectSummary& info) const;
+	virtual void MakePosInfo(Protocol::PosInfo& info)	const {}
+	virtual void MakeStatInfo(Protocol::StatInfo& info) const {}
+	void MakeObjectInfo(Protocol::ObjectInfo& info)		const;
 
 protected:
-	SummaryDataRef		_summary;
-	StatData			_stats;
+	uint64			_objectId	= 0;
+	GameObjectType	_objectType = GameObjectType::UnKnown;
+	int32			_templateId = 0;
+	int32			_level		= 0;
+	wstring			_name;
 
-private:
+	Vector3	_pos;
+	float	_yaw = 0.f;
+
 	weak_ptr<GameScene> _gameScene;
 };

@@ -1,134 +1,181 @@
 #include "pch.h"
 #include "Player.h"
 #include "GameSession.h"
-#include "ClientPacketHandler.h"
 #include "IdGenerator.h"
 #include "DataManager.h"
-#include "World.h"
-#include "Zone.h"
 #include "GameScene.h"
 #include "NavigationManager.h"
+#include "ClientPacketHandler.h"
 #include "DBManager.h"
+#include "ConfigManager.h"
+#include "World.h"
 
-void Player::Init(SummaryDataRef summary, StatData& stat)
+void Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData)
 {
-	// DB ID -> Memory ID
-	_playerDbId = summary->objectId;
-	// summary : objectid, name, level, templateId, objectType
-	_summary = summary;
-	_summary->objectId = IdGenerator::GenerateId(_summary->objectType);
-	_stats = stat;
-	_stats.pos.y = GNavigationManager->GetHeight(stat.pos);
-	_config = GDataManager->GetPlayerData(summary->templateId, summary->level);
+	_playerDbId	= summary.dbId;
+	_objectId	= IdGenerator::GenerateId(GameObjectType::Player);
+	_objectType	= GameObjectType::Player;
+	_name		= summary.name;
+	_level		= summary.level;
+	_templateId = summary.templateId;
 
-	_maxCombo = GDataManager->GetMaxCombo(_summary->templateId);
+	_config = GDataManager->GetPlayerData(_templateId, _level);
+	ASSERT_CRASH(_config != nullptr);
+
+	_maxCombo = GDataManager->GetMaxCombo(_templateId);
+	_speed	  = _config->speed;
+
+	_pos = Vector3(loadData.pos.x, GNavigationManager->GetHeight(loadData.pos), loadData.pos.z);
+	_yaw = loadData.yaw;
+	_hp = loadData.hp;
+	_mp = loadData.mp;
+	_exp = loadData.exp;
+	_state = CreatureState::Idle;
 }
 
-bool Player::InAttackRange(CreatureRef target)
+void Player::HandleMoveJob(const MoveJobRef& job)
 {
-	if (target == nullptr || target->IsDead()) return false;
+	if (job == nullptr) return;
 
-	Vector3 targetPos = target->GetPos();
-	Vector3 dir = targetPos - GetPos();
-	float distSq = dir.LengthSquared();
+	Vector3 oldPos = _pos;
+	CreatureState oldState = _state;
 
-	if (distSq > GetAttackRangeSq()) 
-		return false;
+	_pos = job->pos;
+	_state = job->state;
+	_yaw = job->yaw;
 
-	dir.Normalize();
-	float dot = dir.Dot(GetForward());
-	float cosThreshold = cosf((GetAttackAngle() / 2.0f) * (3.141592f / 180.0f));
+	bool stateChanged = job->state != oldState;
+	bool posChanged = Vector3::DistanceSquared(oldPos, _pos) > 0.0001f;
 
-	return dot >= cosThreshold;
+	if (stateChanged || posChanged)
+		_isDirty = true;
 }
 
-void Player::AddExp(int32 rewardExp)
+void Player::HandleAttack(float yaw, int32 comboIndex, Vector3 clientPos)
 {
-	int32 initLvl = _summary->level;
-	_stats.exp += rewardExp;
+	if (IsDead()) return;
+	if (comboIndex < 1 || comboIndex > _maxCombo) return;
 
-	while (true)
-	{
-		int64 nextLevelExp = GDataManager->GetPlayerRequireExp(_summary->templateId, _summary->level + 1);
-		if (_stats.exp < nextLevelExp) break;
+	float distSq = Vector3::DistanceSquared(clientPos, _pos);
+	Vector3 attackPos = (distSq <= ATTACK_POS_TOLERANCE_SQ) ? clientPos : _pos;
 
-		_summary->level++;
-		ApplyLevelUpStatus();
+	_yaw = yaw;
+	_pos = attackPos;
+	_state = CreatureState::Attack;
 
-		Protocol::S_ChangeLevel packet;
-		packet.set_objectid(_summary->objectId);
-		packet.set_level(_summary->level);
-		auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-		GetGameScene()->BroadcastAround(_stats.pos, sendBuffer, _summary->objectId);
-	}
+	GameSceneRef scene = GetGameScene();
+	if (scene == nullptr) return;
 
-	if (_summary->level > initLvl)
-		GDBManager->DoAsyncPush(&DBManager::SavePlayerLevelUp, _playerDbId, _summary->level, _stats);
-
-	Protocol::S_ChangeExp packet;
-	packet.set_level(_summary->level);
-	packet.set_exp(_stats.exp);
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-	Send(sendBuffer);
-}
-
-void Player::ApplyLevelUpStatus()
-{
-	const PlayerData* config = GDataManager->GetPlayerData(_summary->templateId, _summary->level);
-	if (config != nullptr)
-	{
-		_config = config;
-		_stats.hp = config->maxHp;
-		_stats.mp = config->maxMp;
-	}
-}
-
-bool Player::CheckComboIndex(int32 comboIndex)
-{
-	return 0 < comboIndex && _maxCombo >= comboIndex;
-}
-
-void Player::SetRevive()
-{
-	SetState(CreatureState::Idle);
-	SetHp(GetMaxHp());
-}
-
-void Player::HandleAttack(float yaw, int32 comboIndex)
-{
-	uint64 currentTick = GetTickCount64();
-	if (!CanAttack(comboIndex, currentTick)) return;
-
-	SetYaw(yaw);
-	SetAttackTick(currentTick);
+	ZoneRef zone = GetZone();
+	if (zone == nullptr) return;
 
 	Protocol::S_Attack packet;
-	packet.set_objectid(GetObjectId());
-	packet.set_yaw(GetYaw());
-	packet.set_comboindex(comboIndex);
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
+	packet.set_object_id(_objectId);
+	packet.set_yaw(yaw);
+	packet.set_combo_index(comboIndex);
+	*packet.mutable_pos() = GameUtil::ToProto(attackPos);
+	scene->BroadcastToAdjacentZones(zone, ClientPacketHandler::MakeSendBuffer(packet));
 
-	auto adjacentZones = GWorld->GetAdjacentZones(GetPos());
-	GetGameScene()->BroadcastToZones(adjacentZones, sendBuffer, GetObjectId());
+	uint64 hitDelay = GetHitDelay(comboIndex);
+	auto self = static_pointer_cast<Player>(shared_from_this());
 
-	// 씬 별로 몬스터 공격
-	Map<GameSceneRef, Vector<ZoneRef>> sceneGroups;
-	for (ZoneRef zone : adjacentZones)
-	{
-		if (GameSceneRef scene = zone->GetScene())
-			sceneGroups[scene].push_back(zone);
-	}
-
-	for (auto& item : sceneGroups)
-	{
-		GameSceneRef scene = item.first;
-		Vector<ZoneRef> zones = item.second;
-		scene->DoAsync(&GameScene::PlayerAttack, static_pointer_cast<Player>(shared_from_this()), zones);
-	}
+	scene->DoTimer(hitDelay, [scene, self, attackPos, yaw]() {
+		if (self->IsDead()) return;
+		scene->HandleAttackHitDetection(self, attackPos, yaw);
+	});
 }
 
 void Player::Send(SendBufferRef sendBuffer)
 {
 	if (auto session = _session.lock())
 		session->Send(sendBuffer);
+}
+
+void Player::Revive(Vector3 pos)
+{
+	_hp = _config ? _config->maxHp : 1;
+	_state = CreatureState::Idle;
+	_pos = pos;
+	_yaw = 0.f;
+	_isDirty = true;
+}
+
+void Player::GainExp(int64 rewardExp)
+{
+	if (IsDead() || rewardExp <= 0) return;
+
+	_exp += rewardExp;
+
+	Protocol::S_ChangeExp expPkt;
+	expPkt.set_object_id(_objectId);
+	expPkt.set_exp(_exp);
+	Send(ClientPacketHandler::MakeSendBuffer(expPkt));
+
+	TryLevelUp();
+}
+
+void Player::OnDead()
+{
+}
+
+void Player::MakeStatInfo(Protocol::StatInfo& info) const
+{
+	info.set_hp(_hp);
+	info.set_mp(_mp);
+	info.set_exp(_exp);
+}
+
+void Player::TryLevelUp()
+{
+	int64 reqExp = GDataManager->GetPlayerRequireExp(_templateId, _level);
+	if (_exp < reqExp) return;
+
+	// 다음 레벨 데이터 존재 여부 확인
+	const PlayerData* nextConfig = GDataManager->GetPlayerData(_templateId, _level + 1);
+	if (nextConfig == nullptr) return;   // 최대 레벨
+
+	// 레벨업 처리
+	_exp -= reqExp;
+	_level += 1;
+	_config = nextConfig;
+	_speed = _config->speed;
+	_hp = _config->maxHp;   // HP 풀 회복
+	_mp = _config->maxMp;
+	_isDirty = true;
+
+	GameSceneRef scene = GetGameScene();
+	ZoneRef zone = GetZone();
+
+	if (scene && zone)
+	{
+		Protocol::S_ChangeLevel broadcastPkt;
+		broadcastPkt.set_object_id(_objectId);
+		broadcastPkt.set_level(_level);
+		broadcastPkt.set_max_hp(_config->maxHp);
+		broadcastPkt.set_hp(_hp);
+		scene->BroadcastToAdjacentZones(zone,
+			ClientPacketHandler::MakeSendBuffer(broadcastPkt));
+	}
+
+	Protocol::S_ChangeLevel lvPkt;
+	lvPkt.set_object_id(_objectId);
+	lvPkt.set_level(_level);
+	lvPkt.set_max_hp(_config->maxHp);
+	lvPkt.set_hp(_hp);
+	lvPkt.set_exp(_exp);
+	Send(ClientPacketHandler::MakeSendBuffer(lvPkt));
+
+	uint64  dbId = _playerDbId;
+	int32   level = _level;
+	int32   hp = _hp;
+	int32   mp = _mp;
+	int64   exp = _exp;
+	Vector3 pos = _pos;
+	float   yaw = _yaw;
+
+	GDBManager->DoAsync([dbId, level, hp, mp, exp, pos, yaw]() {
+		GDBManager->SavePlayerLevelUp(dbId, level, hp, mp, exp, pos, yaw);
+	});
+
+	TryLevelUp();
 }

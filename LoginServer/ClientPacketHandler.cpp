@@ -16,23 +16,13 @@ bool Handle_INVALID(PacketSessionRef& session, BYTE* buffer, int32 len)
 bool C_LoginAuthHandler(PacketSessionRef& session, Protocol::C_LoginAuth& pkt)
 {
 	LoginSessionRef loginSession = static_pointer_cast<LoginSession>(session);
-
-	// IOCP Thread -> Logic Thread
-	loginSession->GetLogicQueue()->DoAsyncPush([loginSession, id = pkt.id(), pw = pkt.pw()]() {
-		loginSession->HandleLoginStart(id, pw);
-	});
-
+	loginSession->HandleLoginStart(pkt.id(), pkt.pw());
 	return true;
 }
 
 bool C_JoinHandler(PacketSessionRef& session, Protocol::C_Join& pkt)
 {
 	LoginSessionRef loginSession = static_pointer_cast<LoginSession>(session);
-	
-	// IOCP Thread -> Logic Thread
-	loginSession->GetLogicQueue()->DoAsyncPush([loginSession, id = pkt.id(), pw = pkt.pw()]() {
-		loginSession->HandleJoinStart(id, pw);
-	});
-
+	loginSession->HandleJoinStart(pkt.id(), pkt.pw());
 	return true;
 }

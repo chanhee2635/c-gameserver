@@ -1,19 +1,10 @@
-using Protocol;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 
 public class MonsterController : CreatureController
 {
-    public override void SetInfo(ObjectInfo info)
+    public override void SetInfo(Protocol.ObjectInfo info, Vector3 position, Quaternion rotation)
     {
-        base.SetInfo(info);
-
-        MonsterData data = Managers.Data.MonsterDataDict[TemplateId];
-        MaxHp = data.maxHp;
-        Speed = data.speed;
-        Name = Managers.Data.PrefabDataDict[TemplateId].name;
+        base.SetInfo(info, position, rotation);
 
         SetUI();
     }

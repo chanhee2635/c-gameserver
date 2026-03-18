@@ -61,56 +61,23 @@ struct Vector3
 	Vector3& operator+=(const Vector3& other) { x += other.x; y += other.y; z += other.z; return *this; }
 	Vector3 operator-(const Vector3& other) const { return { x - other.x, y - other.y, z - other.z }; }
 	Vector3 operator*(float scalar) const { return { x * scalar, y * scalar, z * scalar }; }
+	Vector3 operator/(float scalar) const { if (::abs(scalar) < 0.0001f) return Vector3(0.f, 0.f, 0.f); return Vector3(x / scalar, y / scalar, z / scalar); }
 };
 
 // 아주 가끔 변하는 데이터
-struct SummaryData
-{
-	uint64 objectId;
-	wstring name;
-	int32 level;
-	int32 templateId;
-	GameObjectType objectType;
-
-	void ToPacket(Protocol::SummaryInfo* packet) const
-	{
-		packet->set_objectid(objectId);
-		packet->set_name(Utils::ws2s(name));
-		packet->set_level(level);
-		packet->set_templateid(templateId);
-		packet->set_objecttype(static_cast<Protocol::GameObjectType>(objectType));
-	}
+struct PlayerSummaryData {
+	uint64	dbId;
+	wstring	name;
+	int32	templateId;
+	int32	level;
 };
 
-// 실시간 변동 데이터
-struct StatData
-{
-	CreatureState state = CreatureState::Idle;
+struct PlayerLoadData {
 	Vector3 pos;
-	float yaw;
-	int32 hp;
-	int32 mp;
-	int64 exp;
-	bool isRun = false;
-
-	void ToPacket(Protocol::PosInfo* packet) const
-	{
-		packet->set_state(static_cast<Protocol::CreatureState>(state));
-		packet->set_x(pos.x);
-		packet->set_y(pos.y);
-		packet->set_z(pos.z);
-		packet->set_yaw(yaw);
-		packet->set_isrun(isRun);
-	}
-
-	void ToPacket(Protocol::StatInfo* packet) const
-	{
-		packet->set_hp(hp);
-		packet->set_mp(mp);
-		packet->set_exp(exp);
-	}
+	float	yaw;
+	int32	hp, mp;
+	int64	exp;
 };
-
 
 // 기획 데이터
 struct MonsterData
@@ -150,6 +117,8 @@ struct PrefabData
 	wstring name;
 	wstring prefabPath;
 	int32 maxCombo;
+	vector<int32> comboHitDelays;
+	int32 deathDuration;
 };
 
 struct SpawnData

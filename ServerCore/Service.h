@@ -47,6 +47,7 @@ public:
 	IocpCoreRef&		GetIocpCore() { return _iocpCore; }
 	const ServerConfig& GetConfig() { return _config; }
 	
+	void ForEachSession(const function<void(SessionRef)>& callback);
 
 protected:
 	USE_LOCK;

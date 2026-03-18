@@ -971,7 +971,7 @@ GameObject:
   - component: {fileID: 8438482816404220559}
   - component: {fileID: 551270887221402244}
   m_Layer: 5
-  m_Name: Revive
+  m_Name: RevivePopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1503,7 +1503,7 @@ GameObject:
   - component: {fileID: 2495416956907210763}
   - component: {fileID: 3389917696770299626}
   m_Layer: 5
-  m_Name: Exit
+  m_Name: ExitPopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2754,7 +2754,7 @@ GameObject:
   - component: {fileID: 1264606700261169710}
   - component: {fileID: 7158674463620944019}
   m_Layer: 5
-  m_Name: NoBtn
+  m_Name: ExitNoBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3455,7 +3455,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -310}
+  m_AnchoredPosition: {x: 0, y: -309.99997}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &6533256119302677047
@@ -3767,7 +3767,7 @@ GameObject:
   - component: {fileID: 1884284048643645878}
   - component: {fileID: 8545307998169437347}
   m_Layer: 5
-  m_Name: VillagePosBtn
+  m_Name: NearbyReviveBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4879,7 +4879,7 @@ GameObject:
   - component: {fileID: 2164908304943604005}
   - component: {fileID: 9090893505064305580}
   m_Layer: 5
-  m_Name: CurrentPosBtn
+  m_Name: CurrentReviveBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5469,7 +5469,7 @@ GameObject:
   - component: {fileID: 1163568419023028185}
   - component: {fileID: 1207901957143983436}
   m_Layer: 5
-  m_Name: YesBtn
+  m_Name: ExitYesBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -3,103 +3,128 @@
 #include "IdGenerator.h"
 #include "DataManager.h"
 #include "Player.h"
-#include "World.h"
 #include "GameScene.h"
 #include "Zone.h"
 #include "NavigationManager.h"
 #include "ClientPacketHandler.h"
-
+#include "ConfigManager.h"
+#include "World.h"
 
 void Monster::Init(const SpawnData& data)
 {
 	_config = GDataManager->GetMonsterData(data.id);
+	ASSERT_CRASH(_config != nullptr);
 
-	_summary = MakeShared<SummaryData>();
-	_summary->objectType = GameObjectType::Monster;
-	_summary->objectId = IdGenerator::GenerateId(_summary->objectType);
-	_summary->level = _config->level;
-	_summary->name = _config->name;
-	_summary->templateId = _config->id;
+	_objectId = IdGenerator::GenerateId(GameObjectType::Monster);
+	_objectType = GameObjectType::Monster;
+	_templateId = _config->id;
+	_name = _config->name;
+	_level = _config->level;
 
-	_stats.pos = Vector3(data.pos.x, GNavigationManager->GetHeight(data.pos), data.pos.z);
-	_stats.yaw = data.yaw;
-	_stats.hp = _config->maxHp;
+	_speed = _config->speed;
+	_maxCombo = GDataManager->GetMaxCombo(_templateId);
 
-	_nextSearchTick = ::GetTickCount64();
+	_spawnPos = Vector3(data.pos.x, GNavigationManager->GetHeight(data.pos), data.pos.z);
+	_yaw = data.yaw;
+
+	_deltaTime = static_cast<float>(GConfigManager->GetLogic().updateTick) / 1000.0f;
 	_respawnTick = data.respawnTick;
-	_spawnPos = _stats.pos;
-	_maxCombo = GDataManager->GetMaxCombo(_summary->templateId);
+
+	Reset();
 }
 
 void Monster::Reset()
 {
-	_nextSearchTick = ::GetTickCount64();
-	_stats.state = CreatureState::Idle;
-	_stats.hp = _config->maxHp;
-	_stats.pos = _spawnPos;
+	_state = CreatureState::Idle;
+	_hp = _config->maxHp;
+	_pos = _spawnPos;
+	_isDirty = true;
 	_target.reset();
+	_path.clear();
+	_pathIndex = 0;
+	_nextSearchTick = ::GetTickCount64();
+	_nextAttackTick = 0;
+	_lastTargetDistSq = 0.f;
 }
 
 void Monster::Update()
 {
-	switch (GetState())
+	switch (_state)
 	{
-		case CreatureState::Idle:
-			UpdateIdle(); break;
-		case CreatureState::Moving:
-			if (_target.lock() != nullptr)
-				UpdateMoving();
-			else
-				UpdateReturn();
-			break;
-		case CreatureState::Attack:
-			UpdateAttack(); break;
-		case CreatureState::Dead:
-			UpdateDead(); break;
+		case CreatureState::Idle:   UpdateIdle(); break;
+		case CreatureState::Moving: (_target.lock() != nullptr) ? UpdateMoving() : UpdateReturn(); break;
+		case CreatureState::Attack:	UpdateAttack(); break;
+		case CreatureState::Dead:   UpdateDead(); break;
 	}
 }
 
 void Monster::HandleGatherResult(PlayerRef player, float distSq)
 {
-	bool shouldChange = (_target.lock() == nullptr || _target.lock()->IsDead());
+	PlayerRef currentTarget = _target.lock();
 
-	if (_target.lock() != nullptr)
-		if (distSq < _lastTargetDistSq) shouldChange = true;
-	else
-		shouldChange = true;
+	bool shouldChange = (currentTarget == nullptr || currentTarget->IsDead() || distSq < _lastTargetDistSq);
+	if (!shouldChange) return;
 
-	if (shouldChange)
+	_target = player;
+	_lastTargetDistSq = distSq;
+
+	if (_state == CreatureState::Idle)
 	{
-		_target = player;
-		_lastTargetDistSq = distSq;
-
-		if (_stats.state == CreatureState::Idle)
-			_stats.state = CreatureState::Moving;
+		_state = CreatureState::Moving;
+		_path.clear();
+		_pathIndex = 0;
+		_isDirty = true;
 	}
+}
+
+
+void Monster::OnDead()
+{
+	GameSceneRef scene = GetGameScene();
+	ZoneRef zone = GetZone();
+	if (!scene || !zone) return;
+
+	Protocol::S_Die diePkt;
+	diePkt.set_object_id(_objectId);
+	scene->BroadcastToAdjacentZones(zone, ClientPacketHandler::MakeSendBuffer(diePkt));
+
+	auto self = static_pointer_cast<Monster>(shared_from_this());
+
+	int32 deadAnimMs = GDataManager->GetDeathDuration(_templateId);
+	
+	scene->DoTimer(deadAnimMs, [self, respawnTick = _respawnTick]() {
+		GWorld->DoAsyncPush([self, respawnTick]() {
+			GWorld->LeaveCreature(self);
+			GWorld->DoTimer(respawnTick, [self]() {
+				self->Reset();
+				GWorld->EnterCreature(self);
+			});
+		});
+	});
 }
 
 void Monster::UpdateIdle()
 {
-	uint64 now = ::GetTickCount64();
+	int64 now = ::GetTickCount64();
 	if (now < _nextSearchTick) return;
-	_nextSearchTick = now + SEARCH_TICK;
+	_nextSearchTick = now + 500;
 
-	auto adjacentZones = GWorld->GetAdjacentZones(_stats.pos);
-	Map<GameSceneRef, Vector<ZoneRef>> sceneGroups;
-	for (ZoneRef zone : adjacentZones)
-	{
-		if (GameSceneRef scene = zone->GetScene())
-			sceneGroups[scene].push_back(zone);
-	}
-	
+	ZoneRef myZone = GetZone();
+	if (myZone == nullptr) return;
+
 	auto self = static_pointer_cast<Monster>(shared_from_this());
-	Vector3 monsterPos = _stats.pos;
+	Vector3 monsterPos = _pos;
 
-	for (auto& item : sceneGroups)
+	Map<GameSceneRef, Vector<ZoneRef>> sceneGroups;
+	for (ZoneRef zone : myZone->GetAdjacentZones())
+		sceneGroups[zone->GetScene()].push_back(zone);
+
+	for (auto& [scene, zones] : sceneGroups)
 	{
-		GameSceneRef scene = item.first;
-		Vector<ZoneRef> zones = item.second;
-		scene->DoAsync(&GameScene::FindNearestPlayer, zones, self, monsterPos);
+		if (scene.get() == GetGameScene().get())
+			GetGameScene()->FindNearestPlayer(zones, self, monsterPos);
+		else
+			scene->DoAsync(&GameScene::FindNearestPlayer, zones, self, monsterPos);
 	}
 }
 
@@ -109,22 +134,28 @@ void Monster::UpdateMoving()
 	if (target == nullptr || target->IsDead())
 	{
 		_target.reset();
+		_path.clear();
+		_pathIndex = 0;
+		_isDirty = true;
 		return;
 	}
 
 	Vector3 targetPos = target->GetPos();
-	// TODO: y축 고려
-	float distSq = Vector3::DistanceSquared(_stats.pos, targetPos);
-
+	float distSq = Vector3::DistanceSquared(_pos, targetPos);
 	if (distSq > GetMaxSearchRangeSq())
 	{
 		_target.reset();
+		_path.clear();
+		_pathIndex = 0;
+		_isDirty = true;
 		return;
 	}
 
 	if (distSq <= GetAttackRangeSq())
 	{
-		_stats.state = CreatureState::Attack;
+		_state = CreatureState::Attack;
+		_isDirty = true;
+		UpdateAttack();
 		return;
 	}
 
@@ -133,64 +164,57 @@ void Monster::UpdateMoving()
 
 void Monster::UpdateReturn()
 {
-	float distSq = Vector3::DistanceSquared(_stats.pos, _spawnPos);
-
-	if (distSq < 0.5f * 0.5f)
+	if (Vector3::DistanceSquared(_pos, _spawnPos) < 0.1f)
 	{
-		_stats.pos = _spawnPos;
-		_stats.state = CreatureState::Idle;
+		_pos = _spawnPos;
 		_path.clear();
-		auto self = static_pointer_cast<Monster>(shared_from_this());
-		GetGameScene()->HandleMove(self, _stats.pos, _spawnPos);
+		_pathIndex = 0;
+		_state = CreatureState::Idle;
+		_nextSearchTick = ::GetTickCount64();
+		_isDirty = true;
 		return;
 	}
 
 	TickMoveTo(_spawnPos);
+
+	if (_state == CreatureState::Idle)
+	{
+		_pos = _spawnPos;
+		_path.clear();
+		_pathIndex = 0;
+		_nextSearchTick = ::GetTickCount64();
+		_isDirty = true;
+	}
 }
 
 void Monster::UpdateAttack()
 {
-	if (IsDead()) return;
-	// 공격 시간이 지났으면 체크
-	uint64 currentTick = GetTickCount64();
-	if (_lastAttackTick + GetAttackTick() > currentTick)
-		return;
-
-	// 타겟이 있는지를 체크
 	PlayerRef target = _target.lock();
+	
 	if (target == nullptr || target->IsDead())
 	{
 		_target.reset();
-		_stats.state = CreatureState::Moving;
+		_state = CreatureState::Moving;
+		_path.clear();
+		_pathIndex = 0;
+		_isDirty = true;
 		return;
 	}
 
-	// 타겟이 공격 범위에 있는지를 체크
-	float distSq = Vector3::DistanceSquared(_stats.pos, target->GetPos());
-	if (distSq > GetAttackRangeSq())
+	float distSq = Vector3::DistanceSquared(_pos, target->GetPos());
+	if (distSq > GetAttackRangeSq() * 1.1f)
 	{
-		_stats.state = CreatureState::Moving;
+		_state = CreatureState::Moving;
+		_path.clear();
+		_pathIndex = 0;
+		_isDirty = true;
 		return;
 	}
 
-	float dx = target->GetPos().x - _stats.pos.x;
-	float dz = target->GetPos().z - _stats.pos.z;
-	float degree = atan2(dx, dz) * (180.0f / 3.141592f);
-	SetYaw(degree);
+	int64 now = ::GetTickCount64();
+	if (now < _nextAttackTick) return;
 
-	SetAttackTick(currentTick);
-
-	Protocol::S_Attack packet;
-	packet.set_objectid(GetObjectId());
-	packet.set_comboindex(_maxCombo);
-	packet.set_yaw(degree);
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(packet);
-	GetGameScene()->BroadcastAround(GetPos(), sendBuffer, GetObjectId());
-
-	MonsterRef self = static_pointer_cast<Monster>(shared_from_this());
-	// Target의 GameScene 을 호출해서 damage 를 입힌다.
-	// 그런데 현재 target 의 GameScene 이 실행된 GameScene 과 다르다면 target의 상태를 변경하면 안된다.
-	target->GetGameScene()->DoTimer(DAMAGE_TICK, &GameScene::ApplyDamage, (CreatureRef)self, (CreatureRef)target);
+	ExecuteAttack(now, target);
 }
 
 void Monster::UpdateDead()
@@ -199,13 +223,10 @@ void Monster::UpdateDead()
 
 void Monster::TickMoveTo(Vector3 targetPos)
 {
-	Vector3 myPos = _stats.pos;
-
-	float distToLastTarget = Vector3::DistanceSquared(_lastTargetPos, targetPos);
-	if (_path.empty() || distToLastTarget > 1.0f * 1.0f)
+	if (_path.empty() || Vector3::DistanceSquared(_lastTargetPos, targetPos) > 2.0f)
 	{
 		_path.clear();
-		if (GNavigationManager->FindPath(myPos, targetPos, _path))
+		if (GNavigationManager->FindPath(_pos, targetPos, _path))
 		{
 			_pathIndex = 1;
 			_lastTargetPos = targetPos;
@@ -214,28 +235,106 @@ void Monster::TickMoveTo(Vector3 targetPos)
 			return;
 	}
 
-	if (_pathIndex >= _path.size()) return;
-	Vector3 nextWaypoint = _path[_pathIndex];
+	if (_pathIndex >= (int32)_path.size())
+	{
+		_path.clear();
+		_pathIndex = 0;
+		return;
+	}
 
-	Vector3 dir = nextWaypoint - myPos;
-	float distToPointSq = Vector3::DistanceSquared(nextWaypoint, myPos);
+	Vector3 nextWaypoint = _path[_pathIndex];
+	Vector3 dir = nextWaypoint - _pos;
+
+	float distToPointSq = Vector3::DistanceSquared(nextWaypoint, _pos);
 	if (distToPointSq < 0.2f * 0.2f)
 	{
 		++_pathIndex;
-		if (_pathIndex >= _path.size()) return;
+		if (_pathIndex >= _path.size())
+			return;
 		nextWaypoint = _path[_pathIndex];
-		dir = nextWaypoint - myPos;
+		dir = nextWaypoint - _pos;
 	}
 
 	dir.Normalize();
 
-	float moveDist = GetConfig()->speed * 0.1f;
-	Vector3 nextPos = myPos + (dir * moveDist);
+	float moveDist = _speed * _deltaTime;
+	Vector3 nextPos = _pos + (dir * moveDist);
 	nextPos.y = GNavigationManager->GetHeight(nextPos);
 
-	SetYaw(::atan2(dir.x, dir.z));
-	SetPos(nextPos);
+	float degree = ::atan2f(dir.x, dir.z) * (180.0f / 3.141592f);
+	if (degree < 0)
+		degree += 360.0f;
+	_yaw = degree;
+	_pos = nextPos;
+
+	_isDirty = true;
+}
+
+void Monster::ExecuteAttack(int64 now, PlayerRef target)
+{
+	uint64 cooldownMs = static_cast<uint64>(1000.0f * max(_config->attackSpeed, 0.1f));
+	_nextAttackTick = now + cooldownMs;
+
+	Vector3 toTarget = target->GetPos() - _pos;
+	toTarget.y = 0.f;
+	if (toTarget.LengthSquared() > 0.001f)
+	{
+		toTarget.Normalize();
+		float degree = ::atan2f(toTarget.x, toTarget.z) * (180.0f / 3.141592f);
+		if (degree < 0) degree += 360.0f;
+		_yaw = degree;
+		_isDirty = true;
+	}
+
+	GameSceneRef scene = GetGameScene();
+	ZoneRef zone = GetZone();
+	if (scene && zone)
+	{
+		Protocol::S_Attack packet;
+		packet.set_object_id(_objectId);
+		packet.set_yaw(_yaw);
+		packet.set_combo_index(1);
+		*packet.mutable_pos() = GameUtil::ToProto(_pos);
+
+		scene->BroadcastToAdjacentZones(zone, ClientPacketHandler::MakeSendBuffer(packet));
+	}
 
 	auto self = static_pointer_cast<Monster>(shared_from_this());
-	GetGameScene()->HandleMove(self, myPos, nextPos);
+	uint64 hitDelay = GetHitDelay(1);
+
+	scene->DoTimer(hitDelay, [self, target]() {
+		self->ApplyAttackDamage(target);
+	});
 }
+
+void Monster::ApplyAttackDamage(PlayerRef target)
+{
+	if (IsDead()) return;
+	if (target == nullptr || target->IsDead()) return;
+
+	float distSq = Vector3::DistanceSquared(_pos, target->GetPos());
+	if (distSq > GetAttackRangeSq() * 4.0f)  // 2배 사거리까지 허용 (레이턴시 보정)
+		return;
+
+	int32 actualDamage = target->TakeDamage(_config->attack);
+	if (actualDamage <= 0) return;
+
+	GameSceneRef scene = GetGameScene();
+	ZoneRef zone = GetZone();
+	if (scene == nullptr || zone == nullptr) return;
+
+	Protocol::S_ChangeHp pkt;
+	pkt.set_object_id(target->GetObjectId());
+	pkt.set_hp(target->GetHp());
+	pkt.set_damage(-actualDamage);  // 음수로 구분 (피해)
+
+	scene->BroadcastToAdjacentZones(zone, ClientPacketHandler::MakeSendBuffer(pkt));
+
+	if (target->IsDead())
+	{
+		Protocol::S_Die diePkt;
+		diePkt.set_object_id(target->GetObjectId());
+		scene->BroadcastToAdjacentZones(zone, ClientPacketHandler::MakeSendBuffer(diePkt));
+	}
+}
+

@@ -1,6 +1,4 @@
 using Protocol;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -8,19 +6,11 @@ using UnityEngine.UI;
 
 public class UI_SelectPlayerScene_Item : UI_Base
 {
-    public UI_SelectPlayerScene parent { get; set; }
-    public SummaryInfo Info { get; set; }
+    public UI_SelectPlayerScene Parent { get; set; }
+    public PlayerSummary Summary { get; set; }
 
-    enum RenderImages
-    {
-        PlayerImage
-    }
-
-    enum Texts
-    {
-        LevelText,
-        ClassText
-    }
+    enum RenderImages { PlayerImage }
+    enum Texts{ LevelText, ClassText }
 
     protected override void Init()
     {
@@ -32,21 +22,18 @@ public class UI_SelectPlayerScene_Item : UI_Base
 
     void OnClickEvent(PointerEventData evt)
     {
-        if (parent == null) return;
-        if (Info == null) return;
-
-        parent.SelectPlayer(Info.Name);
+        if (Parent == null || Summary == null) return;
+        Parent.SelectPlayer(Summary.Name);
     }
 
     public void SetPlayerInfo()
     {
-        if (Info != null)
-        {
-            PrefabData data = Managers.Data.PrefabDataDict[Info.TemplateId];
-            Get<RawImage>((int)RenderImages.PlayerImage).texture = Managers.Resource.Load<RenderTexture>($"RenderTexture/{data.prefabPath}");
-            GetText((int)Texts.LevelText).text = $"Lv.{Info.Level} {Info.Name}";
-            GetText((int)Texts.ClassText).text = data.name;
-        }
+        if (Summary == null) return;
+
+        PrefabData data = Managers.Data.PrefabDataDict[Summary.TemplateId];
+        Get<RawImage>((int)RenderImages.PlayerImage).texture = Managers.Resource.Load<RenderTexture>($"RenderTexture/{data.prefabPath}");
+        GetText((int)Texts.LevelText).text = $"Lv.{Summary.Level} {Summary.Name}";
+        GetText((int)Texts.ClassText).text = data.name;
     }
 
     public void SetColor(Color color)

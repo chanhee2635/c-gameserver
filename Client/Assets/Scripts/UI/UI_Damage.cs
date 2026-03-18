@@ -15,12 +15,10 @@ public class UI_Damage : MonoBehaviour
     public void SetInfo(int damage)
     {
         DamageText.text = damage.ToString();
+        DamageText.color = damage < 0 ? Color.red : Color.blue;
         _timer = 0;
 
-        DamageText.color = damage < 0 ? Color.red : Color.blue;
-
-        transform.localPosition += new Vector3(Random.Range(-0.5f, 0.5f), 0, 0);
-
+        transform.localPosition += new Vector3(Random.Range(-0.2f, 0.2f), 0, 0);
         _pool = GetComponent<Poolable>();
     }
 

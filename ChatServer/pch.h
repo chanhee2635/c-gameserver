@@ -25,3 +25,7 @@
 USING_SHARED_PTR(ChatSession);
 USING_SHARED_PTR(Zone);
 
+
+class SessionManager;
+
+extern std::unique_ptr<SessionManager> GSessionManager;

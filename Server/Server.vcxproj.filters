@@ -55,9 +55,6 @@
     <ClCompile Include="Player.cpp">
       <Filter>소스 파일\GameContents\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Room.cpp">
-      <Filter>소스 파일\GameContents\Room</Filter>
-    </ClCompile>
     <ClCompile Include="ClientPacketHandler.cpp">
       <Filter>소스 파일\Packet</Filter>
     </ClCompile>
@@ -100,6 +97,9 @@
     <ClCompile Include="IdGenerator.cpp">
       <Filter>소스 파일\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="GameUtil.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="Enum.pb.cc">
       <Filter>소스 파일\Protocol</Filter>
     </ClCompile>
@@ -116,9 +116,6 @@
     </ClInclude>
     <ClInclude Include="Player.h">
       <Filter>소스 파일\GameContents\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="Room.h">
-      <Filter>소스 파일\GameContents\Room</Filter>
     </ClInclude>
     <ClInclude Include="ClientPacketHandler.h">
       <Filter>소스 파일\Packet</Filter>
@@ -160,6 +157,9 @@
       <Filter>소스 파일\Navigation</Filter>
     </ClInclude>
     <ClInclude Include="IdGenerator.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="GameUtil.h">
       <Filter>소스 파일\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Enum.pb.h">

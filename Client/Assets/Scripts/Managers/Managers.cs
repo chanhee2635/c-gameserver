@@ -5,7 +5,7 @@ using UnityEngine;
 public class Managers : MonoBehaviour
 {
     static Managers s_Instance;
-    static Managers Instance { get { Init(); return s_Instance; } }
+    public static Managers Instance { get { Init(); return s_Instance; } }
 
 
     NetworkManager _network = new NetworkManager();
@@ -28,10 +28,13 @@ public class Managers : MonoBehaviour
 
     void Awake()
     {
-        Application.targetFrameRate = 60;
-        Application.runInBackground = true;
-
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 30;
+        QualitySettings.shadows = ShadowQuality.Disable;
+        QualitySettings.pixelLightCount = 0;
+        QualitySettings.antiAliasing = 0;
         Screen.SetResolution(1280, 720, false);
+        Application.runInBackground = true;
     }
 
     void Start()

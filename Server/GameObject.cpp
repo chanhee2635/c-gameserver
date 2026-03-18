@@ -2,19 +2,18 @@
 #include "GameObject.h"
 #include "DataManager.h"
 
-void GameObject::Init(uint64 objectId, Vector3 pos, float yaw)
+void GameObject::MakeSummaryInfo(Protocol::ObjectSummary& info) const
 {
-	_summary->objectId = objectId;
-	_stats.pos = pos;
-	_stats.yaw = yaw;
+	info.set_object_id(_objectId);
+	info.set_name(Utils::ws2s(_name));
+	info.set_level(_level);
+	info.set_template_id(_templateId);
+	info.set_object_type(static_cast<Protocol::GameObjectType>(_objectType));
 }
 
-Vector3 GameObject::GetForward()
+void GameObject::MakeObjectInfo(Protocol::ObjectInfo& info) const
 {
-	float radian = GetYaw() * (3.141592f / 180.0);
-	float x = sinf(radian);
-	float z = cosf(radian);
-
-	return Vector3(x, 0.0f, z).GetNormalized();
+	MakeSummaryInfo(*info.mutable_summary());
+	MakePosInfo(*info.mutable_pos_info());
+	MakeStatInfo(*info.mutable_stat_info());
 }
-

@@ -31,10 +31,10 @@ struct IocpEvent : public OVERLAPPED
 
 	EventType		type;   // 이벤트 타입
 	IocpObjectRef	owner;  // 이벤트 처리 주체
-
 	SessionRef		session = nullptr;  // 세션을 전달할 임시 저장소
 
 	vector<BYTE> buffer;  // 미사용: 세션의 _recvBuffer 를 사용
 	vector<SendBufferRef> sendBuffers; // 여러 버퍼를 한 번에 보낼 때 사용
+	vector<WSABUF> wsaBufs;
 };
 

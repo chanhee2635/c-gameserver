@@ -64,8 +64,22 @@ void Service::AddSession(SessionRef session)
 void Service::ReleaseSession(SessionRef session)
 {
 	WRITE_LOCK;
-	ASSERT_CRASH(_sessions.erase(session) != 0);
+	size_t erasedCount = _sessions.erase(session);
+	ASSERT_CRASH(erasedCount != 0);
 	_sessionCount.fetch_sub(1);
+}
+
+void Service::ForEachSession(const function<void(SessionRef)>& callback)
+{
+	WRITE_LOCK;
+
+	for (auto& item : _sessions)
+	{
+		SessionRef session = item;
+
+		if (session != nullptr)
+			callback(session);
+	}
 }
 
 /*-----------------
@@ -81,8 +95,9 @@ bool ClientService::Start()
 {
 	if (CanStart() == false) return false;
 
-	_config = GConfigManager->GetGame();
-
+	_config.recvBufferSize = 65535;
+	_config.recvBufferCount = 10;
+	_config.maxSessionCount = 1000;
 
 	return true;
 }

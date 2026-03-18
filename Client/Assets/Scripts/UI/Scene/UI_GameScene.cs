@@ -1,5 +1,3 @@
-using Protocol;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -11,49 +9,13 @@ public class UI_GameScene : UI_Scene
 {
     public List<UI_Chat_Item> chats { get; } = new List<UI_Chat_Item>();
 
-    enum Texts
-    {
-        LevelText
-    }
-
-    enum Sliders
-    {
-        HPSlider,
-        MPSlider,
-        EXPSlider
-    }
-
-    enum ChatItem
-    {
-        ChatItem
-    }
-
-    enum Dropdowns
-    {
-        ChatType
-    }
-
-    enum InputFields
-    {
-        ChatInput
-    }
-
-    enum Buttons
-    {
-        AttackBtn,
-        SendBtn,
-        CurrentPosBtn,
-        VillagePosBtn,
-        YesBtn,
-        NoBtn
-    }
-
-    enum Images
-    {
-        AttackCool,
-        Revive,
-        Exit
-    }
+    enum Texts { LevelText }
+    enum Sliders { HPSlider, MPSlider, EXPSlider }
+    enum ChatItem { ChatItem }
+    enum Dropdowns { ChatType }
+    enum InputFields { ChatInput }
+    enum Buttons { AttackBtn, SendBtn, CurrentReviveBtn, NearbyReviveBtn, ExitYesBtn, ExitNoBtn }
+    enum Images { AttackCool, RevivePopup, ExitPopup }
 
     protected override void Init()
     {
@@ -68,70 +30,75 @@ public class UI_GameScene : UI_Scene
         Bind<VerticalLayoutGroup>(typeof(ChatItem));
 
         GetButton((int)Buttons.SendBtn).gameObject.BindEvent(OnClickSendButton);
-        GetButton((int)Buttons.CurrentPosBtn).gameObject.BindEvent(OnClickCurrentPosButton);
-        GetButton((int)Buttons.VillagePosBtn).gameObject.BindEvent(OnClickVillagePosButton);
-        GetButton((int)Buttons.YesBtn).gameObject.BindEvent(OnClickExitYesButton);
-        GetButton((int)Buttons.NoBtn).gameObject.BindEvent(OnClickExitNoButton);
+        GetButton((int)Buttons.CurrentReviveBtn).gameObject.BindEvent(_ => SendRevivePacket(isCurrentPos: true));
+        GetButton((int)Buttons.NearbyReviveBtn).gameObject.BindEvent(_ => SendRevivePacket(isCurrentPos: false));
+        GetButton((int)Buttons.ExitYesBtn).gameObject.BindEvent(OnClickExitYesButton);
+        GetButton((int)Buttons.ExitNoBtn).gameObject.BindEvent(OnClickExitNoButton);
+        GetButton((int)Buttons.AttackBtn).gameObject.BindEvent(OnClickAttackButton);
 
         foreach (Transform child in Get<VerticalLayoutGroup>((int)ChatItem.ChatItem).transform.Cast<Transform>().ToList())
             Managers.Resource.Destroy(child.gameObject);
 
-        GetImage((int)Images.Revive).gameObject.SetActive(false);
-        GetImage((int)Images.Exit).gameObject.SetActive(false);
+        GetImage((int)Images.RevivePopup).gameObject.SetActive(false);
+        GetImage((int)Images.ExitPopup).gameObject.SetActive(false);
+    }
 
-        PlayerSetAttackCool();
+    public void SetMyPlayerInfo()
+    {
+        MyPlayerController player = Managers.Object.MyPlayer;
+        if (player == null) return;
+
+        GetText((int)Texts.LevelText).text = player.Level.ToString();
+        Get<Slider>((int)Sliders.HPSlider).value = player.GetHpRatio();
+        Get<Slider>((int)Sliders.MPSlider).value = player.GetMpRatio();
+        Get<Slider>((int)Sliders.EXPSlider).value = player.GetExpRatio();
+
+        player.SetAttackCool(GetImage((int)Images.AttackCool));
     }
 
     void Update()
     {
-        GetText((int)Texts.LevelText).text = Managers.Object.MyPlayer.Level.ToString();
-        Get<Slider>((int)Sliders.HPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.HPSlider).value, Managers.Object.MyPlayer.GetHpRatio(), Time.deltaTime * 20f);
-        Get<Slider>((int)Sliders.MPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.MPSlider).value, Managers.Object.MyPlayer.GetMpRatio(), Time.deltaTime * 20f);
-        Get<Slider>((int)Sliders.EXPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.EXPSlider).value, Managers.Object.MyPlayer.GetExpRatio(), Time.deltaTime * 20f);
+        MyPlayerController player = Managers.Object.MyPlayer;
+        if (player == null) return;
+
+        GetText((int)Texts.LevelText).text = player.Level.ToString();
+        Get<Slider>((int)Sliders.HPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.HPSlider).value, player.GetHpRatio(), Time.deltaTime * 20f); ;
+        Get<Slider>((int)Sliders.MPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.MPSlider).value, player.GetMpRatio(), Time.deltaTime * 20f); ;
+        Get<Slider>((int)Sliders.EXPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.EXPSlider).value, player.GetExpRatio(), Time.deltaTime * 20f); ;
 
         if (Input.GetKeyDown(KeyCode.Escape))
-        {
             ShowExitPopup();
-        }
     }
 
-    public void OnClickSendButton(PointerEventData evt)
-    {
-        SendChatting();
-    }
-
-    public void OnClickCurrentPosButton(PointerEventData evt)
-    {
-        SendRevivePacket(true);
-    }
-
-    public void OnClickVillagePosButton(PointerEventData evt)
-    {
-        SendRevivePacket(false);
-    }
-
+    public void OnClickSendButton(PointerEventData evt) { SendChatting(); }
     public void OnClickExitYesButton(PointerEventData evt)
     {
-        C_Quit packet = new C_Quit();
-        Managers.Network.Send(packet);
+        GetImage((int)Images.ExitPopup).gameObject.SetActive(false);
+
+        Managers.Network.Send(new Protocol.C_Quit());
         Managers.Network.DisconnectToChatServer();
         Managers.Scene.LoadScene(Define.Scene.Login);
     }
 
     public void OnClickExitNoButton(PointerEventData evt)
     {
-        GetImage((int)Images.Exit).gameObject.SetActive(false);
+        GetImage((int)Images.ExitPopup).gameObject.SetActive(false);
+    }
+
+    public void OnClickAttackButton(PointerEventData evt)
+    {
+        MyPlayerController player = Managers.Object.MyPlayer;
+        if (player == null) return;
+        player.TryAttack();
     }
 
     private void SendRevivePacket(bool isCurrentPos)
     {
-        if (Managers.Object.MyPlayer.State != CreatureState.Dead) return;
+        MyPlayerController player = Managers.Object.MyPlayer;
+        if (player == null || player.State != Protocol.CreatureState.Dead) return;
 
-        C_Revive packet = new C_Revive();
-        packet.IsCurrentPos = isCurrentPos;
-        Managers.Network.Send(packet);
-
-        GetImage((int)Images.Revive).gameObject.SetActive(false);
+        Managers.Network.Send(new Protocol.C_Revive { IsCurrentPos = isCurrentPos });
+        GetImage((int)Images.RevivePopup).gameObject.SetActive(false);
     }
 
     public void SendChatting()
@@ -139,15 +106,16 @@ public class UI_GameScene : UI_Scene
         string msg = Get<TMP_InputField>((int)InputFields.ChatInput).text.Trim();
         if (string.IsNullOrEmpty(msg)) return;
 
-        C_Chat packet = new C_Chat();
-        packet.ToServer = Get<TMP_Dropdown>((int)Dropdowns.ChatType).value == 1;
-        packet.Msg = msg;
-        Managers.Network.SendToChat(packet);
+        Managers.Network.SendToChat(new Protocol.C_Chat
+        {
+            ToServer = Get<TMP_Dropdown>((int)Dropdowns.ChatType).value == 1,
+            Msg = msg
+        });
 
         Get<TMP_InputField>((int)InputFields.ChatInput).text = null;
     }
 
-    public void RecvChatting(S_Chat packet)
+    public void RecvChatting(Protocol.S_Chat packet)
     {
         if (chats.Count > 20)
         {
@@ -155,14 +123,8 @@ public class UI_GameScene : UI_Scene
             chats.RemoveAt(0);
         }
 
-        string type = "일반";
-        Color color = Color.black;
-        if (packet.ToServer)
-        {
-            type = "서버";
-            color = Color.green;
-        }
-
+        string type = packet.ToServer ? "서버" : "일반";
+        Color color = packet.ToServer ? Color.green : Color.black;
         string msg = $"[{type}] {packet.Name} : {packet.Msg}";
 
         UI_Chat_Item item = Managers.UI.MakeSubItem<UI_Chat_Item>(Get<VerticalLayoutGroup>((int)ChatItem.ChatItem).transform);
@@ -171,21 +133,17 @@ public class UI_GameScene : UI_Scene
         chats.Add(item);
     }
 
-    public void PlayerSetAttackCool()
-    {
-        Managers.Object.MyPlayer.SetAttackCool(GetImage((int)Images.AttackCool));
-    }
-
     public void ShowRevivePopup()
     {
-        if (Managers.Object.MyPlayer.State != CreatureState.Dead) return;
+        MyPlayerController player = Managers.Object.MyPlayer;
+        if (player == null || player.State != Protocol.CreatureState.Dead) return;
 
-        GetImage((int)Images.Revive).gameObject.SetActive(true);
+        GetImage((int)Images.RevivePopup).gameObject.SetActive(true);
     }
 
     public void ShowExitPopup()
     {
-        GameObject go = GetImage((int)Images.Exit).gameObject;
-        go.SetActive(!go.activeSelf);
+        GameObject popup = GetImage((int)Images.ExitPopup).gameObject;
+        popup.SetActive(!popup.activeSelf);
     }
 }

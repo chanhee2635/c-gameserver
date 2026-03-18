@@ -126,6 +126,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)Libraries\Include\;$(SolutionDir)Libraries\Include\RecastNDetour;$(SolutionDir)ServerCore\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -178,6 +179,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)Libraries\Include\;$(SolutionDir)Libraries\Include\RecastNDetour;$(SolutionDir)ServerCore\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -200,21 +202,22 @@
     <ClCompile Include="DBManager.cpp" />
     <ClCompile Include="Enum.pb.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Enums.cpp" />
     <ClCompile Include="Game.pb.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameScene.cpp" />
     <ClCompile Include="GameSession.cpp" />
     <ClCompile Include="GameSession_game.cpp" />
+    <ClCompile Include="GameUtil.cpp" />
     <ClCompile Include="IdGenerator.cpp" />
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="NavigationManager.cpp" />
@@ -226,7 +229,6 @@
     </ClCompile>
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="RedisManager.cpp" />
-    <ClCompile Include="Room.cpp" />
     <ClCompile Include="World.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="ClientPacketHandler.cpp" />
@@ -243,6 +245,7 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="GameSession.h" />
+    <ClInclude Include="GameUtil.h" />
     <ClInclude Include="IdGenerator.h" />
     <ClInclude Include="Monster.h" />
     <ClInclude Include="NavigationManager.h" />
@@ -250,7 +253,6 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="ClientPacketHandler.h" />
     <ClInclude Include="RedisManager.h" />
-    <ClInclude Include="Room.h" />
     <ClInclude Include="World.h" />
     <ClInclude Include="Struct.h" />
     <ClInclude Include="Zone.h" />

@@ -4,40 +4,42 @@
 class Player : public Creature
 {
 public:
-	Player() {};
+	Player() = default;
 	virtual ~Player() = default;
 
-	void Init(SummaryDataRef summary, StatData& stat);
+	void Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData);
+	void HandleMoveJob(const MoveJobRef& job);
+	void HandleAttack(float yaw, int32 comboIndex, Vector3 clientPos);
 
 	uint64 GetPlayerDbId() { return _playerDbId; }
-	const PlayerData* GetConfig() { return _config; }
-	GameSessionRef GetSession() { return _session.lock(); }
 	void SetSession(GameSessionRef session) { _session = session; }
-	void SetLastMoveTime(float time) { _lastMoveTime = time; }
-	int32 GetMaxHp() { return _config->maxHp; }
-	int32 GetDamage() override { return _config->attack; }
-	int32 GetDefense() override{ return _config->defense; }
-	double GetSpeed() { return _config->speed; }
-	float GetLastMoveTime() { return _lastMoveTime; }
-	float GetAttackRangeSq() { return _config->attackRange * _config->attackRange; }
-	uint64 GetAttackTick() { return static_cast<uint64>(_config->attackSpeed * 1000); }
-	float GetAttackAngle() { return _config->attackAngle; }
-	bool InAttackRange(CreatureRef target);
-	void AddExp(int32 rewardExp);
-	void ApplyLevelUpStatus();
-	bool CheckComboIndex(int32 comboIndex);
-	void SetRevive();
-
-	void HandleAttack(float yaw, int32 comboIndex);
-
 	void Send(SendBufferRef sendBuffer);
 
+	void Revive(Vector3 pos);
+	void SetPos(Vector3 pos) { _pos = pos; }
+	void SetYaw(float yaw) { _yaw = yaw; }
+	float GetYaw()	  const { return _yaw; }
+	int32 GetMaxHp()  const { return _config ? _config->maxHp : 0; }
+	int32 GetMp()	  const { return _mp; }
+	int64 GetExp()    const { return _exp; }
+	int32 GetAttack() const { return _config ? _config->attack : 0; }
+	float GetAttackRange() const { return _config ? _config->attackRange : 0.f; }
+	float GetAttackAngle() const { return _config ? _config->attackAngle : 0.f; }
+	void GainExp(int64 rewardExp);
+	virtual float GetAttackSpeed() const override { return _config ? _config->attackSpeed : 1.0f; }
+	virtual int32 GetDefense() const override { return _config ? _config->defense : 0; }
+	virtual void OnDead() override;
+
+	void MakeStatInfo(Protocol::StatInfo& info) const override;
+
 private:
+	void TryLevelUp();
+
+	uint64	_playerDbId = 0;
+	int32	_mp = 0;
+	int64	_exp = 0;
 	const PlayerData* _config = nullptr;
-
-	float _lastMoveTime = 0.0f;
-
-	uint64 _playerDbId = 0;
 	weak_ptr<GameSession>	_session;
-};
 
+	static constexpr float ATTACK_POS_TOLERANCE_SQ = 9.0f;
+};

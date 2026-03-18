@@ -9,7 +9,11 @@ public class PrefabData
     public int id;
     public string name;
     public string prefabPath;
+    public string myPrefabPath;
     public int maxCombo;
+    public float[] comboDurations;
+    public int[] comboHitDelays;
+    public int deathDuration;
 }
 
 [Serializable]

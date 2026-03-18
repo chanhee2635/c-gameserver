@@ -46,6 +46,71 @@ void Session::Send(SendBufferRef sendBuffer)
 		RegisterSend();
 }
 
+void Session::PushSendBuffer(SendBufferRef sendBuffer)
+{
+	/*WRITE_LOCK;
+	_sendBuffers.push_back(sendBuffer);*/
+
+	SendBufferNode* newNode = new SendBufferNode();
+	newNode->buffer = sendBuffer;
+	newNode->next = _sendBufferHead.load(std::memory_order_relaxed);
+
+	// CAS (Lock-Free)
+	while (!_sendBufferHead.compare_exchange_weak(newNode->next, newNode,
+		std::memory_order_release, std::memory_order_relaxed));
+}
+
+void Session::FlushSend()
+{
+	if (IsConnected() == false)	return;
+
+	/*bool registerSend = false;
+	{
+		WRITE_LOCK;
+		if (_sendBuffers.empty()) return;
+
+		int32 size = 0;
+		int32 processCount = 0;
+
+		for (int32 i = 0; i < _sendBuffers.size(); ++i)
+		{
+			if (size + _sendBuffers[i]->WriteSize() > 65535) break;
+			size += _sendBuffers[i]->WriteSize();
+			++processCount;
+		}
+
+		if (processCount == 0) return;
+
+		for (int32 i = 0; i < processCount; ++i)
+			_sendQueue.push(_sendBuffers[i]);
+
+		_sendBuffers.erase(_sendBuffers.begin(), _sendBuffers.begin() + processCount);
+		registerSend = _sendRegistered.exchange(true) == false;
+	}*/
+
+	SendBufferNode* node = _sendBufferHead.exchange(nullptr, std::memory_order_acquire);
+	if (node == nullptr) return;
+
+	Vector<SendBufferRef> tempBuffers;
+	while (node) {
+		tempBuffers.push_back(node->buffer);
+		SendBufferNode* next = node->next;
+		delete node;
+		node = next;
+	}
+
+	bool registerSend = false;
+	{
+		WRITE_LOCK;
+		for (SendBufferRef sendBuffer : tempBuffers)
+			_sendQueue.push(sendBuffer);
+		registerSend = _sendRegistered.exchange(true) == false;
+	}
+
+	if (registerSend)
+		RegisterSend();
+}
+
 bool Session::Connect()
 {
 	return RegisterConnect();
@@ -80,7 +145,7 @@ void Session::Dispatch(IocpEvent* iocpEvent, int32 numOfBytes)
 		ProcessRecv(numOfBytes);
 		break;
 	case EventType::Send:
-		ProcessSend(numOfBytes);
+		ProcessSend(iocpEvent, numOfBytes);
 		break;
 	default:
 		break;
@@ -160,47 +225,51 @@ void Session::RegisterSend()
 {
 	if (IsConnected() == false) return;
 
-	_sendEvent.Init();
-	_sendEvent.owner = shared_from_this();  // ADD_REF
+	IocpEvent* sendEvent = new IocpEvent(EventType::Send);
+	sendEvent->Init();
+	sendEvent->owner = shared_from_this();  // ADD_REF
 
 	// sendQueue에 쌓인 SendBuffer들을 sendEvent에 이동
 	{
 		WRITE_LOCK;
 
-		int32 writeSize = 0;
 		while (_sendQueue.empty() == false)
 		{
 			SendBufferRef sendBuffer = _sendQueue.front();
-
-			// TODO: 너무 많이 쌓이면 다음에 전송 (최대치 적용)
-			writeSize += sendBuffer->WriteSize();
-
 			_sendQueue.pop();
-			_sendEvent.sendBuffers.push_back(sendBuffer);
+			sendEvent->sendBuffers.push_back(sendBuffer);
 		}
 	}
 
-	// Scatter-Gather (흩어져 있는 데이터들을 모아서 한 번에 보냄)
-	vector<WSABUF> wsaBufs;
-	wsaBufs.reserve(_sendEvent.sendBuffers.size());
-	for (SendBufferRef sendBuffer : _sendEvent.sendBuffers)
+	if (sendEvent->sendBuffers.empty())
+	{
+		sendEvent->owner = nullptr;
+		delete sendEvent;
+		_sendRegistered.store(false);
+		return;
+	}
+
+	sendEvent->wsaBufs.reserve(sendEvent->sendBuffers.size());
+	for (SendBufferRef sendBuffer : sendEvent->sendBuffers)
 	{
 		WSABUF wsaBuf;
 		wsaBuf.buf = reinterpret_cast<char*>(sendBuffer->Buffer());
 		wsaBuf.len = static_cast<LONG>(sendBuffer->WriteSize());
-		wsaBufs.push_back(wsaBuf);
+		sendEvent->wsaBufs.push_back(wsaBuf);
 	}
 
 	// 비동기 전송 호출
 	DWORD numOfBytes = 0;
-	if (SOCKET_ERROR == ::WSASend(_socket, wsaBufs.data(), static_cast<DWORD>(wsaBufs.size()), OUT & numOfBytes, 0, &_sendEvent, nullptr))
+	if (SOCKET_ERROR == ::WSASend(_socket, sendEvent->wsaBufs.data(), static_cast<DWORD>(sendEvent->wsaBufs.size()), OUT & numOfBytes, 0, sendEvent, nullptr))
 	{
 		int32 errorCode = ::WSAGetLastError();
 		if (errorCode != WSA_IO_PENDING)
 		{
 			HandleError(errorCode);
-			_sendEvent.owner = nullptr;  // RELEASE_REF
-			_sendEvent.sendBuffers.clear();  // RELEASE_REF
+			sendEvent->owner = nullptr;  // RELEASE_REF
+			sendEvent->sendBuffers.clear();  // RELEASE_REF
+			sendEvent->wsaBufs.clear();
+			delete sendEvent;
 			_sendRegistered.store(false);
 		}
 	}
@@ -269,10 +338,12 @@ void Session::ProcessRecv(int32 numOfBytes)
 	RegisterRecv();
 }
 
-void Session::ProcessSend(int32 numOfBytes)
+void Session::ProcessSend(IocpEvent* sendEvent, int32 numOfBytes)
 {
-	_sendEvent.owner = nullptr;  // RELEASE_REF
-	_sendEvent.sendBuffers.clear();  // RELEASE_REF
+	sendEvent->owner = nullptr;  // RELEASE_REF
+	sendEvent->sendBuffers.clear();  // RELEASE_REF
+	sendEvent->wsaBufs.clear();
+	delete sendEvent;
 
 	// 상대방이 접속을 끊었을 때
 	if (numOfBytes == 0)

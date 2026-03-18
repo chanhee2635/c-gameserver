@@ -17,6 +17,8 @@ public class PacketQueue
     Queue<PacketMessage> _packetQueue = new Queue<PacketMessage>();
     object _lock = new object();
 
+    List<PacketMessage> _popBuffer = new List<PacketMessage>();
+
     public void Push(ushort id, IMessage packet)
     {
         lock (_lock)
@@ -38,14 +40,14 @@ public class PacketQueue
 
     public List<PacketMessage> PopAll()
     {
-        List<PacketMessage> list = new List<PacketMessage>();
+        _popBuffer.Clear();
 
         lock (_lock)
         {
             while (_packetQueue.Count > 0)
-                list.Add(_packetQueue.Dequeue());
+                _popBuffer.Add(_packetQueue.Dequeue());
         }
 
-        return list;
+        return _popBuffer;
     }
 }

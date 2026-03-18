@@ -6,23 +6,16 @@
 #include "World.h"
 #include "DBManager.h"
 
-void GameSession::OnConnected()
-{
-	// GameConnected 패킷을 전송
-	Protocol::S_GameConnected pkt;
-	auto sendBuffer = ClientPacketHandler::MakeSendBuffer(pkt);
-	Send(sendBuffer);
-}
+void GameSession::OnConnected() {}
 
 void GameSession::OnDisconnected()
 {
-	if (_player)
-	{
-		uint64 userDbId = _player->GetPlayerDbId();
-		StatData stat = _player->GetStat();
-		GDBManager->DoAsyncPush(&DBManager::SavePlayerInfo, userDbId, stat);
-		GWorld->LeaveCreature(_player);
-	}
+	PlayerRef player = GetPlayer();
+	if (player == nullptr) return;
+
+	GWorld->DoAsync([player]() {
+		GWorld->LeaveCreature(player);
+	});
 
 	_player = nullptr;
 	_summaries.clear();

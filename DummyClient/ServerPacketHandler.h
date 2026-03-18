@@ -7,20 +7,15 @@ extern PacketHandlerFunc GPacketHandler[UINT16_MAX];
 bool Handle_INVALID(PacketSessionRef& session, BYTE* buffer, int32 len);
 bool S_LoginAuthHandler(PacketSessionRef& session, Protocol::S_LoginAuth&pkt);
 bool S_JoinHandler(PacketSessionRef& session, Protocol::S_Join&pkt);
-bool S_GameConnectedHandler(PacketSessionRef& session, Protocol::S_GameConnected&pkt);
 bool S_PlayerListHandler(PacketSessionRef& session, Protocol::S_PlayerList&pkt);
 bool S_CreatePlayerHandler(PacketSessionRef& session, Protocol::S_CreatePlayer&pkt);
 bool S_EnterGameHandler(PacketSessionRef& session, Protocol::S_EnterGame&pkt);
-bool S_SpawnHandler(PacketSessionRef& session, Protocol::S_Spawn&pkt);
-bool S_DespawnHandler(PacketSessionRef& session, Protocol::S_Despawn&pkt);
-bool S_MoveHandler(PacketSessionRef& session, Protocol::S_Move&pkt);
 bool S_AttackHandler(PacketSessionRef& session, Protocol::S_Attack&pkt);
 bool S_DieHandler(PacketSessionRef& session, Protocol::S_Die&pkt);
 bool S_ChangeHpHandler(PacketSessionRef& session, Protocol::S_ChangeHp&pkt);
 bool S_ChangeExpHandler(PacketSessionRef& session, Protocol::S_ChangeExp&pkt);
-bool S_ChangeStatHandler(PacketSessionRef& session, Protocol::S_ChangeStat&pkt);
-bool S_ChangeStateHandler(PacketSessionRef& session, Protocol::S_ChangeState&pkt);
 bool S_ChangeLevelHandler(PacketSessionRef& session, Protocol::S_ChangeLevel&pkt);
+bool S_UpdateSceneHandler(PacketSessionRef& session, Protocol::S_UpdateScene&pkt);
 bool S_ReviveHandler(PacketSessionRef& session, Protocol::S_Revive&pkt);
 bool S_ChatLoginHandler(PacketSessionRef& session, Protocol::S_ChatLogin&pkt);
 bool S_ChatHandler(PacketSessionRef& session, Protocol::S_Chat&pkt);
@@ -38,20 +33,15 @@ public:
 			GPacketHandler[i] = Handle_INVALID;
 		GPacketHandler[Protocol::MsgId::S_LOGIN_AUTH] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_LoginAuth>(S_LoginAuthHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_JOIN] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_Join>(S_JoinHandler, session, buffer, len); };
-		GPacketHandler[Protocol::MsgId::S_GAME_CONNECTED] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_GameConnected>(S_GameConnectedHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_PLAYER_LIST] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_PlayerList>(S_PlayerListHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_CREATE_PLAYER] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_CreatePlayer>(S_CreatePlayerHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_ENTER_GAME] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_EnterGame>(S_EnterGameHandler, session, buffer, len); };
-		GPacketHandler[Protocol::MsgId::S_SPAWN] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_Spawn>(S_SpawnHandler, session, buffer, len); };
-		GPacketHandler[Protocol::MsgId::S_DESPAWN] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_Despawn>(S_DespawnHandler, session, buffer, len); };
-		GPacketHandler[Protocol::MsgId::S_MOVE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_Move>(S_MoveHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_ATTACK] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_Attack>(S_AttackHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_DIE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_Die>(S_DieHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_CHANGE_HP] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_ChangeHp>(S_ChangeHpHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_CHANGE_EXP] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_ChangeExp>(S_ChangeExpHandler, session, buffer, len); };
-		GPacketHandler[Protocol::MsgId::S_CHANGE_STAT] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_ChangeStat>(S_ChangeStatHandler, session, buffer, len); };
-		GPacketHandler[Protocol::MsgId::S_CHANGE_STATE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_ChangeState>(S_ChangeStateHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_CHANGE_LEVEL] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_ChangeLevel>(S_ChangeLevelHandler, session, buffer, len); };
+		GPacketHandler[Protocol::MsgId::S_UPDATE_SCENE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_UpdateScene>(S_UpdateSceneHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_REVIVE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_Revive>(S_ReviveHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_CHAT_LOGIN] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_ChatLogin>(S_ChatLoginHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::S_CHAT] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::S_Chat>(S_ChatHandler, session, buffer, len); };
@@ -80,8 +70,8 @@ public:
 	static SendBufferRef MakeSendBuffer(Protocol::C_LoadCompleted& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::C_LOAD_COMPLETED); }
 	static SendBufferRef MakeSendBuffer(Protocol::C_Move& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::C_MOVE); }
 	static SendBufferRef MakeSendBuffer(Protocol::C_Attack& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::C_ATTACK); }
-	static SendBufferRef MakeSendBuffer(Protocol::C_Revive& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::C_REVIVE); }
 	static SendBufferRef MakeSendBuffer(Protocol::C_Quit& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::C_QUIT); }
+	static SendBufferRef MakeSendBuffer(Protocol::C_Revive& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::C_REVIVE); }
 	static SendBufferRef MakeSendBuffer(Protocol::C_ChatLogin& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::C_CHAT_LOGIN); }
 	static SendBufferRef MakeSendBuffer(Protocol::C_Chat& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::C_CHAT); }
 
@@ -130,7 +120,7 @@ private:
 		header->id = pktId;
 
 		// 헤더 뒷부분부터 패킷 데이터를 직렬화하여 복사
-		ASSERT_CRASH(pkt.SerializeToArray(&header[1], dataSize));
+		pkt.SerializeToArray(&header[1], dataSize);
 
 		sendBuffer->Close(packetSize);
 

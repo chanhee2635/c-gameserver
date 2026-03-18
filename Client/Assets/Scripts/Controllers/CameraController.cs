@@ -12,7 +12,13 @@ public class CameraController : MonoBehaviour
     public float X { get; set; }
     public float Y { get; set; }
     float yMinLimit = -20f;
-    float yMaxLimit = 10f;
+    float yMaxLimit = 20f;
+
+    private void Start()
+    {
+        //Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.visible = false;
+    }
 
     void LateUpdate()
     {

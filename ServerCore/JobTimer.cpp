@@ -18,7 +18,6 @@ void JobTimer::Reserve(uint64 tickAfter, weak_ptr<JobQueue> owner, JobRef job)
 
 void JobTimer::Distribute(uint64 now)
 {
-	// 한 번에 한 스레드만 통과
 	if (_distributing.exchange(true) == true)
 		return;
 
@@ -46,7 +45,6 @@ void JobTimer::Distribute(uint64 now)
 		ObjectPool<JobData>::Push(item.jobData);
 	}
 
-	// 끝났으면 풀어준다
 	_distributing.store(false);
 }
 

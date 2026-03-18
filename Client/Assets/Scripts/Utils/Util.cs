@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Util
@@ -51,5 +52,18 @@ public class Util
         return null;
     }
 
+    public static Protocol.Vector3 ToProto(UnityEngine.Vector3 v)
+    {
+        return new Protocol.Vector3
+        {
+            X = v.x,
+            Y = v.y,
+            Z = v.z
+        };
+    }
 
+    public static UnityEngine.Vector3 ToUnity(Protocol.Vector3 v)
+    {
+        return new UnityEngine.Vector3(v.X, v.Y, v.Z);
+    }
 }

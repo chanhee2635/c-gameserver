@@ -4,8 +4,6 @@
 #include "Zone.h"
 #include "ConfigManager.h"
 
-extern std::unique_ptr<SessionManager> GSessionManager = make_unique<SessionManager>();
-
 void SessionManager::Start()
 {
 	WorldConfig config = GConfigManager->GetWorld();
@@ -104,6 +102,7 @@ void SessionManager::HandleZoneUpdate(const std::string& msg)
 	}
 
 	int32 oldZoneId = session->GetZoneId();
+
 
 	if (oldZoneId >= 0 && oldZoneId < _totalZoneCount && oldZoneId != newZoneId)
 	{

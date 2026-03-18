@@ -1,3 +1,4 @@
+using Protocol;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,13 +10,24 @@ public class SelectPlayerScene : BaseScene
     protected override void Init()
     {
         base.Init();
-
         SceneType = Define.Scene.SelectPlayer;
-
         _sceneUI = Managers.UI.ShowSceneUI<UI_SelectPlayerScene>();
     }
 
-    public override void Clear()
+    public void SetPlayerSummaries(List<PlayerSummary> summaries)
     {
+        _sceneUI.SetPlayerSummaries(summaries);
     }
+
+    public void OnCreatePlayerSuccess(PlayerSummary summary)
+    {
+        _sceneUI.SetCreateResult(summary);
+    }
+
+    public void OnCreatePlayerFail(string reason)
+    {
+        _sceneUI.SetWarningMessage(reason);
+    }
+
+    public override void Clear() {}
 }

@@ -11,8 +11,8 @@ bool C_EnterGameHandler(PacketSessionRef& session, Protocol::C_EnterGame&pkt);
 bool C_LoadCompletedHandler(PacketSessionRef& session, Protocol::C_LoadCompleted&pkt);
 bool C_MoveHandler(PacketSessionRef& session, Protocol::C_Move&pkt);
 bool C_AttackHandler(PacketSessionRef& session, Protocol::C_Attack&pkt);
-bool C_ReviveHandler(PacketSessionRef& session, Protocol::C_Revive&pkt);
 bool C_QuitHandler(PacketSessionRef& session, Protocol::C_Quit&pkt);
+bool C_ReviveHandler(PacketSessionRef& session, Protocol::C_Revive&pkt);
 
 class ClientPacketHandler
 {
@@ -31,8 +31,8 @@ public:
 		GPacketHandler[Protocol::MsgId::C_LOAD_COMPLETED] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_LoadCompleted>(C_LoadCompletedHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::C_MOVE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_Move>(C_MoveHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::C_ATTACK] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_Attack>(C_AttackHandler, session, buffer, len); };
-		GPacketHandler[Protocol::MsgId::C_REVIVE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_Revive>(C_ReviveHandler, session, buffer, len); };
 		GPacketHandler[Protocol::MsgId::C_QUIT] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_Quit>(C_QuitHandler, session, buffer, len); };
+		GPacketHandler[Protocol::MsgId::C_REVIVE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_Revive>(C_ReviveHandler, session, buffer, len); };
 	}
 
 	/*
@@ -50,20 +50,15 @@ public:
 
 		return GPacketHandler[header->id](session, buffer, len);
 	}
-	static SendBufferRef MakeSendBuffer(Protocol::S_GameConnected& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_GAME_CONNECTED); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_PlayerList& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_PLAYER_LIST); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_CreatePlayer& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_CREATE_PLAYER); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_EnterGame& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_ENTER_GAME); }
-	static SendBufferRef MakeSendBuffer(Protocol::S_Spawn& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_SPAWN); }
-	static SendBufferRef MakeSendBuffer(Protocol::S_Despawn& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_DESPAWN); }
-	static SendBufferRef MakeSendBuffer(Protocol::S_Move& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_MOVE); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_Attack& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_ATTACK); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_Die& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_DIE); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_ChangeHp& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_CHANGE_HP); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_ChangeExp& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_CHANGE_EXP); }
-	static SendBufferRef MakeSendBuffer(Protocol::S_ChangeStat& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_CHANGE_STAT); }
-	static SendBufferRef MakeSendBuffer(Protocol::S_ChangeState& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_CHANGE_STATE); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_ChangeLevel& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_CHANGE_LEVEL); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_UpdateScene& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_UPDATE_SCENE); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_Revive& pkt) { return MakeSendBuffer(pkt, Protocol::MsgId::S_REVIVE); }
 
 private:
@@ -105,7 +100,7 @@ private:
 		PacketHeader* header = reinterpret_cast<PacketHeader*>(sendBuffer->Buffer());
 		header->size = packetSize;
 		header->id = pktId;
-		ASSERT_CRASH(pkt.SerializeToArray(&header[1], dataSize));
+		pkt.SerializeToArray(&header[1], dataSize);
 
 		sendBuffer->Close(packetSize);
 

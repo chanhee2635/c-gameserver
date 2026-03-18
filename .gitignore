@@ -4,6 +4,11 @@ Debug/
 Release/
 x64/
 x86/
+*.obj
+*.exe
+*.dll
+*.lib
+*.exp
 *.user
 *.suo
 *.pdb

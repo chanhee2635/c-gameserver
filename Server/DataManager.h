@@ -22,6 +22,7 @@ public:
 
 	int64 GetPlayerRequireExp(int32 templateId, int32 level);
 	int32 GetMaxCombo(int32 templateId);
+	int32 GetDeathDuration(int32 templateId);
 	SpawnData* GetNearestSpawnData(Vector3 playerPos);
 
 private:

@@ -1,85 +1,255 @@
-using Protocol;
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
 
 public class MyPlayerController : PlayerController
 {
-    NavMeshAgent _navMeshAgent;
+    NavMeshAgent _agent;
     Image _attackCoolImage;
-    protected int MaxMp { get; set; }
-    protected int Mp { get; set; }
-    protected long Exp { get; set; }
-    protected long TotalExp { get; set; }
-    protected int MaxCombo { get; set; }
-    protected float AttackSpeed { get; set; }
 
-    float _lastSendTime = 0;
-    const float SEND_INTERVAL = 0.1f;
+    long _maxExp;
+    long _exp;
 
-    CreatureState LastState { get; set; } = CreatureState.Idle;
+    private bool    _isMoving = false;
+    private bool    _isSprinting = false;
 
-    bool LastRunState { get; set; } = false;
+    private float       _tickTimer = 0f;
+    private const float TICK_INTERVAL = 0.1f;
+    private const float FORCE_SYNC_INTERVAL = 0.5f;
+    private float       _lastSendTime;
+    private Protocol.CreatureState _lastSendState;
 
-    int _currentComboIndex = 0;
-    int _nextComboIndex = 0;
-    float _lastAttackTime = 0;
-    float ComboTimeout = 2.0f;
-    bool _reserveNextCombo = false;
+    private Camera _mainCam;
 
-    Dictionary<int, float> _attackDurations = new Dictionary<int, float>();
+    private int _maxCombo = 0;
+    private const float COMBO_INPUT_WINDOW = 0.45f;
 
-    protected void Start()
+    private bool _isAttacking = false;   // 공격 모션 진행 중
+    private int _currentCombo = 0;       // 현재 실행 콤보 인덱스 (0 = 없음)
+    private bool _comboQueued = false;   // 다음 콤보 예약 여부
+    private float _attackTimer = 0f;      // 현재 모션 경과 시간
+    private float _comboDuration = 0f;      // 현재 모션의 총 길이
+
+    protected override void Awake()
     {
-        _navMeshAgent = GetComponent<NavMeshAgent>();
-        _navMeshAgent.updateRotation = false;
-        _navMeshAgent.updatePosition = true;
-        _navMeshAgent.acceleration = 100f;
-
-        // TODO: 데이터로 서버와 공유
-        _attackDurations[1] = GetClipLength("Attack_1");
-        _attackDurations[2] = GetClipLength("Attack_2");
-        _attackDurations[3] = GetClipLength("Attack_3") + GetClipLength("Attack_4");
+        base.Awake();
+        _agent = GetComponent<NavMeshAgent>();
+        _agent.acceleration = 60f;
+        _agent.stoppingDistance = 0.1f;
     }
 
-    float GetClipLength(string clipName)
+    public override void SetInfo(Protocol.ObjectInfo info, Vector3 position, Quaternion rotation)
     {
-        foreach(var clip in _anim.runtimeAnimatorController.animationClips)
-        {
-            if (clip.name == clipName) return clip.length;
-        }
+        base.SetInfo(info, position, rotation);
+        _maxExp = Managers.Data.GetRequireExp(_templateId, Level);
+        _exp = info.StatInfo.Exp;
+        _agent.speed = _baseSpeed;
 
-        return 0f;
+        _maxCombo = Managers.Data.GetMaxCombo(_templateId);
+
+        CameraController cam = Camera.main.GetOrAddComponent<CameraController>();
+        cam.MyPlayer = gameObject;
+        cam.X = info.PosInfo.Yaw;
+        cam.Y = 0f;
+
+        _mainCam = Camera.main;
     }
 
-    public void SetAttackCool(Image attackCool)
-    {
-        _attackCoolImage = attackCool;
-    }
+    public void SetAttackCool(Image image) { _attackCoolImage = image; }
+    public float GetExpRatio() => _maxExp > 0 ? (float)_exp / _maxExp : 0f;
 
     protected override void Update()
     {
-        if (State == CreatureState.Dead) return;
+        if (State == Protocol.CreatureState.Dead) return;
 
-        GetInput();
-
-        MyMovement();
-
-        if (!IsAttack() && (IsStateChanged() || IsMoveTick()))
+        if (_isAttacking)
         {
-            SendMovePacket();
-            LastState = State;
-            LastRunState = IsRun;
-            _lastSendTime = Time.time;
+            UpdateComboAttack();
+            UpdateAttackCoolUI();
+        }
+        else
+        {
+            HandleSprinting();
+            HandleMovementInput();
+            if (Input.GetKeyDown(KeyCode.Space))
+                TryAttack();
         }
 
-        UpdateAttackCoolUI();
+        CheckAndSendTickPacket();
+    }
+    private void HandleSprinting()
+    {
+        _isSprinting = Input.GetKey(KeyCode.LeftShift) && _isMoving;
+        _agent.speed = _isSprinting ? _baseSpeed * 1.5f : _baseSpeed;
     }
 
-    void UpdateAttackCoolUI()
+    private void HandleMovementInput()
+    {
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+
+        if (_mainCam == null) _mainCam = Camera.main;   
+        Transform cam = _mainCam.transform;
+        Vector3 forward = Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized;
+        Vector3 right = Vector3.ProjectOnPlane(cam.right, Vector3.up).normalized;
+        Vector3 inputDir = (forward * v + right * h).normalized;
+
+        if (inputDir != Vector3.zero)
+        {
+            _isMoving = true;
+            _agent.Move(inputDir * _agent.speed * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(inputDir), Time.deltaTime * 10f);
+            State = _isSprinting ? Protocol.CreatureState.Sprinting : Protocol.CreatureState.Moving;
+        }
+        else
+        {
+            _isMoving = false;
+            _agent.velocity = Vector3.zero;
+            State = Protocol.CreatureState.Idle;
+        }
+
+        float moveAnim = (State == Protocol.CreatureState.Sprinting) ? 1.0f : (State == Protocol.CreatureState.Moving) ? 0.5f : 0.0f;
+        _animator.SetFloat("Move", moveAnim, 0.15f, Time.deltaTime);
+    }
+
+    public void TryAttack()
+    {
+        if (_isAttacking) return;
+        StartComboAttack(1);
+    }
+
+    private void UpdateComboAttack()
+    {
+        _attackTimer += Time.deltaTime;
+
+        bool inInputWindow = _attackTimer >= _comboDuration * COMBO_INPUT_WINDOW;
+        if (inInputWindow && !_comboQueued && _currentCombo < _maxCombo)
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+                _comboQueued = true;
+        }
+
+        if (_attackTimer >= _comboDuration)
+        {
+            if (_comboQueued)
+                StartComboAttack(_currentCombo + 1);
+            else
+            {
+                _isAttacking = false;
+                _currentCombo = 0;
+                State = Protocol.CreatureState.Idle;
+                _animator.SetFloat("Move", 0f);
+
+                if (_attackCoolImage != null)
+                    _attackCoolImage.fillAmount = 0f;
+            }
+        }
+    }
+
+    private void UpdateAttackCoolUI()
+    {
+        if (_attackCoolImage == null) return;
+        _attackCoolImage.fillAmount = _comboDuration > 0f ? _attackTimer / _comboDuration : 0f;
+    }
+
+    private void StartComboAttack(int comboIndex)
+    {
+        _isAttacking = true;
+        _comboQueued = false;
+        _currentCombo = comboIndex;
+        _attackTimer = 0f;
+        _comboDuration = Managers.Data.GetComboDuration(_templateId, comboIndex);
+
+        _agent.velocity = Vector3.zero;
+        State = Protocol.CreatureState.Attack;
+
+        _animator.SetFloat("Move", 0f);
+        _animator.SetInteger("ComboIndex", comboIndex);
+        _animator.SetTrigger("Attack");
+
+        if (_attackCoolImage != null)
+            _attackCoolImage.fillAmount = 0f;
+
+        Protocol.C_Attack packet = new Protocol.C_Attack
+        {
+            Yaw = transform.rotation.eulerAngles.y,
+            ComboIndex = comboIndex,
+            Pos = Util.ToProto(transform.position)
+        };
+        Managers.Network.Send(packet);
+    }
+
+    private void CheckAndSendTickPacket()
+    {
+        if (_isAttacking) return;
+
+        _tickTimer += Time.deltaTime;
+        if (_tickTimer < TICK_INTERVAL) return;
+        _tickTimer = 0f;
+
+        bool isMovingNow = (State == Protocol.CreatureState.Moving || State == Protocol.CreatureState.Sprinting);
+        bool stateChanged = _lastSendState != State;
+        bool isTimeOut = Time.time - _lastSendTime >= FORCE_SYNC_INTERVAL;
+
+        if (isMovingNow || stateChanged || isTimeOut)
+            SendMovePacket();
+    }
+
+    private void SendMovePacket()
+    {
+        Protocol.C_Move packet = new Protocol.C_Move
+        {
+            PosInfo = new Protocol.PosInfo
+            {
+                Pos = Util.ToProto(transform.position),
+                Yaw = transform.rotation.eulerAngles.y,
+                State = State
+            }
+        };
+
+        Managers.Network.Send(packet);
+
+        _lastSendState = State;
+        _lastSendTime = Time.time;
+    }
+
+    public void OnChangeExp(long exp)
+    {
+        _exp = exp;
+        _maxExp = Managers.Data.GetRequireExp(_templateId, Level);
+    }
+
+    public void OnLevelUp(int level, int maxHp, int hp, long exp)
+    {
+        _exp = exp;
+        _maxExp = Managers.Data.GetRequireExp(_templateId, level);
+        base.OnLevelUp(level, maxHp, hp);
+    }
+
+    public void OnRevive(Vector3 pos, int hp, int maxHp)
+    {
+        Hp = hp;
+        MaxHp = maxHp;
+        State = Protocol.CreatureState.Idle;
+
+        _isAttacking = false;
+        _comboQueued = false;
+        _currentCombo = 0;
+
+        transform.position = pos;
+        _agent.Warp(pos);
+
+        _animator.SetBool("IsDead", false);
+        _animator.SetFloat("Move", 0f);
+
+        GameObject go = Managers.Resource.Instantiate("Effects/ReviveEffect");
+        if (go != null)
+            go.transform.position = pos + Vector3.up * 0.1f;
+    }
+
+    /*void UpdateAttackCoolUI()
     {
         if (_attackCoolImage == null) return;
 
@@ -107,7 +277,7 @@ public class MyPlayerController : PlayerController
 
     bool IsMoveTick()
     {
-        return State == CreatureState.Moving && Time.time - _lastSendTime > SEND_INTERVAL;
+        return *//*State == CreatureState.Moving && *//*Time.time - _lastSendTime > SEND_INTERVAL;
     }
 
     bool IsStateChanged()
@@ -151,7 +321,7 @@ public class MyPlayerController : PlayerController
             Vector3 forward = cam.forward * v;
             Vector3 right = cam.right * h;
             Vector3 moveDir = (forward + right).normalized;
-            float speed = Speed * (IsRun ? 2.0f : 1.0f);
+            float speed = moveSpeed * (IsRun ? 2.0f : 1.0f);
             DestPos = transform.position + (moveDir * speed * Time.deltaTime);
         }
         else
@@ -206,12 +376,12 @@ public class MyPlayerController : PlayerController
             Quaternion targetRot = Quaternion.LookRotation(dir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * RotateSpeed);
 
-            Vector3 movement = dir.normalized * Time.deltaTime * Speed * (IsRun ? 2.0f : 1.0f);
+            Vector3 movement = dir.normalized * Time.deltaTime * moveSpeed * (IsRun ? 2.0f : 1.0f);
 
             if (movement.magnitude > dir.magnitude)
                 movement = dir;
 
-            _navMeshAgent.Move(movement);
+            agent.Move(movement);
         }
     }
 
@@ -224,16 +394,16 @@ public class MyPlayerController : PlayerController
         cam.X = info.PosInfo.Yaw;
         cam.Y = 0f;
 
-        _navMeshAgent = gameObject.GetOrAddComponent<NavMeshAgent>();
-        if (_navMeshAgent != null) _navMeshAgent.enabled = false;
+        agent = gameObject.GetOrAddComponent<NavMeshAgent>();
+        if (agent != null) agent.enabled = false;
 
         Vector3 serverPos = new Vector3(info.PosInfo.X, info.PosInfo.Y, info.PosInfo.Z);
 
         NavMeshHit hit;
         if (NavMesh.SamplePosition(serverPos + (Vector3.up * 5f), out hit, 10.0f, NavMesh.AllAreas))
         {
-            _navMeshAgent.Warp(hit.position);
-            _navMeshAgent.enabled = true;
+            agent.Warp(hit.position);
+            agent.enabled = true;
         }
 
         PlayerData data = Managers.Data.PlayerDataDict[(TemplateId, Level)];
@@ -325,5 +495,5 @@ public class MyPlayerController : PlayerController
         _anim.speed = AttackSpeed;
         _anim.SetInteger("ComboIndex", _currentComboIndex);
         _anim.SetTrigger("Attack");
-    }
+    }*/
 }
