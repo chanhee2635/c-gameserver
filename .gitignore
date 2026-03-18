@@ -61,3 +61,4 @@ config.json
 "Video/" 
 "*.zip" 
 "Common/config.json" 
+"Libraries/" 
