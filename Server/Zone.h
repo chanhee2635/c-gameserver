@@ -21,7 +21,7 @@ public:
 	void AddPendingDespawn(uint64 objectId) { _pendingDespawns.insert(objectId); }
 	void AddPendingSpawn(CreatureRef creature) { _pendingSpawns[creature->GetObjectId()] = creature; }
 	void AddPendingMove(CreatureRef creature) { _pendingMoves[creature->GetObjectId()] = creature; }
-	void FillUpdatePacket(Protocol::S_UpdateScene& packet);
+	void FillUpdatePacket(Protocol::S_UpdateScene& packet, std::function<void()> flushPacket);
 	void ClearPending();
 
 	bool IsEmpty() { return _pendingDespawns.empty() && _pendingSpawns.empty() && _pendingMoves.empty(); }
@@ -33,8 +33,8 @@ public:
 	void SetAdjacentZones(Vector<ZoneRef> adjacent) { _adjacentZones = adjacent; }
 	const Vector<ZoneRef>& GetAdjacentZones() { return _adjacentZones; }
 
-	void MakeSpawnPacket(PlayerRef self, Protocol::S_UpdateScene& packet);
-	void MakeDespawnPacket(uint64 selfId, Protocol::S_UpdateScene& packet);
+	void MakeSpawnPacket(PlayerRef self, Protocol::S_UpdateScene& packet, std::function<void()> flushPacket);
+	void MakeDespawnPacket(uint64 selfId, Protocol::S_UpdateScene& packet, std::function<void()> flushPacket);
 
 	void Enter(CreatureRef creature, bool sceneChanged = true);
 	void Leave(CreatureRef creature, bool sceneChanged = true);

@@ -9,6 +9,7 @@
 #include "DBManager.h"
 #include "ConfigManager.h"
 #include "World.h"
+#include <GameMetrics.h>
 
 void Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData)
 {
@@ -116,6 +117,7 @@ void Player::GainExp(int64 rewardExp)
 
 void Player::OnDead()
 {
+	GMetrics.totalPlayerDeaths.fetch_add(1);
 }
 
 void Player::MakeStatInfo(Protocol::StatInfo& info) const

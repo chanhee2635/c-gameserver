@@ -15,7 +15,7 @@ Zone::Zone(int32 x, int32 z) : _x(x), _z(z)
 	_monsters.reserve(50);
 }
 
-void Zone::FillUpdatePacket(Protocol::S_UpdateScene& packet)
+void Zone::FillUpdatePacket(Protocol::S_UpdateScene& packet, std::function<void()> flushPacket)
 {
 	for (uint64 id : _pendingDespawns)
 	{
@@ -25,11 +25,13 @@ void Zone::FillUpdatePacket(Protocol::S_UpdateScene& packet)
 	{
 		auto* info = packet.add_spawns();
 		creature->MakeObjectInfo(*info);
+		if (packet.ByteSizeLong() > 4000) flushPacket();
 	}
 	for (auto& [id, creature] : _pendingMoves)
 	{
 		auto* info = packet.add_moves();
 		creature->MakePosInfo(*info);
+		if (packet.ByteSizeLong() > 4000) flushPacket();
 	}
 }
 
@@ -46,7 +48,7 @@ Vector3 Zone::GetPos()
 	return Vector3((float)_x * zoneSize, 0.0f, (float)_z * zoneSize);
 }
 
-void Zone::MakeSpawnPacket(PlayerRef self, OUT Protocol::S_UpdateScene& packet)
+void Zone::MakeSpawnPacket(PlayerRef self, OUT Protocol::S_UpdateScene& packet, std::function<void()> flushPacket)
 {
 	if (_players.empty() && _monsters.empty()) return;
 
@@ -57,6 +59,9 @@ void Zone::MakeSpawnPacket(PlayerRef self, OUT Protocol::S_UpdateScene& packet)
 			if (player == self) continue;
 			auto info = packet.add_spawns();
 			player->MakeObjectInfo(*info);
+
+			if (packet.ByteSizeLong() > 4000)
+				flushPacket();
 		}
 	}
 
@@ -66,11 +71,14 @@ void Zone::MakeSpawnPacket(PlayerRef self, OUT Protocol::S_UpdateScene& packet)
 		{
 			auto info = packet.add_spawns();
 			monster->MakeObjectInfo(*info);
+
+			if (packet.ByteSizeLong() > 4000)
+				flushPacket();
 		}
 	}
 }
 
-void Zone::MakeDespawnPacket(uint64 selfId, OUT Protocol::S_UpdateScene& packet)
+void Zone::MakeDespawnPacket(uint64 selfId, OUT Protocol::S_UpdateScene& packet, std::function<void()> flushPacket)
 {
 	if (_players.empty() && _monsters.empty()) return;
 
@@ -78,11 +86,17 @@ void Zone::MakeDespawnPacket(uint64 selfId, OUT Protocol::S_UpdateScene& packet)
 	{
 		if (item.first == selfId) continue;
 		packet.add_despawns(item.first);
+
+		if (packet.ByteSizeLong() > 4000)
+			flushPacket();
 	}
 
 	for (auto& item : _monsters)
 	{
 		packet.add_despawns(item.first);
+
+		if (packet.ByteSizeLong() > 4000)
+			flushPacket();
 	}
 }
 

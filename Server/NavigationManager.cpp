@@ -70,7 +70,11 @@ bool NavigationManager::LoadNavMesh(const char* path)
 
 		fread(data, tileHeader.dataSize, 1, fp);
 
-		_navMesh->addTile(data, tileHeader.dataSize, DT_TILE_FREE_DATA, tileHeader.tileRef, 0);
+		dtTileRef result = 0;
+		dtStatus addStatus = _navMesh->addTile(data, tileHeader.dataSize, DT_TILE_FREE_DATA, tileHeader.tileRef, &result);
+		if (dtStatusFailed(addStatus)) {
+			cout << "타일 추가 실패! Status: " << addStatus << endl;
+		}
 	}
 
 	fclose(fp);
@@ -97,7 +101,10 @@ float NavigationManager::GetHeight(Vector3 pos)
 	dtStatus status = _navQuery->findNearestPoly(inputPos, _halfExtents, &_filter, &polyRef, closestPt);
 
 	if (dtStatusFailed(status) || polyRef == 0)
+	{
+		printf("실패 좌표: %.2f, %.2f, %.2f\n", pos.x, pos.y, pos.z);
 		return -999.0f;
+	}
 
 	float height = 0;
 	status = _navQuery->getPolyHeight(polyRef, closestPt, &height);

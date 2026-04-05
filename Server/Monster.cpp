@@ -9,6 +9,7 @@
 #include "ClientPacketHandler.h"
 #include "ConfigManager.h"
 #include "World.h"
+#include <GameMetrics.h>
 
 void Monster::Init(const SpawnData& data)
 {
@@ -80,6 +81,8 @@ void Monster::HandleGatherResult(PlayerRef player, float distSq)
 
 void Monster::OnDead()
 {
+	GMetrics.totalMonsterDeaths.fetch_add(1);
+
 	GameSceneRef scene = GetGameScene();
 	ZoneRef zone = GetZone();
 	if (!scene || !zone) return;

@@ -8,6 +8,8 @@
 #include "ConfigManager.h"
 #include "DataManager.h"
 #include "RedisManager.h"
+#include <GameMetrics.h>
+#include "PacketHelper.h"
 
 GameScene::GameScene()
 {
@@ -97,6 +99,8 @@ void GameScene::CollectMoveNotices()
 
 void GameScene::HandleZoneChange(CreatureRef creature, ZoneRef oldZone, ZoneRef newZone)
 {
+	GMetrics.totalZoneChanges.fetch_add(1);
+
 	GameSceneRef oldScene = oldZone->GetScene();
 	GameSceneRef newScene = newZone->GetScene();
 	bool isSceneChanged = (oldScene != newScene);
@@ -163,10 +167,7 @@ void GameScene::ProcessNotices(const vector<MoveNotice>& notices)
 			if (creature->GetObjectType() == GameObjectType::Player)
 			{
 				PlayerRef player = static_pointer_cast<Player>(creature);
-				Protocol::S_UpdateScene packet;
-				zone->MakeSpawnPacket(player, packet);
-				if (packet.spawns_size() > 0)
-					player->Send(ClientPacketHandler::MakeSendBuffer(packet));
+				PacketHelper::SendSpawnPackets(player, { zone });
 			}
 			break;
 		case VisionType::Despawn:
@@ -174,10 +175,7 @@ void GameScene::ProcessNotices(const vector<MoveNotice>& notices)
 			if (creature->GetObjectType() == GameObjectType::Player)
 			{
 				PlayerRef player = static_pointer_cast<Player>(creature);
-				Protocol::S_UpdateScene packet;
-				zone->MakeDespawnPacket(player->GetObjectId(), packet);
-				if (packet.despawns_size() > 0)
-					player->Send(ClientPacketHandler::MakeSendBuffer(packet));
+				PacketHelper::SendDespawnPackets(player, { zone });
 			}
 			break;
 		case VisionType::Move:
@@ -189,43 +187,29 @@ void GameScene::ProcessNotices(const vector<MoveNotice>& notices)
 
 void GameScene::BroadcastScene()
 {
+	GMetrics.totalBroadcasts.fetch_add(1);
+
 	for (ZoneRef& zone : _zones)
 	{
-		if (!zone->IsEmpty())
-		{
-			if (zone->IsActive())
+		if (zone->IsEmpty()) continue;
+		if (!zone->IsActive()) continue;
+
+		Protocol::S_UpdateScene packet;
+
+		auto flushToZone = [&packet, &zone, this]() {
+			if (packet.moves_size() > 0 || packet.spawns_size() > 0 || packet.despawns_size() > 0)
 			{
-				Protocol::S_UpdateScene packet;
-				zone->FillUpdatePacket(packet);
-
-				const int32 MAX_MOVES_PER_PACKET = 30;
-				if (packet.moves_size() > MAX_MOVES_PER_PACKET)
-				{
-					Protocol::S_UpdateScene splitPacket;
-					splitPacket.mutable_spawns()->CopyFrom(packet.spawns());
-					splitPacket.mutable_despawns()->CopyFrom(packet.despawns());
-
-					for (int32 i = 0; i < packet.moves_size(); i++)
-					{
-						splitPacket.add_moves()->CopyFrom(packet.moves(i));
-						if (splitPacket.moves_size() >= MAX_MOVES_PER_PACKET)
-						{
-							BroadcastToZone(zone, ClientPacketHandler::MakeSendBuffer(splitPacket));
-							splitPacket.clear_moves();
-							splitPacket.clear_spawns();
-							splitPacket.clear_despawns();
-						}
-					}
-					if (splitPacket.moves_size() > 0 || splitPacket.spawns_size() > 0)
-						BroadcastToZone(zone, ClientPacketHandler::MakeSendBuffer(splitPacket));
-				}
-				else if (packet.moves_size() > 0 || packet.spawns_size() > 0 || packet.despawns_size() > 0)
-				{
-					BroadcastToZone(zone, ClientPacketHandler::MakeSendBuffer(packet));
-				}
+				GMetrics.totalBroadcastSplits.fetch_add(1); 
+				BroadcastToZone(zone, ClientPacketHandler::MakeSendBuffer(packet));
+				packet.Clear(); 
 			}
-			zone->ClearPending();
-		}
+		};
+
+		zone->FillUpdatePacket(packet, flushToZone);
+
+		flushToZone();
+
+		zone->ClearPending();
 	}
 }
 
@@ -328,6 +312,8 @@ void GameScene::HandleAttackHitDetection(PlayerRef attacker, Vector3 attackPos, 
 void GameScene::HandleRevive(PlayerRef player, bool isCurrentPos)
 {
 	if (player == nullptr || !player->IsDead()) return;
+
+	GMetrics.totalPlayerRevives.fetch_add(1);
 
 	Vector3 revivePos;
 	if (isCurrentPos)

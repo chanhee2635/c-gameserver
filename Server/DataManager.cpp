@@ -52,6 +52,7 @@ bool DataManager::LoadPrefabData()
 		}
 
 		data.deathDuration = item["deathDuration"];
+		data.poolSize = item["poolSize"];
 
 		_prefabData[data.id] = data;
 	}

@@ -40,7 +40,7 @@ private:
 	dtNavMesh* _navMesh = nullptr;
 	dtNavMeshQuery* _navQuery = nullptr;
 	dtQueryFilter _filter;
-	float _halfExtents[3] = { 2.0f, 4.0f, 2.0f };  // Å½»ö ¹üÀ§
+	float _halfExtents[3] = { 1.0f, 2.0f, 1.0f };  // Å½»ö ¹üÀ§
 };
 
 extern std::unique_ptr<NavigationManager>	GNavigationManager;

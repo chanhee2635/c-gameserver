@@ -11,6 +11,8 @@
 #include "RedisManager.h"
 #include "DBService.h"
 #include "DBManager.h"
+#include "PrometheusServer.h"
+#include "FileLogger.h"
 
 void DoWorkerJob(ServerServiceRef& service, uint64 workedTick)
 {
@@ -70,6 +72,9 @@ int main()
 	GWorld = make_shared<World>();
 
 	SocketUtils::Init();
+
+	GFileLogger.Init("C:/monitoring/ServerLogs/game-server.log");
+	GPrometheusServer.Start(8080);
 
 	if (GConfigManager->LoadConfig("../../Common/config.json") == false)
 	{
@@ -131,6 +136,9 @@ int main()
 
 	GThreadManager->Join();
 	GDBConnectionPool->Clear();
+
+	GPrometheusServer.Stop();
+
 	SocketUtils::Clear();
 
 	return 0;

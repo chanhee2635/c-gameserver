@@ -9,6 +9,8 @@
 #include "ClientPacketHandler.h"
 #include "RedisManager.h"
 #include "ConfigManager.h"
+#include <GameMetrics.h>
+#include "PacketHelper.h"
 
 void World::Init()
 {
@@ -168,6 +170,8 @@ void World::SpawnMonsters()
 		MonsterRef monster = MakeShared<Monster>();
 		monster->Init(data);
 
+		GMetrics.activeMonsters.fetch_add(1);
+
 		EnterCreature(monster);
 	}
 }
@@ -180,6 +184,8 @@ void World::PlayerEnterToGame(GameSessionRef session, PlayerSummaryData summary,
 	player->Init(summary, loadData);
 	player->SetSession(session);
 	session->SetPlayer(player);
+
+	GMetrics.activePlayers.fetch_add(1);
 
 	// Redis 저장 (Chat 서버 정보)
 	GRedisManager->SetPlayerInfo(player->GetObjectId(), Utils::ws2s(player->GetName()), GConfigManager->GetGame().port);
@@ -219,12 +225,8 @@ void World::EnterCreature(CreatureRef creature)
 
 			if (creature->GetObjectType() == GameObjectType::Player)
 			{
-				Protocol::S_UpdateScene packet;
 				PlayerRef player = static_pointer_cast<Player>(creature);
-				for (ZoneRef zone : zones)
-					zone->MakeSpawnPacket(player, packet);
-				if (packet.spawns_size() > 0)
-					player->Send(ClientPacketHandler::MakeSendBuffer(packet));
+				PacketHelper::SendSpawnPackets(player, zones);
 			}
 		});
 	}
@@ -260,15 +262,16 @@ void World::LeaveCreature(CreatureRef creature)
 
 			if (creature->GetObjectType() == GameObjectType::Player)
 			{
-				Protocol::S_UpdateScene packet;
 				PlayerRef player = static_pointer_cast<Player>(creature);
-				for (ZoneRef zone : zones)
-					zone->MakeDespawnPacket(player->GetObjectId(), packet);
-				if (packet.despawns_size() > 0)
-					player->Send(ClientPacketHandler::MakeSendBuffer(packet));
+				PacketHelper::SendDespawnPackets(player, zones);
 			}
 		});
 	}
+
+	if (creature->GetObjectType() == GameObjectType::Player)
+		GMetrics.activePlayers.fetch_sub(1);
+	else if (creature->GetObjectType() == GameObjectType::Monster)
+		GMetrics.activeMonsters.fetch_sub(1);
 }
 
 ZoneRef World::GetZoneByPos(Vector3 pos)

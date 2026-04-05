@@ -119,6 +119,7 @@ struct PrefabData
 	int32 maxCombo;
 	vector<int32> comboHitDelays;
 	int32 deathDuration;
+	int32 poolSize;
 };
 
 struct SpawnData

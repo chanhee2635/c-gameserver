@@ -3,6 +3,7 @@
 #include "DBConnectionPool.h"
 #include "DBBind.h"
 #include "DataManager.h"
+#include <GameMetrics.h>
 
 void DBManager::PushGlobalQueue()
 {
@@ -12,6 +13,13 @@ void DBManager::PushGlobalQueue()
 bool DBManager::GetPlayerInfo(uint64 accountDbId, OUT Vector<PlayerSummaryData>& summaries)
 {
 	DBConnectionRef dbConn = GDBConnectionPool->Pop();
+
+	if (dbConn == nullptr)
+	{
+		GMetrics.dbConnectionPoolEmpty.fetch_add(1);
+		return false;
+	}
+
 	DBBind<1, 4> dbBind(*dbConn, L"SELECT player_id, name, level, class_type FROM Players WHERE account_id = (?)");
 
 	int64 playerDbId = 0;
@@ -26,7 +34,12 @@ bool DBManager::GetPlayerInfo(uint64 accountDbId, OUT Vector<PlayerSummaryData>&
 	dbBind.BindCol(3, OUT classtype);
 
 	if (!dbBind.Execute())
+	{
+		GMetrics.dbQueryFail.fetch_add(1);
 		return false;
+	}
+
+	GMetrics.dbQuerySuccess.fetch_add(1);
 
 	while (dbConn->Fetch())
 	{
@@ -78,11 +91,14 @@ bool DBManager::CreatePlayer(uint64 accountDbId, int32 templateId, string name, 
 
 	if (success)
 	{
+		GMetrics.dbQuerySuccess.fetch_add(1);
 		summary.dbId = playerDbId;
 		summary.name = wName;
 		summary.level = 1;
 		summary.templateId = templateId;
 	}
+	else
+		GMetrics.dbQueryFail.fetch_add(1);
 
 	return success;
 }
@@ -103,6 +119,11 @@ bool DBManager::GetPlayerDetailInfo(uint64 userDbid, OUT PlayerLoadData& loadDat
 
 	bool success = dbBind.Execute() && dbConn->Fetch();
 
+	if (success)
+		GMetrics.dbQuerySuccess.fetch_add(1);
+	else
+		GMetrics.dbQueryFail.fetch_add(1);
+
 	return success;
 }
 
@@ -119,7 +140,15 @@ bool DBManager::SavePlayerLevelUp(uint64 playerDbId, int32 level, int32 hp, int3
 	dbBind.BindParam(6, pos.y);
 	dbBind.BindParam(7, pos.z);
 	dbBind.BindParam(8, yaw);
-	return dbBind.Execute();
+
+	bool success = dbBind.Execute();
+
+	if (success)
+		GMetrics.dbQuerySuccess.fetch_add(1);
+	else
+		GMetrics.dbQueryFail.fetch_add(1);
+
+	return success;
 }
 
 bool DBManager::SavePlayerInfo(uint64 playerDbId, int32 hp, int32 mp, int64 exp, Vector3 pos, float yaw)
@@ -136,5 +165,12 @@ bool DBManager::SavePlayerInfo(uint64 playerDbId, int32 hp, int32 mp, int64 exp,
 	dbBind.BindParam(6, yaw);
 	dbBind.BindParam(7, playerDbId);
 
-	return dbBind.Execute();
+	bool success = dbBind.Execute();
+
+	if (success)
+		GMetrics.dbQuerySuccess.fetch_add(1);
+	else
+		GMetrics.dbQueryFail.fetch_add(1);
+
+	return success;
 }
