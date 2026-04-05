@@ -39,6 +39,9 @@ int main()
     rcPolyMeshDetail* dmesh = nullptr; 
     rcPolyMesh* pmesh = BuildRecastPolyMesh(&ctx, &geom, dmesh);
 
+    cout << "npolys: " << pmesh->npolys << endl;
+    cout << "nverts: " << pmesh->nverts << endl;
+
     if (!pmesh || !dmesh)
     {
         cout << "에러 : NavMesh 빌드 실패!" << endl;
@@ -69,8 +72,8 @@ int main()
     params.walkableHeight = 2.0f;
     params.walkableRadius = 0.5f;
     params.walkableClimb = 0.5f;
-    params.cs = 0.1f;
-    params.ch = 0.05f;
+    params.cs = 0.5f;
+    params.ch = 0.25f;
     params.buildBvTree = true;
 
     unsigned char* navData = nullptr;
@@ -94,6 +97,17 @@ int main()
         header.params.tileHeight = params.bmax[2] - params.bmin[2];
         header.params.maxTiles = 1;
         header.params.maxPolys = params.polyCount;
+
+        // 추가
+        cout << "npolys: " << params.polyCount << endl;
+        cout << "bmin: " << params.bmin[0] << " " << params.bmin[1] << " " << params.bmin[2] << endl;
+        cout << "bmax: " << params.bmax[0] << " " << params.bmax[1] << " " << params.bmax[2] << endl;
+        cout << "navDataSize: " << navDataSize << endl;
+        cout << "orig: " << header.params.orig[0] << " " << header.params.orig[1] << " " << header.params.orig[2] << endl;
+        cout << "tileWidth: " << header.params.tileWidth << endl;
+        cout << "tileHeight: " << header.params.tileHeight << endl;
+        cout << "maxPolys: " << header.params.maxPolys << endl;
+
         fwrite(&header, sizeof(NavMeshSetHeader), 1, fp);
 
         NavMeshTileHeader tileHeader;
@@ -125,19 +139,20 @@ rcPolyMesh* BuildRecastPolyMesh(rcContext* ctx, InputGeom* geom, rcPolyMeshDetai
 
     rcConfig cfg;
     memset(&cfg, 0, sizeof(cfg));
-    cfg.cs = 0.1f;
-    cfg.ch = 0.05f;
+
+    cfg.cs = 0.2f;             // 가로세로 셀 크기
+    cfg.ch = 0.01f;            // 높이 정밀도 (데이터의 0.048을 잡기 위함)
     cfg.walkableSlopeAngle = 60.0f;
-    cfg.walkableHeight = (int)ceilf(2.0f / cfg.ch);
-    cfg.walkableClimb = (int)floorf(0.5f / cfg.ch);
-    cfg.walkableRadius = (int)ceilf(0.5f / cfg.cs);
+    cfg.walkableHeight = 1;    // 최소 1칸 이상이면 서 있을 수 있음
+    cfg.walkableClimb = 1;
+    cfg.walkableRadius = 0;    // 에이전트 반지름에 의한 침식 방지 (테스트용)
     cfg.maxEdgeLen = (int)(12.0f / cfg.cs);
-    cfg.maxSimplificationError = 0.5f;
-    cfg.minRegionArea = (int)rcSqr(2);
+    cfg.maxSimplificationError = 1.3f;
+    cfg.minRegionArea = 0;     // 영역 삭제 방지
     cfg.mergeRegionArea = (int)rcSqr(20);
     cfg.maxVertsPerPoly = 6;
     cfg.detailSampleDist = 6.0f;
-    cfg.detailSampleMaxError = 0.2f;
+    cfg.detailSampleMaxError = 0.1f;
 
     rcCalcGridSize(bmin, bmax, cfg.cs, &cfg.width, &cfg.height);
 
