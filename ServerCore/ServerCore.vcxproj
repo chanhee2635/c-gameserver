@@ -172,7 +172,9 @@
     <ClInclude Include="DBConnectionPool.h" />
     <ClInclude Include="DBService.h" />
     <ClInclude Include="DeadLockProfiler.h" />
+    <ClInclude Include="FileLogger.h" />
     <ClInclude Include="FileUtils.h" />
+    <ClInclude Include="GameMetrics.h" />
     <ClInclude Include="GlobalQueue.h" />
     <ClInclude Include="IocpCore.h" />
     <ClInclude Include="IocpEvent.h" />
@@ -187,6 +189,7 @@
     <ClInclude Include="NetAddress.h" />
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PrometheusServer.h" />
     <ClInclude Include="RecvBuffer.h" />
     <ClInclude Include="RefCounting.h" />
     <ClInclude Include="SendBuffer.h" />
@@ -213,7 +216,9 @@
     <ClCompile Include="DBConnectionPool.cpp" />
     <ClCompile Include="DBService.cpp" />
     <ClCompile Include="DeadLockProfiler.cpp" />
+    <ClCompile Include="FileLogger.cpp" />
     <ClCompile Include="FileUtils.cpp" />
+    <ClCompile Include="GameMetrics.cpp" />
     <ClCompile Include="GlobalQueue.cpp" />
     <ClCompile Include="IocpCore.cpp" />
     <ClCompile Include="IocpEvent.cpp" />
@@ -232,6 +237,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="PrometheusServer.cpp" />
     <ClCompile Include="RecvBuffer.cpp" />
     <ClCompile Include="RefCounting.cpp" />
     <ClCompile Include="SendBuffer.cpp" />

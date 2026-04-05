@@ -29,6 +29,9 @@
     <Filter Include="소스 파일\Log">
       <UniqueIdentifier>{95dbdbde-e482-49b7-8265-8c02c671c1f7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Monitoring">
+      <UniqueIdentifier>{5a13b72b-244a-4f6c-be48-7f694e06ed5e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -151,6 +154,15 @@
     <ClInclude Include="DBService.h">
       <Filter>소스 파일\DB</Filter>
     </ClInclude>
+    <ClInclude Include="GameMetrics.h">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClInclude>
+    <ClInclude Include="FileLogger.h">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClInclude>
+    <ClInclude Include="PrometheusServer.h">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -260,6 +272,15 @@
     </ClCompile>
     <ClCompile Include="DBService.cpp">
       <Filter>소스 파일\DB</Filter>
+    </ClCompile>
+    <ClCompile Include="PrometheusServer.cpp">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClCompile>
+    <ClCompile Include="FileLogger.cpp">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClCompile>
+    <ClCompile Include="GameMetrics.cpp">
+      <Filter>소스 파일\Monitoring</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

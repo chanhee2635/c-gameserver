@@ -221,6 +221,7 @@
     <ClCompile Include="IdGenerator.cpp" />
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="NavigationManager.cpp" />
+    <ClCompile Include="PacketHelper.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -249,6 +250,7 @@
     <ClInclude Include="IdGenerator.h" />
     <ClInclude Include="Monster.h" />
     <ClInclude Include="NavigationManager.h" />
+    <ClInclude Include="PacketHelper.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="ClientPacketHandler.h" />

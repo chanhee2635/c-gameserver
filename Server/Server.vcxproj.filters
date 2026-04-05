@@ -97,14 +97,17 @@
     <ClCompile Include="IdGenerator.cpp">
       <Filter>소스 파일\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="GameUtil.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="Enum.pb.cc">
       <Filter>소스 파일\Protocol</Filter>
     </ClCompile>
     <ClCompile Include="Game.pb.cc">
       <Filter>소스 파일\Protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUtil.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="PacketHelper.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -168,6 +171,7 @@
     <ClInclude Include="Game.pb.h">
       <Filter>소스 파일\Protocol</Filter>
     </ClInclude>
+    <ClInclude Include="PacketHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Common\protoc-3.21.12-win64\bin\Game.proto">
