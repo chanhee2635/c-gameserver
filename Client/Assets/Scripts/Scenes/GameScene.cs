@@ -12,6 +12,23 @@ public class GameScene : BaseScene
         base.Init();
         SceneType = Define.Scene.Game;
         _sceneUI = Managers.UI.ShowSceneUI<UI_GameScene>();
+
+        CreatePools();
+    }
+
+    void CreatePools()
+    {
+        foreach(var pair in Managers.Data.PrefabDataDict)
+        {
+            PrefabData data = pair.Value;
+
+            if (!string.IsNullOrEmpty(data.prefabPath))
+            {
+                GameObject prefab = Managers.Resource.Load<GameObject>($"Prefabs/{data.prefabPath}");
+                if (prefab != null && prefab.GetComponent<Poolable>() != null)
+                    Managers.Pool.CreatePool(prefab, data.poolSize);
+            }
+        }
     }
 
     public void OnEnterGame(ObjectInfo myPlayerInfo)

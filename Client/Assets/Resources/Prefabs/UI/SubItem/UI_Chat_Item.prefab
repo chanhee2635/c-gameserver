@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8548910870937717637}
   - component: {fileID: 7462381705062978275}
   - component: {fileID: 5747114460346755345}
+  - component: {fileID: -6627883142063498638}
   m_Layer: 5
   m_Name: UI_Chat_Item
   m_TagString: Untagged
@@ -162,3 +163,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3c1c18e7ecf1604d89045c653d30176, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &-6627883142063498638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4427975427348673551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 299fefbf1b07de449962dfaf64ec2dcb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  IsUsing: 0

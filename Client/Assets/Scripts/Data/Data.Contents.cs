@@ -14,6 +14,7 @@ public class PrefabData
     public float[] comboDurations;
     public int[] comboHitDelays;
     public int deathDuration;
+    public int poolSize;
 }
 
 [Serializable]
