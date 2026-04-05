@@ -62,6 +62,14 @@ void DummyUser::Update(int64 now)
 	ContinuousMove(deltaTime);
 }
 
+void DummyUser::Disconnect()
+{
+	if (_gameSession)
+		_gameSession->Disconnect(L"DummyClient Remove");
+	if (_chatSession)
+		_chatSession->Disconnect(L"DummyClient Remove");
+}
+
 void DummyUser::ContinuousMove(float deltaTime)
 {
 	if (_gameSession == nullptr) return;

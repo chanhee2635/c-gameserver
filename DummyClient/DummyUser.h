@@ -57,6 +57,7 @@ public:
 	void ConnectToGame();
 	void ConnectToChat();
 	void Update(int64 now);
+	void Disconnect();
 
 	void ContinuousMove(float deltaTime);
 
@@ -82,5 +83,5 @@ private:
 	Vector3 _moveDir;
 
 	static constexpr float MOVE_SEND_INTERVAL_MS = 100.f;
-	static constexpr float MOVE_SPEED = 2.0f;
+	static constexpr float MOVE_SPEED = 1.8f;
 };

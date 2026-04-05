@@ -23,4 +23,3 @@ USING_SHARED_PTR(DummyUser);
 extern ClientServiceRef GGameService;
 extern ClientServiceRef GChatService;
 extern IocpCoreRef GIocpCore;
-extern vector<DummyUserRef> GUsers;
