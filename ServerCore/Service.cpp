@@ -95,9 +95,9 @@ bool ClientService::Start()
 {
 	if (CanStart() == false) return false;
 
-	_config.recvBufferSize = 65535;
-	_config.recvBufferCount = 10;
-	_config.maxSessionCount = 1000;
+	_config.recvBufferSize = 4096;
+	_config.recvBufferCount = 2;
+	_config.maxSessionCount = 10000;
 
 	return true;
 }

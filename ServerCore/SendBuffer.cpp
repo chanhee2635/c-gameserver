@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "SendBuffer.h"
+#include "GameMetrics.h"
 
 SendBuffer::SendBuffer(SendBufferChunkRef owner, BYTE* buffer, uint32 allocSize)
 	: _owner(owner), _buffer(buffer), _allocSize(allocSize)
@@ -93,12 +94,16 @@ SendBufferChunkRef SendBufferManager::Pop()
 		// 풀에 재사용 가능한 청크가 남아있는지 확인
 		if (_sendBufferChunks.empty() == false)
 		{
+			GMetrics.sendBufferChunkReuse.fetch_add(1);
+
 			// LIFO 방식 사용으로 성능 최적화 (캐시에 메모리 주소가 남아있을 가능성↑)
 			SendBufferChunkRef sendBufferChunk = _sendBufferChunks.back();
 			_sendBufferChunks.pop_back();
 			return sendBufferChunk;
 		}
 	}
+
+	GMetrics.sendBufferChunkAlloc.fetch_add(1);
 
 	// 풀이 비어있다면 새로운 청크를 생성 (RefCount가 0이 되면 PushGlobal 함수를 호출하여 풀에 반납)
 	return SendBufferChunkRef(xnew<SendBufferChunk>(), PushGlobal);

@@ -6,11 +6,6 @@
 
 class Service;
 
-struct SendBufferNode {
-	SendBufferRef buffer;
-	SendBufferNode* next = nullptr;
-};
-
 /*----------------
 	  Session
 -----------------*/
@@ -32,8 +27,6 @@ public:
 	// 패킷 전송 요청
 	void					Send(SendBufferRef sendBuffer);
 	/*@brief 즉시 Send하지 않고 큐에 저장*/
-	void					PushSendBuffer(SendBufferRef sendBuffer);
-	void					FlushSend();
 	bool					Connect();
 	void					Disconnect(const WCHAR* cause);
 
@@ -94,8 +87,6 @@ private:
 
 	// 송신 관련
 	queue<SendBufferRef>	_sendQueue;
-	//vector<SendBufferRef>	_sendBuffers;
-	std::atomic<SendBufferNode*> _sendBufferHead{ nullptr };
 	atomic<bool>			_sendRegistered = false;
 
 private:
@@ -103,7 +94,6 @@ private:
 	IocpEvent				_connectEvent{ EventType::Connect };
 	IocpEvent				_disconnectEvent{ EventType::Disconnect };
 	IocpEvent				_recvEvent{ EventType::Recv };
-	//IocpEvent				_sendEvent{ EventType::Send };
 };
 
 /*-------------------
