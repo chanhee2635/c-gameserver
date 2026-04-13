@@ -297,7 +297,7 @@ void GameScene::HandleAttackHitDetection(PlayerRef attacker, Vector3 attackPos, 
 				Vector3 dir = toMonster;
 				dir.Normalize();
 				float dot = forward.Dot(dir);
-				if (dot < cosHalfAngle) continue;  // °ø°Ý °¢µµ ¹Û
+				if (dot < cosHalfAngle) continue;  // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 			}
 
 			int32 rawDamage = attacker->GetAttack();
@@ -358,6 +358,7 @@ void GameScene::FindNearestPlayer(Vector<ZoneRef> zones, MonsterRef monster, Vec
 	float minDistSq = monster->GetSearchRangeSq();
 	for (const ZoneRef& zone : zones)
 	{
+		if (zone->_players.empty()) continue;
 		for (auto& [id, player] : zone->_players)
 		{
 			if (player->IsDead()) continue;

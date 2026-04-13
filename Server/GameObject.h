@@ -29,6 +29,7 @@ protected:
 	int32			_templateId = 0;
 	int32			_level		= 0;
 	wstring			_name;
+	string			_nameUtf8;	// ws2s 변환 결과 캐싱 (MakeSummaryInfo 매 호출 비용 제거)
 
 	Vector3	_pos;
 	float	_yaw = 0.f;
