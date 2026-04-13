@@ -20,7 +20,7 @@ Service::~Service()
 
 void Service::CloseService()
 {
-	// ¼­ºñ½ºÀÇ °øÅë ÀÚ¿ø ÇØÁ¦
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½ï¿½
 }
 
 void Service::Broadcast(SendBufferRef sendBuffer)
@@ -47,7 +47,6 @@ void Service::AddSession(SessionRef session)
 {
 	WRITE_LOCK;
 
-	// ÃÖ´ë Á¢¼Ó ¼ö ÃÊ°ú ½Ã X
 	if (_sessionCount >= _config.maxSessionCount)
 	{
 		session->Disconnect(L"MaxSessionCount Exceeded");
@@ -59,7 +58,7 @@ void Service::AddSession(SessionRef session)
 }
 
 /* 
-* ¿£Áø´Ü¿¡¼­ÀÇ Session »èÁ¦
+* ï¿½ï¿½ï¿½ï¿½ï¿½Ü¿ï¿½ï¿½ï¿½ï¿½ï¿½ Session ï¿½ï¿½ï¿½ï¿½
 */
 void Service::ReleaseSession(SessionRef session)
 {
@@ -95,8 +94,8 @@ bool ClientService::Start()
 {
 	if (CanStart() == false) return false;
 
-	_config.recvBufferSize = 4096;
-	_config.recvBufferCount = 2;
+	_config.recvBufferSize = 65535;
+	_config.recvBufferCount = 10;
 	_config.maxSessionCount = 10000;
 
 	return true;
@@ -149,11 +148,11 @@ bool LoginService::Start()
 
 	_config = GConfigManager->GetLogin();
 
-	// Á¢¼Ó ¼ö¶ôÀ» ´ã´çÇÒ ¸®½º³Ê °´Ã¼ »ý¼º
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½
 	_listener = MakeShared<Listener>();
 	if (_listener == nullptr) return false;
 
-	// ¸®½º³Ê¿¡°Ô ³ª¸¦ Àü´ÞÇÏ¸ç ºñµ¿±â Accept¸¦ ¿äÃ»
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ñµ¿±ï¿½ Acceptï¿½ï¿½ ï¿½ï¿½Ã»
 	LoginServiceRef service = static_pointer_cast<LoginService>(shared_from_this());
 	if (_listener->StartAccept(service) == false) return false;
 

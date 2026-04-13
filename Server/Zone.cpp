@@ -23,6 +23,7 @@ void Zone::FillUpdatePacket(Protocol::S_UpdateScene& packet, std::function<void(
 		packet.add_despawns(id);
 		if (++despawnCount >= 400) { flushPacket(); despawnCount = 0; }
 	}
+	flushPacket();	// despawn 완료 후 flush - spawn과 누적 방지
 
 	int32 spawnCount = 0;
 	for (auto& [id, creature] : _pendingSpawns)
@@ -31,6 +32,7 @@ void Zone::FillUpdatePacket(Protocol::S_UpdateScene& packet, std::function<void(
 		creature->MakeObjectInfo(*info);
 		if (++spawnCount >= 30) { flushPacket(); spawnCount = 0; }
 	}
+	flushPacket();	// spawn 완료 후 flush - move와 누적 방지
 
 	int32 moveCount = 0;
 	for (auto& [id, creature] : _pendingMoves)
