@@ -17,6 +17,7 @@ void Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadDa
 	_objectId	= IdGenerator::GenerateId(GameObjectType::Player);
 	_objectType	= GameObjectType::Player;
 	_name		= summary.name;
+	_nameUtf8	= Utils::ws2s(_name);
 	_level		= summary.level;
 	_templateId = summary.templateId;
 
@@ -41,7 +42,12 @@ void Player::HandleMoveJob(const MoveJobRef& job)
 	Vector3 oldPos = _pos;
 	CreatureState oldState = _state;
 
-	_pos = job->pos;
+	Vector3 validPos;
+	if (GNavigationManager->IsValidLocation(job->pos, validPos))
+		_pos = validPos;
+	else
+		_pos = oldPos;
+
 	_state = job->state;
 	_yaw = job->yaw;
 
@@ -132,16 +138,16 @@ void Player::TryLevelUp()
 	int64 reqExp = GDataManager->GetPlayerRequireExp(_templateId, _level);
 	if (_exp < reqExp) return;
 
-	// ´ÙÀ½ ·¹º§ µ¥ÀÌÅÍ Á¸Àç ¿©ºÎ È®ÀÎ
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
 	const PlayerData* nextConfig = GDataManager->GetPlayerData(_templateId, _level + 1);
-	if (nextConfig == nullptr) return;   // ÃÖ´ë ·¹º§
+	if (nextConfig == nullptr) return;   // ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-	// ·¹º§¾÷ Ã³¸®
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
 	_exp -= reqExp;
 	_level += 1;
 	_config = nextConfig;
 	_speed = _config->speed;
-	_hp = _config->maxHp;   // HP Ç® È¸º¹
+	_hp = _config->maxHp;   // HP Ç® È¸ï¿½ï¿½
 	_mp = _config->maxMp;
 	_isDirty = true;
 

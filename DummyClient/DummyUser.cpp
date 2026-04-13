@@ -77,9 +77,37 @@ void DummyUser::ContinuousMove(float deltaTime)
 	int64 now = ::GetTickCount64();
 	_lastMoveSendTick = now;
 
-	// ★ 실제 경과 시간 기반 이동 거리 계산 → 움찔거림 제거
-	_gameSession->SetPosX(_moveDir.x * MOVE_SPEED * deltaTime);
-	_gameSession->SetPosZ(_moveDir.z * MOVE_SPEED * deltaTime);
+	float curX = _gameSession->GetPosX();
+	float curZ = _gameSession->GetPosZ();
+	float newX = curX + _moveDir.x * MOVE_SPEED * deltaTime;
+	float newZ = curZ + _moveDir.z * MOVE_SPEED * deltaTime;
+
+	constexpr float MAP_MIN = 5.0f;
+	constexpr float MAP_MAX = 495.0f;
+
+	bool dirChanged = false;
+	if (newX < MAP_MIN || newX > MAP_MAX)
+	{
+		_moveDir.x = -_moveDir.x;
+		newX = std::clamp(newX, MAP_MIN, MAP_MAX);
+		dirChanged = true;
+	}
+	if (newZ < MAP_MIN || newZ > MAP_MAX)
+	{
+		_moveDir.z = -_moveDir.z;
+		newZ = std::clamp(newZ, MAP_MIN, MAP_MAX);
+		dirChanged = true;
+	}
+
+	if (dirChanged)
+	{
+		float yaw = atan2f(_moveDir.x, _moveDir.z) * (180.0f / 3.141592f);
+		if (yaw < 0) yaw += 360.0f;
+		_gameSession->SetYaw(yaw);
+	}
+
+	_gameSession->SetPosX(newX - curX);
+	_gameSession->SetPosZ(newZ - curZ);
 
 	SendMovePacket();
 }

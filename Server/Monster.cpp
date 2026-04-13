@@ -20,6 +20,7 @@ void Monster::Init(const SpawnData& data)
 	_objectType = GameObjectType::Monster;
 	_templateId = _config->id;
 	_name = _config->name;
+	_nameUtf8 = Utils::ws2s(_name);
 	_level = _config->level;
 
 	_speed = _config->speed;
@@ -29,6 +30,7 @@ void Monster::Init(const SpawnData& data)
 	_yaw = data.yaw;
 
 	_deltaTime = static_cast<float>(GConfigManager->GetLogic().updateTick) / 1000.0f;
+	_searchTick = static_cast<int64>(GConfigManager->GetLogic().searchTick);
 	_respawnTick = data.respawnTick;
 
 	Reset();
@@ -110,7 +112,7 @@ void Monster::UpdateIdle()
 {
 	int64 now = ::GetTickCount64();
 	if (now < _nextSearchTick) return;
-	_nextSearchTick = now + 500;
+	_nextSearchTick = now + _searchTick;
 
 	ZoneRef myZone = GetZone();
 	if (myZone == nullptr) return;
@@ -120,7 +122,10 @@ void Monster::UpdateIdle()
 
 	Map<GameSceneRef, Vector<ZoneRef>> sceneGroups;
 	for (ZoneRef zone : myZone->GetAdjacentZones())
+	{
+		if (!zone->IsActive()) continue;
 		sceneGroups[zone->GetScene()].push_back(zone);
+	}
 
 	for (auto& [scene, zones] : sceneGroups)
 	{
@@ -316,7 +321,7 @@ void Monster::ApplyAttackDamage(PlayerRef target)
 	if (target == nullptr || target->IsDead()) return;
 
 	float distSq = Vector3::DistanceSquared(_pos, target->GetPos());
-	if (distSq > GetAttackRangeSq() * 4.0f)  // 2¹è »ç°Å¸®±îÁö Çã¿ë (·¹ÀÌÅÏ½Ã º¸Á¤)
+	if (distSq > GetAttackRangeSq() * 4.0f)  // 2ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 		return;
 
 	int32 actualDamage = target->TakeDamage(_config->attack);
@@ -329,7 +334,7 @@ void Monster::ApplyAttackDamage(PlayerRef target)
 	Protocol::S_ChangeHp pkt;
 	pkt.set_object_id(target->GetObjectId());
 	pkt.set_hp(target->GetHp());
-	pkt.set_damage(-actualDamage);  // À½¼ö·Î ±¸ºÐ (ÇÇÇØ)
+	pkt.set_damage(-actualDamage);  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½)
 
 	scene->BroadcastToAdjacentZones(zone, ClientPacketHandler::MakeSendBuffer(pkt));
 

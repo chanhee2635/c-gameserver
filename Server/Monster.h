@@ -44,6 +44,7 @@ private:
 	int32 _pathIndex = 0;
 	Vector3 _lastTargetPos;
 	float _lastTargetDistSq = 0.0f;
+	int64 _searchTick = 500;
 	int64 _nextSearchTick = 0;
 	int64 _nextAttackTick = 0;
 	Vector3 _spawnPos;
