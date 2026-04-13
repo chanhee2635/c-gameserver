@@ -5,6 +5,14 @@
 #include "Service.h"
 #include "Chat.pb.h"
 #include "ServerPacketHandler.h"
+#include "NavigationManager.h"
+
+
+void DummyUser::InitInfo(int32 dummyId)
+{
+	_name = "Dummy_" + std::to_string(dummyId);
+	_templateId = (rand() % 2) + 1;
+}
 
 void DummyUser::ConnectToGame()
 {
@@ -17,83 +25,122 @@ void DummyUser::ConnectToGame()
 
 void DummyUser::ConnectToChat()
 {
+	ChatStatus expected = ChatStatus::None;
+	if (_chatStatus.compare_exchange_strong(expected, ChatStatus::Connecting) == false)
+		return;
+
 	_chatSession = static_pointer_cast<ChatSession>(GChatService->CreateSession());
-	if (_chatSession == nullptr) return;
+	if (_chatSession == nullptr)
+	{
+		_chatStatus.store(ChatStatus::None);
+		return;
+	}
 
 	_chatSession->SetOwner(shared_from_this());
 	_chatSession->Connect();
 }
 
-void DummyUser::Update(int64 now)
+void DummyUser::Update(int64 now, float deltaTime)
 {
-	if (isConnected == false) return;
+	if (_gameSession == nullptr || _gameSession->IsConnected() == false)
+		return;
+	if (_chatSession == nullptr || _chatStatus.load() != ChatStatus::Connected)
+		return;
 
-	if (now > _nextChatTick)
+	if (now >= _nextChatTick)
 	{
-		_nextChatTick = now + 2000 + (rand() % 3000);
-		if (rand() % 100 < 20)
-			SendRandomChat();
+		_nextChatTick = now + (10000 + (rand() % 20000));
+		SendRandomChat();
 	}
-
-	int64 elapsed = (_lastMoveSendTick > 0) ? (now - _lastMoveSendTick) : (int64)MOVE_SEND_INTERVAL_MS;
-	float deltaTime = (float)elapsed / 1000.f;
 
 	if (now > _nextMoveTick)
 	{
-		_nextMoveTick = now + (rand() % 2000 + 3000);
+		_nextMoveTick = now + (3000 + (rand() % 2000));
 
-		float angle = (rand() % 360) * (3.141592f / 180.0f);
-		_moveDir = { cosf(angle), 0.f, sinf(angle) };
-		float yaw = atan2f(_moveDir.x, _moveDir.z) * (180.0f / 3.141592f);
-		if (yaw < 0) yaw += 360.0f;
-
-		if (_gameSession)
-		{
-			_gameSession->SetState(Protocol::CreatureState::MOVING);
-			_gameSession->SetYaw(yaw);
-		}
-
-		_lastMoveSendTick = now;
-		ContinuousMove(0.f);
-		return;
+		int32 angle = rand() % 360;
+		_moveDir = DirectionTable::Directions[angle];
+		float radian = atan2f(_moveDir.x, _moveDir.z);
+		_currentYaw = radian * (180.0f / 3.141592f);
 	}
 
-	if (elapsed < (int64)MOVE_SEND_INTERVAL_MS) return;
+	if (_gameSession->GetState() == Protocol::CreatureState::IDLE && now < _nextMoveTick)
+		return;
+	
 	ContinuousMove(deltaTime);
+	
+	if (now >= _nextMovePacketTick)
+	{
+		_nextMovePacketTick = now + MOVE_PACKET_INTERVAL;
+		if (_gameSession->GetState() == Protocol::CreatureState::MOVING)
+			SendMovePacket();
+	}
 }
 
 void DummyUser::Disconnect()
 {
 	if (_gameSession)
-		_gameSession->Disconnect(L"DummyClient Remove");
+	{
+		_gameSession->Disconnect(L"DummyClient Logout");
+		_gameSession->SetOwner(nullptr);
+		_gameSession = nullptr;
+	}
 	if (_chatSession)
-		_chatSession->Disconnect(L"DummyClient Remove");
+	{
+		_chatSession->Disconnect(L"DummyClient Logout");
+		_chatSession->SetOwner(nullptr);
+		_chatSession = nullptr;
+	}
+}
+
+void DummyUser::Clear()
+{
+	Disconnect();
+
+	_gameSession = nullptr;
+	_chatSession = nullptr;
+
+	_chatStatus.store(ChatStatus::None);
+
 }
 
 void DummyUser::ContinuousMove(float deltaTime)
 {
-	if (_gameSession == nullptr) return;
+	Vector3 nextPos = _pos;
+	nextPos.x += _moveDir.x * MOVE_SPEED * deltaTime;
+	nextPos.z += _moveDir.z * MOVE_SPEED * deltaTime;
 
-	int64 now = ::GetTickCount64();
-	_lastMoveSendTick = now;
+	if (GNavigationManager->CanMoveTo(nextPos))
+	{
+		_pos = nextPos;
+		_gameSession->SetState(Protocol::CreatureState::MOVING);
+	}
+	else
+	{
+		_nextMoveTick = ::GetTickCount64() + 2000;
+		_gameSession->SetState(Protocol::CreatureState::IDLE);
+		return;
+	}
 
-	// ★ 실제 경과 시간 기반 이동 거리 계산 → 움찔거림 제거
-	_gameSession->SetPosX(_moveDir.x * MOVE_SPEED * deltaTime);
-	_gameSession->SetPosZ(_moveDir.z * MOVE_SPEED * deltaTime);
+	_gameSession->SetPosX(_pos.x);
+	_gameSession->SetPosZ(_pos.z);
+	_gameSession->SetYaw(_currentYaw);
+}
 
-	SendMovePacket();
+void DummyUser::SendToGame(SendBufferRef sendBuffer)
+{
+	_gameSession->Send(sendBuffer);
 }
 
 void DummyUser::SendRandomChat()
 {
-	if (_chatSession == nullptr) return;
-	if (_gameSession == nullptr) return;
+	if (_chatSession == nullptr || _chatStatus.load() != ChatStatus::Connected)
+		return;
 
-	string msg = u8"Hello, I'm " + _gameSession->GetName();
+	string msg = "Hi! I'm Dummy" + _gameSession->GetName();
 
 	Protocol::C_Chat packet;
 	packet.set_msg(msg);
-	packet.set_toserver(rand() % 2 == 0);
+	packet.set_toserver(false);
 
 	auto sendBuffer = ServerPacketHandler::MakeSendBuffer(packet);
 	_chatSession->Send(sendBuffer);
@@ -101,7 +148,8 @@ void DummyUser::SendRandomChat()
 
 void DummyUser::SendMovePacket()
 {
-	if (_gameSession == nullptr) return;
+	if (_gameSession == nullptr || _gameSession->IsConnected() == false)
+		return;
 
 	Protocol::C_Move packet;
 	auto* posInfo = packet.mutable_pos_info();

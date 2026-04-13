@@ -23,10 +23,17 @@ void GameScene::AddZone(ZoneRef zone)
 
 void GameScene::Update()
 {
+	uint64 startTick = ::GetTickCount64();
+
 	UpdateObjects();
 	CollectMoveNotices();
 	DispatchNotices();
 	BroadcastScene();
+
+	uint64 endTick = ::GetTickCount64();
+	uint64 elapsed = endTick - startTick;
+	if (elapsed > 50)
+		wcout << "Tick OVERLOAD: " << elapsed << endl;
 
 	DoTimer(_updateTick, &GameScene::Update);
 }
