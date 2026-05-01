@@ -16,8 +16,8 @@ public:
 	uint32			AllocSize() { return _allocSize; }
 	uint32			WriteSize() { return _writeSize; }
 	/*
-	* @brief ÆÐÅ¶ ±â·ÏÀ» ¿Ï·áÇÏ°í ½ÇÁ¦ »ç¿ëÇÑ µ¥ÀÌÅÍ Å©±â¸¦ È®Á¤
-	* @param writeSize ½ÇÁ¦·Î ¹öÆÛ¿¡ ±â·ÏÇÑ ¹ÙÀÌÆ® Å©±â
+	* @brief ï¿½ï¿½Å¶ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å©ï¿½â¸¦ È®ï¿½ï¿½
+	* @param writeSize ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Û¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® Å©ï¿½ï¿½
 	*/
 	void			Close(uint32 writeSize);
 
@@ -34,19 +34,14 @@ private:
 
 class SendBufferChunk : public enable_shared_from_this<SendBufferChunk>
 {
-	enum
-	{
-		SEND_BUFFER_CHUNK_SIZE = 65536
-	};
-
 public:
 	SendBufferChunk();
 	~SendBufferChunk();
 
 	void			Reset();
-	/* @brief Ã»Å© ³»ºÎ ¸Þ¸ð¸®¿¡¼­ allocSize¸¸Å­ ÇÒ´çÇØ SendBuffer ¹ÝÈ¯ */
+	/* @brief Ã»Å© ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ð¸®¿ï¿½ï¿½ï¿½ allocSizeï¿½ï¿½Å­ ï¿½Ò´ï¿½ï¿½ï¿½ SendBuffer ï¿½ï¿½È¯ */
 	SendBufferRef	Open(uint32 allocSize);
-	/* @brief ÇöÀç ¿­¸° ÇÒ´ç ¿äÃ»À» ´Ý°í, ½ÇÁ¦ »ç¿ë·®À» È®Á¤ */
+	/* @brief ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½ ï¿½ï¿½Ã»ï¿½ï¿½ ï¿½Ý°ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ë·®ï¿½ï¿½ È®ï¿½ï¿½ */
 	void			Close(uint32 writeSize);
 
 	bool			IsOpen() { return _open; }
@@ -67,17 +62,17 @@ class SendBufferManager
 {
 public:
 	/*
-	* @brief Àü¼Û¿¡ »ç¿ëÇÒ ¸Þ¸ð¸® ¹öÆÛ¸¦ ÇÒ´ç
-	* @param size ¿äÃ»ÇÒ ¹öÆÛ Å©±â
-	* @return ÇÒ´çµÈ °ø°£À» °ü¸®ÇÏ´Â SendBufferRef
-	* @details ¸Å¹ø ÇÒ´çÇÏÁö ¾Ê°í TLS Chunk¿¡¼­ ¼øÂ÷ÀûÀ¸·Î °ø°£À» Àß¶ó¼­ Á¦°ø (Lock-Free)
+	* @brief ï¿½ï¿½ï¿½Û¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ï¿½ ï¿½ï¿½ï¿½Û¸ï¿½ ï¿½Ò´ï¿½
+	* @param size ï¿½ï¿½Ã»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å©ï¿½ï¿½
+	* @return ï¿½Ò´ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ SendBufferRef
+	* @details ï¿½Å¹ï¿½ ï¿½Ò´ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½ TLS Chunkï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß¶ï¿½ ï¿½ï¿½ï¿½ï¿½ (Lock-Free)
 	*/
 	SendBufferRef		Open(uint32 size);
 
 private:
 	/*
-	* @brief Àü¿ª Ç®¿¡¼­ »ç¿ë °¡´ÉÇÑ SendBufferChunk¸¦ ÇÏ³ª ²¨³¿
-	* @details Ç®ÀÌ ºñ¾îÀÖ´Ù¸é »õ·Î »ý¼º, ÂüÁ¶ È½¼ö°¡ 0ÀÌ µÇ¸é ÀÚµ¿À¸·Î Ç®¿¡ ¹Ý³³
+	* @brief ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ SendBufferChunkï¿½ï¿½ ï¿½Ï³ï¿½ ï¿½ï¿½ï¿½ï¿½
+	* @details Ç®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ö´Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ È½ï¿½ï¿½ï¿½ï¿½ 0ï¿½ï¿½ ï¿½Ç¸ï¿½ ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½ ï¿½Ý³ï¿½
 	*/
 	SendBufferChunkRef	Pop();
 	void				Push(SendBufferChunkRef buffer);

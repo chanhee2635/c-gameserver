@@ -13,28 +13,41 @@ enum class EventType : uint8
 
 /*-----------------
 	 IocpEvent
+	 (ìµœì†Œ ê³µí†µ ë² ì´ìŠ¤: OVERLAPPED + type + owner)
 -----------------*/
-
-/*
-* @brief IOCP ºñµ¿±â ÀÛ¾÷ÀÇ Context(¹®¸Æ)¸¦ ÀúÀåÇÏ´Â ±¸Á¶Ã¼
-* @details 
-* 1. GetQueueComletionStatus ÇÔ¼öÀÇ ÀÛ¾÷ ¿Ï·á ½Ã LPOVERLAPPED Æ÷ÀÎÅÍ¸¦ ¹İÈ¯
-* 2. IocpEvent°¡ OVERLAPPED¸¦ »ó¼Ó¹Ş¾Ò±â ¶§¹®¿¡, ¸Ş¸ğ¸® ÁÖ¼Ò»ó IocpEventÀÇ ½ÃÀÛ ÁöÁ¡Àº OVERLAPPEDÀÇ ½ÃÀÛ ÁöÁ¡°ú ÀÏÄ¡
-* 3. LPOVERLAPPED ÁÖ¼Ò¸¦ static_cast<IocpEvent*>·Î º¯È¯ÇÏ¸é ¸â¹ö º¯¼ö¿¡ Áï½Ã Á¢±Ù °¡´É
-*/
 struct IocpEvent : public OVERLAPPED
 {
 	IocpEvent(EventType type);
 
-	// OVERLAPPED ±¸Á¶Ã¼ ¹× ÀÌº¥Æ®¸¦ Àç»ç¿ëÇÏ±â À§ÇØ ÃÊ±âÈ­
+	// IOCP ì¬ì‚¬ìš© ì „ OVERLAPPED ì´ˆê¸°í™”
 	void			Init();
 
-	EventType		type;   // ÀÌº¥Æ® Å¸ÀÔ
-	IocpObjectRef	owner;  // ÀÌº¥Æ® Ã³¸® ÁÖÃ¼
-	SessionRef		session = nullptr;  // ¼¼¼ÇÀ» Àü´ŞÇÒ ÀÓ½Ã ÀúÀå¼Ò
-
-	vector<BYTE> buffer;  // ¹Ì»ç¿ë: ¼¼¼ÇÀÇ _recvBuffer ¸¦ »ç¿ë
-	vector<SendBufferRef> sendBuffers; // ¿©·¯ ¹öÆÛ¸¦ ÇÑ ¹ø¿¡ º¸³¾ ¶§ »ç¿ë
-	vector<WSABUF> wsaBufs;
+	EventType		type;
+	IocpObjectRef	owner;
 };
 
+/*-----------------
+	 SendEvent
+	 Sessionì˜ ë©¤ë²„ ë³€ìˆ˜ë¡œ ë³´ìœ  â†’ í™ í• ë‹¹ ì œê±°
+-----------------*/
+struct SendEvent : public IocpEvent
+{
+	SendEvent() : IocpEvent(EventType::Send) {}
+
+	Vector<SendBufferRef>	sendBuffers;  // ì „ì†¡ ì™„ë£Œ ì „ê¹Œì§€ ì°¸ì¡° ìœ ì§€
+	Vector<WSABUF>			wsaBufs;      // WSASend ìš© scatter/gather ë°°ì—´
+};
+
+/*-----------------
+	 AcceptEvent
+	 Listenerì˜ ë©¤ë²„ë¡œ ë³´ìœ  â†’ í™ í• ë‹¹ ì œê±°
+	 AcceptEx ì£¼ì†Œ ë²„í¼ë„ ë‚´ë¶€ì— ë³´ìœ  (session->_recvBuffer ì˜¤ì—¼ ì œê±°)
+-----------------*/
+struct AcceptEvent : public IocpEvent
+{
+	AcceptEvent() : IocpEvent(EventType::Accept) {}
+
+	SessionRef	session = nullptr;
+	// AcceptEx: ë¡œì»¬ + ì›ê²© ì£¼ì†Œë¥¼ ê°ê° ADDR_BUFFER_SIZE í¬ê¸°ë¡œ ì €ì¥
+	BYTE		addrBuffer[Config::Network::ADDR_BUFFER_SIZE * 2] = {};
+};

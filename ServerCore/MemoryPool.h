@@ -1,60 +1,93 @@
 #pragma once
 
-enum
-{
-	SLIST_ALIGNMENT = 16
-};
-
 /*-----------------
 	MemoryHeader
 -----------------*/
 
-DECLSPEC_ALIGN(SLIST_ALIGNMENT) // ½ÃÀÛ ÁÖ¼Ò°¡ 16ÀÇ ¹è¼ö°¡ µÇµµ·Ï ¸Ş¸ğ¸® ÇÒ´ç
-struct MemoryHeader : public SLIST_ENTRY  // MemoryHeaderÀÇ Å©±â°¡ 8À» ³Ñ¾î°¡¸é SLIST_ENTRY(8¹ÙÀÌÆ®)°¡ ¾Æ´Ñ Mutex·Î »ç¿ëÇØ¾ß ÇÔ(¿øÀÚ¼º º¸ÀåX)
+struct alignas(Config::Memory::SLIST_ALIGNMENT) MemoryHeader : public SLIST_ENTRY
 {
 	// [MemoryHeader][Data]
-	MemoryHeader(int32 size) : allocSize(size) {}
+	MemoryHeader(uint32 size) : _allocSize(size), _magic(MagicNumber) {}
 
-	/*
-	* ÇÒ´çµÈ ¸Ş¸ğ¸®¸¦ ÅëÇØ MemoryHeaderÀÇ »ı¼ºÀÚ¸¦ ½ÇÇà ÈÄ µ¥ÀÌÅÍ Æ÷ÀÎÅÍ ¹İÈ¯
-	*/
-	static void* AttachHeader(MemoryHeader* header, int32 size)
+	static void* AttachHeader(MemoryHeader* header, uint32 size)
 	{
-		new(header)MemoryHeader(size);
-		return reinterpret_cast<void*>(++header);
+		new(header) MemoryHeader(size);
+		return reinterpret_cast<void*>(header + 1);
 	}
 
-	/*
-	* MemoryHeader Æ÷ÀÎÅÍ ¹İÈ¯
-	*/
 	static MemoryHeader* DetachHeader(void* ptr)
 	{
-		MemoryHeader* header = reinterpret_cast<MemoryHeader*>(ptr) - 1;
-		return header;
+		return static_cast<MemoryHeader*>(ptr) - 1;
 	}
 
-	int32 allocSize;  // 4¹ÙÀÌÆ®
-	// TODO: ÇÊ¿äÇÑ Ãß°¡ Á¤º¸
+	uint32 GetAllocSize() const { return _allocSize; }
+	uint32 GetMagic()     const { return _magic; }
+
+private:
+	uint32 _allocSize;
+	uint32 _magic;
+
+	static constexpr uint32 MagicNumber = Config::Memory::MAGIC_NUMBER;
 };
 
 /*---------------
 	MemoryPool
 ---------------*/
 
-DECLSPEC_ALIGN(SLIST_ALIGNMENT)
+DECLSPEC_ALIGN(Config::Memory::SLIST_ALIGNMENT)
 class MemoryPool
 {
 public:
 	MemoryPool(int32 allocSize);
 	~MemoryPool();
 
-	void			Push(MemoryHeader* ptr);
-	MemoryHeader*	Pop();
+	void          Push(MemoryHeader* ptr);
+	MemoryHeader* Pop();
+
+	int32 GetAllocSize() const { return _allocSize; }
 
 private:
-	SLIST_HEADER	_header;
-	int32			_allocSize = 0;
-	atomic<int32>	_useCount = 0;
-	atomic<int32>	_reserveCount = 0;
+	MemoryHeader* AllocBatch();
+
+	SLIST_HEADER  _header;
+	int32         _allocSize = 0;
+
+#ifdef _DEBUG
+	atomic<int32> _useCount     = 0;
+	atomic<int32> _reserveCount = 0;
+#endif
+
+	static constexpr uint32 AlignSize   = Config::Memory::SLIST_ALIGNMENT;
+	static constexpr uint32 MagicNumber = Config::Memory::MAGIC_NUMBER;
+	static constexpr uint32 AllocCount  = Config::Memory::ALLOC_COUNT;
 };
 
+/*------------------
+	TlsMemoryPool
+------------------*/
+
+// ìŠ¤ë ˆë“œ ì „ìš© í’€ - Global MemoryPoolì„ ê°ì‹¸ lock-free ë¡œì»¬ ìºì‹œ ì œê³µ
+class TlsMemoryPool
+{
+public:
+	TlsMemoryPool(MemoryPool* globalPool);
+	~TlsMemoryPool();
+
+	MemoryHeader* Pop();
+	void          Push(MemoryHeader* header);
+	void          ReturnAll();  // ìŠ¤ë ˆë“œ ì¢…ë£Œ ì‹œ ì „ë¶€ ë°˜í™˜
+
+private:
+	void          PushLocal(MemoryHeader* header);
+	MemoryHeader* PopLocal();
+
+	void FetchFromGlobal();   // ë¡œì»¬ ê³ ê°ˆ ì‹œ globalì—ì„œ BatchCountê°œ ê°€ì ¸ì˜´
+	void ReturnToGlobal();    // ë¡œì»¬ í¬í™” ì‹œ globalë¡œ BatchCountê°œ ë°˜í™˜
+
+	MemoryPool*   _globalPool;
+	MemoryHeader* _head  = nullptr;  // SLIST_ENTRY::Nextë¥¼ ë‹¨ì¼ ìŠ¤ë ˆë“œ free listë¡œ ì¬ì‚¬ìš©
+	int32         _count = 0;
+
+	static constexpr int32 MaxCount   = Config::Memory::TLS_MAX_COUNT;
+	static constexpr int32 BatchCount = Config::Memory::TLS_BATCH_COUNT;
+};

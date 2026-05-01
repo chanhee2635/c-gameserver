@@ -8,40 +8,87 @@
 
 void* BaseAllocator::Alloc(int32 size)
 {
-	return ::malloc(size);
+	return ::_aligned_malloc(size, AlignSize);
 }
 
 void BaseAllocator::Release(void* ptr)
 {
-	::free(ptr);
+	::_aligned_free(ptr);
 }
 
 /*------------------
 	StompAllocator
 ------------------*/
-// Use-After-Free Ãë¾àÁ¡À» ¹æÁö
 
-/*
-* ÇÊ¿äÇÑ ÆäÀÌÁö Å©±â¸¸Å­ÀÇ °¡»ó ¸Þ¸ð¸® °ø°£À» ÇÒ´ç (¿À¹öÇÃ·Î¿ì °¨Áö)
-*/
+const int32 StompAllocator::PAGE_SIZE = []()
+{
+	SYSTEM_INFO info;
+	::GetSystemInfo(&info);
+	return static_cast<int32>(info.dwPageSize);
+}();
+
 void* StompAllocator::Alloc(int32 size)
 {
-	const int64 pageCount = (size + PAGE_SIZE - 1) / PAGE_SIZE;  // ÇÊ¿äÇÑ ÆäÀÌÁö Å©±â
-	const int64 dataOffset = pageCount * PAGE_SIZE - size;  // ÇÊ¿äÇÑ ÆäÀÌÁö Å©±â¿¡¼­ size ¸¦ »« À§Ä¡ [           offset[size]] (µ¥ÀÌÅÍ »ç¿ë °ø°£ ³²¿ëÀ» ¸·±â À§ÇÔ)
-	void* baseAddress = ::VirtualAlloc(NULL, pageCount * PAGE_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); // Thread-Safe(Ä¿³Î·¹º§/System Call ¿øÀÚÀû Ã³¸®)
-	// dataOffset(byte) ¸¸Å­À» ÀÌµ¿ÇÏ¿© ÇØ´ç À§Ä¡¸¦ »ç¿ëÇÏµµ·Ï ÇÔ
+	const uint32 alignedSize    = MemoryUtils::AlignUp(size, AlignSize);
+	const uint32 dataPageCount  = (alignedSize + PAGE_SIZE - 1) / PAGE_SIZE;
+	const uint32 totalPageCount = dataPageCount + 1;  // +1 Guard Page
+
+	void* baseAddress = ::VirtualAlloc(NULL,
+		static_cast<size_t>(totalPageCount * PAGE_SIZE),
+		MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+	// Guard Page: ì˜¤ë²„í”Œë¡œìš° ì¦‰ì‹œ Access Violation
+	void* guardPage = static_cast<int8*>(baseAddress) + (dataPageCount * PAGE_SIZE);
+	DWORD oldProtect;
+	::VirtualProtect(guardPage, PAGE_SIZE, PAGE_NOACCESS, &oldProtect);
+
+	const uint32 dataOffset = (dataPageCount * PAGE_SIZE) - alignedSize;
 	return static_cast<void*>(static_cast<int8*>(baseAddress) + dataOffset);
 }
 
-/*
-* °¡»ó ¸Þ¸ð¸® ¿µ¿ªÀ» OS¿¡ ¹ÝÈ¯ÇÏ°í Á¢±Ù ºÒ°¡´ÉÇÑ »óÅÂ·Î ¸¸µç´Ù.(Use-After-Free °¨Áö)
-*/
 void StompAllocator::Release(void* ptr)
 {
-	const int64 address = reinterpret_cast<int64>(ptr);
-	// ½ÃÀÛ À§Ä¡¸¦ Ã£´Â´Ù.
-	const int64 baseAddress = address - (address % PAGE_SIZE);
+	if (ptr == nullptr) return;
+
+	const uintptr address     = reinterpret_cast<uintptr>(ptr);
+	const uintptr baseAddress = address - (address % PAGE_SIZE);
 	::VirtualFree(reinterpret_cast<void*>(baseAddress), 0, MEM_RELEASE);
+}
+
+/*-----------------
+	FrameAllocator
+-----------------*/
+
+FrameAllocator::FrameAllocator(uint32 bufferSize) : _bufferSize(bufferSize)
+{
+	_buffer  = static_cast<uint8*>(::_aligned_malloc(bufferSize, AlignSize));
+	_freePtr = _buffer;
+	_endPtr  = _buffer + bufferSize;
+}
+
+FrameAllocator::~FrameAllocator()
+{
+	if (_buffer)
+	{
+		::_aligned_free(_buffer);
+		_buffer = nullptr;
+	}
+}
+
+void* FrameAllocator::Alloc(uint32 size)
+{
+	const uint32 alignedSize = MemoryUtils::AlignUp(size, AlignSize);
+
+	ASSERT_CRASH(_freePtr + alignedSize <= _endPtr);
+
+	void* ptr = _freePtr;
+	_freePtr += alignedSize;
+	return ptr;
+}
+
+void FrameAllocator::Clear()
+{
+	_freePtr = _buffer;
 }
 
 /*-----------------

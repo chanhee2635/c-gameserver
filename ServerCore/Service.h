@@ -17,7 +17,7 @@ enum class ServiceType : uint8
 	Service
 --------------*/
 
-// Ãß»óÅ¬·¡½ºÀÎ SessionÀº °´Ã¼ »ý¼ºX, ÄÁÅÙÃ÷´Ü¿¡¼­ SessionÀÇ ÀÚ½Ä Å¬·¡½º °´Ã¼¸¦ »ý¼ºÇÏ´Â ÇÔ¼ö¸¦ Àü´ÞÇÏ±â À§ÇÔ
+// ï¿½ß»ï¿½Å¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Sessionï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½X, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü¿ï¿½ï¿½ï¿½ Sessionï¿½ï¿½ ï¿½Ú½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½
 using SessionFactory = function<SessionRef(void)>;
 
 class Service : public enable_shared_from_this<Service>
@@ -33,9 +33,9 @@ public:
 	void				SetSessionFactory(SessionFactory func) { _sessionFactory = func; }
 
 	void				Broadcast(SendBufferRef sendBuffer);
-	// »õ·Î¿î ¼¼¼Ç °´Ã¼¸¦ »ý¼ºÇÏ°í IOCP¿¡ µî·Ï
+	// ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ IOCPï¿½ï¿½ ï¿½ï¿½ï¿½
 	SessionRef			CreateSession();
-	// È°¼ºÈ­µÈ ¼¼¼ÇÀ» ¼­ºñ½º °ü¸® ¸ñ·Ï¿¡ Ãß°¡
+	// È°ï¿½ï¿½È­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ï¿ï¿½ ï¿½ß°ï¿½
 	void				AddSession(SessionRef session);
 	void				ReleaseSession(SessionRef session);
 	int32				GetCurrentSessionCount() { return _sessionCount.load(); }
@@ -56,7 +56,7 @@ protected:
 	NetAddress			_netAddress = {};
 	IocpCoreRef			_iocpCore;
 
-	set<SessionRef>		_sessions;  // setÀº Thread-Safe ÇÏÁö ¾Ê¾Æ MUTEX ÇÊ¿ä. (Red-Black Æ®¸®)
+	HashSet<SessionRef>	_sessions;  // HashSetï¿½ï¿½ Thread-Safe ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¾ï¿½ MUTEX ï¿½Ê¿ï¿½. (Red-Black Æ®ï¿½ï¿½)
 	atomic<int32>		_sessionCount = 0;
 	SessionFactory		_sessionFactory;
 
@@ -86,9 +86,9 @@ public:
 	ServerService(NetAddress targetAddress, IocpCoreRef core, SessionFactory factory);
 	virtual ~ServerService() {}
 
-	/*@brief °ÔÀÓ ¼­ºñ½ºÀÇ Å¬¶óÀÌ¾ðÆ® Á¢¼Ó ¼ö¶ôÀ» ½ÃÀÛÇÑ´Ù.*/
+	/*@brief ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.*/
 	virtual bool	Start() override;
-	/*@brief °ÔÀÓ ¼­ºñ½º¸¦ Áß´ÜÇÏ°í °ü·Ã ÀÚ¿øÀ» ÇØÁ¦ÇÑ´Ù.*/
+	/*@brief ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ñ½º¸ï¿½ ï¿½ß´ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.*/
 	virtual void	CloseService() override;
 
 private:
@@ -105,9 +105,9 @@ public:
 	LoginService(NetAddress targetAddress, IocpCoreRef core, SessionFactory factory);
 	virtual ~LoginService() {}
 
-	/*@brief ·Î±×ÀÎ ¼­ºñ½ºÀÇ Å¬¶óÀÌ¾ðÆ® Á¢¼Ó ¼ö¶ôÀ» ½ÃÀÛÇÑ´Ù.*/
+	/*@brief ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.*/
 	virtual bool	Start() override;
-	/*@brief ·Î±×ÀÎ ¼­ºñ½º¸¦ Áß´ÜÇÏ°í °ü·Ã ÀÚ¿øÀ» ÇØÁ¦ÇÑ´Ù.*/
+	/*@brief ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ñ½º¸ï¿½ ï¿½ß´ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.*/
 	virtual void	CloseService() override;
 
 private:

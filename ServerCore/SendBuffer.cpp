@@ -39,13 +39,13 @@ void SendBufferChunk::Reset()
 
 SendBufferRef SendBufferChunk::Open(uint32 allocSize)
 {
-	ASSERT_CRASH(allocSize <= SEND_BUFFER_CHUNK_SIZE);
+	ASSERT_CRASH(allocSize <= Config::Buffer::SEND_BUFFER_CHUNK_SIZE);
 	ASSERT_CRASH(_open == false);
 
 	if (allocSize > FreeSize()) return nullptr;
 
 	_open = true;
-	// SendBuffer °´Ã¼ »ý¼º ¹× ¹ÝÈ¯
+	// SendBuffer ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½È¯
 	return ObjectPool<SendBuffer>::MakeShared(shared_from_this(), Buffer(), allocSize);
 }
 
@@ -62,41 +62,41 @@ void SendBufferChunk::Close(uint32 writeSize)
 
 SendBufferRef SendBufferManager::Open(uint32 size)
 {
-	// ½º·¹µå Àü¿ë Chunk°¡ ¾ø´Â °æ¿ì ÃÊ±âÈ­
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Chunkï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
 	if (LSendBufferChunk == nullptr)
 	{
-		// Àü¿ª Pool¿¡¼­ Å« ¸Þ¸ð¸® µ¢¾î¸® ÇÏ³ª¸¦ °¡Á®¿È
+		// ï¿½ï¿½ï¿½ï¿½ Poolï¿½ï¿½ï¿½ï¿½ Å« ï¿½Þ¸ï¿½ ï¿½ï¿½ï¿½î¸® ï¿½Ï³ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		LSendBufferChunk = Pop();
 		LSendBufferChunk->Reset();
 	}
 
-	// Áßº¹ È£Ãâ Ã¼Å© (Close ¸¦ ÇÏÁö ¾ÊÀº °æ¿ì)
+	// ï¿½ßºï¿½ È£ï¿½ï¿½ Ã¼Å© (Close ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
 	ASSERT_CRASH(LSendBufferChunk->IsOpen() == false);
 
-	// Chunk¿¡ ³²Àº °ø°£ÀÌ ¿äÃ»ÇÑ Å©±âº¸´Ù ÀÛÀº °æ¿ì 
+	// Chunkï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã»ï¿½ï¿½ Å©ï¿½âº¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ 
 	if (LSendBufferChunk->FreeSize() < size)
 	{
-		// ±âÁ¸ Chunk ±³Ã¼
-		// (±âÁ¸ ChunkÀÇ RefCount°¡ 0ÀÌ µÇ¸é ÀÚµ¿À¸·Î PushGlobal È£ÃâµÇ¾î Pool¿¡ ¹Ý³³)
+		// ï¿½ï¿½ï¿½ï¿½ Chunk ï¿½ï¿½Ã¼
+		// (ï¿½ï¿½ï¿½ï¿½ Chunkï¿½ï¿½ RefCountï¿½ï¿½ 0ï¿½ï¿½ ï¿½Ç¸ï¿½ ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ PushGlobal È£ï¿½ï¿½Ç¾ï¿½ Poolï¿½ï¿½ ï¿½Ý³ï¿½)
 		LSendBufferChunk = Pop();
 		LSendBufferChunk->Reset();
 	}
 
-	// Chunk¿¡¼­ ¿äÃ»ÇÑ Å©±â¸¸Å­ °ø°£À» ¿¹¾àÇÏ¿© SendBuffer °´Ã¼ ¹ÝÈ¯
+	// Chunkï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã»ï¿½ï¿½ Å©ï¿½â¸¸Å­ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ SendBuffer ï¿½ï¿½Ã¼ ï¿½ï¿½È¯
 	return LSendBufferChunk->Open(size);
 }
 
 SendBufferChunkRef SendBufferManager::Pop()
 {
 	{
-		// Àü¿ª Ç®¿¡ Á¢±ÙÇÏ±â À§ÇÑ LOCK
+		// ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ LOCK
 		WRITE_LOCK;
-		// Ç®¿¡ Àç»ç¿ë °¡´ÉÇÑ Ã»Å©°¡ ³²¾ÆÀÖ´ÂÁö È®ÀÎ
+		// Ç®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã»Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½
 		if (_sendBufferChunks.empty() == false)
 		{
 			GMetrics.sendBufferChunkReuse.fetch_add(1);
 
-			// LIFO ¹æ½Ä »ç¿ëÀ¸·Î ¼º´É ÃÖÀûÈ­ (Ä³½Ã¿¡ ¸Þ¸ð¸® ÁÖ¼Ò°¡ ³²¾ÆÀÖÀ» °¡´É¼º¡è)
+			// LIFO ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È­ (Ä³ï¿½Ã¿ï¿½ ï¿½Þ¸ï¿½ ï¿½Ö¼Ò°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½É¼ï¿½ï¿½ï¿½)
 			SendBufferChunkRef sendBufferChunk = _sendBufferChunks.back();
 			_sendBufferChunks.pop_back();
 			return sendBufferChunk;
@@ -105,7 +105,7 @@ SendBufferChunkRef SendBufferManager::Pop()
 
 	GMetrics.sendBufferChunkAlloc.fetch_add(1);
 
-	// Ç®ÀÌ ºñ¾îÀÖ´Ù¸é »õ·Î¿î Ã»Å©¸¦ »ý¼º (RefCount°¡ 0ÀÌ µÇ¸é PushGlobal ÇÔ¼ö¸¦ È£ÃâÇÏ¿© Ç®¿¡ ¹Ý³³)
+	// Ç®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ö´Ù¸ï¿½ ï¿½ï¿½ï¿½Î¿ï¿½ Ã»Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (RefCountï¿½ï¿½ 0ï¿½ï¿½ ï¿½Ç¸ï¿½ PushGlobal ï¿½Ô¼ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½Ï¿ï¿½ Ç®ï¿½ï¿½ ï¿½Ý³ï¿½)
 	return SendBufferChunkRef(xnew<SendBufferChunk>(), PushGlobal);
 }
 

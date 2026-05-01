@@ -175,6 +175,8 @@
     <ClInclude Include="FileLogger.h" />
     <ClInclude Include="FileUtils.h" />
     <ClInclude Include="GameMetrics.h" />
+    <ClInclude Include="Logger.h" />
+    <ClInclude Include="ServerStats.h" />
     <ClInclude Include="GlobalQueue.h" />
     <ClInclude Include="IocpCore.h" />
     <ClInclude Include="IocpEvent.h" />
@@ -219,6 +221,8 @@
     <ClCompile Include="FileLogger.cpp" />
     <ClCompile Include="FileUtils.cpp" />
     <ClCompile Include="GameMetrics.cpp" />
+    <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="ServerStats.cpp" />
     <ClCompile Include="GlobalQueue.cpp" />
     <ClCompile Include="IocpCore.cpp" />
     <ClCompile Include="IocpEvent.cpp" />

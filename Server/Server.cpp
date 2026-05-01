@@ -126,7 +126,7 @@ int main()
 
 	for (int32 i = 0; i < serverConfig.workerThreadCount; i++)
 	{
-		GThreadManager->Launch([&service, workedTick = serverConfig.logicWorkedTick]()
+		GThreadManager->Launch(ThreadType::LOGIC, [&service, workedTick = serverConfig.logicWorkedTick]()
 			{
 				DoWorkerJob(service, workedTick);
 			});

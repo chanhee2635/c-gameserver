@@ -1,38 +1,60 @@
 #pragma once
-
 #include <thread>
 #include <functional>
+#include <tuple>
+// CoreTLS::OnThreadStart/OnThreadEnd ë¥¼ ì¸ë¼ì¸ Launch ì—ì„œ ì§ì ‘ í˜¸ì¶œ
+#include "CoreTLS.h"
 
 /*----------------------
-	Threadmanager
+    Threadmanager
 -----------------------*/
 
 class ThreadManager
 {
 public:
-	ThreadManager();
-	~ThreadManager();
+    ThreadManager();
+    ~ThreadManager();
 
-	/*
-	* @brief »õ·Î¿î ¿öÄ¿ ½º·¹µå¸¦ »ı¼ºÇÏ°í ½ÇÇàÀ» °ü¸®
-	* @param callback ½º·¹µå°¡ ½ÇÇàÇÒ ½ÇÁ¦ ·ÎÁ÷
-	*/
-	void Launch(function<void(void)> callback);
+    /*
+    * @brief ìƒˆ Worker ìŠ¤ë ˆë“œë¥¼ ìƒì„±í•˜ê³  ì½œë°±ì„ ì‹¤í–‰
+    * @param type     ìŠ¤ë ˆë“œ ì—­í•  (LOGIC / DB / MONITOR / ...)
+    * @param callback ìŠ¤ë ˆë“œê°€ ì‹¤í–‰í•  í•¨ìˆ˜ ë˜ëŠ” ëŒë‹¤
+    * @param args     callback ì— ì „ë‹¬í•  ì¸ì (perfect forwarding)
+    *
+    * @details
+    *  - CoreTLS::OnThreadStart() â†’ callback ì‹¤í–‰ â†’ CoreTLS::OnThreadEnd() ìˆœì„œ ë³´ì¥
+    *  - ê°œë°œìê°€ TLS ì´ˆê¸°í™”ë¥¼ ì§ì ‘ í˜¸ì¶œí•  í•„ìš” ì—†ìŒ
+    */
+    template<typename Fn, typename... Args>
+    void Launch(ThreadType type, Fn&& callback, Args&&... args)
+    {
+        LockGuard guard(_lock);
+        uint32 nextId = ++_threadIdCounter;
 
-	/* @brief °ü¸® ÁßÀÎ ¸ğµç ½º·¹µåÀÇ Á¾·á¸¦ ±â´Ù¸®°í ÀÚ¿øÀ» Á¤¸® */
-	void Join();
+        // C++17: parameter pack ìº¡ì²˜ëŠ” tuple + std::apply ë¡œ ì²˜ë¦¬
+        auto tup = std::make_tuple(std::forward<Args>(args)...);
+        _threads.push_back(std::thread(
+            [type, nextId,
+             cb  = std::forward<Fn>(callback),
+             t   = std::move(tup)]() mutable
+            {
+                CoreTLS::OnThreadStart(type, nextId);
+                std::apply(std::move(cb), std::move(t));
+                CoreTLS::OnThreadEnd();
+            }
+        ));
+    }
 
-	/* TLS ÃÊ±âÈ­ */
-	static void InitTLS();
-	/* TLS¿¡ ÇÒ´çµÈ ÀÚ¿øµéÀ» Á¤¸® */
-	static void DestroyTLS();
+    /* @brief ëª¨ë“  ì‚´ì•„ìˆëŠ” ìŠ¤ë ˆë“œê°€ ëë‚  ë•Œê¹Œì§€ ëŒ€ê¸° í›„ ìì› í•´ì œ */
+    void Join();
 
-	static void DoGlobalQueueWork();
-	static void DoDBQueueWork();
-	static void DistributeReservedJobs();
+    /* â”€â”€ í´ë§ ë°©ì‹ GlobalQueue / JobTimer ì œì–´ â”€â”€ */
+    static void DoGlobalQueueWork();
+    static void DoDBQueueWork();
+    static void DistributeReservedJobs();
 
 private:
-	Mutex			_lock;
-	vector<thread>	_threads;
+    Mutex               _lock;
+    Vector<std::thread> _threads;
+    Atomic<uint32>      _threadIdCounter = 0;  // ê° ìŠ¤ë ˆë“œì— ê³ ìœ  ID ë¶€ì—¬
 };
-

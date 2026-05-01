@@ -7,9 +7,9 @@ unique_ptr<DBService> GDBService = make_unique<DBService>();
 
 void DBService::InitTLS()
 {
-	// Àü¿ª Ç®¿¡ Á¢±ÙÇÒ ¶§ Lock °æÇÕÀ» ÃÖ¼ÒÈ­ ÇÏ±â À§ÇÔ
-	// ODBC Æ¯¼º»ó ¿¬°á °´Ã¼ ÇÏ³ª´ç ÇÑ ¹ø¿¡ ÇÏ³ªÀÇ ¸í·É¸¸ Ã³¸®ÇÒ ¼ö ÀÖ´Â ÀÔÃâ·Â Á¦ÇÑ...
-	// Æ®·£Àè¼Ç ±¸ÇöÀ» À§ÇÔ (ÇÁ·Î½ÃÀú·Î ´ëÃ¼ °¡´É)
+	// ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Lock ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¼ï¿½È­ ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// ODBC Æ¯ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½Ï³ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ï³ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½É¸ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½...
+	// Æ®ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½Î½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½)
 	LDBConnection = GDBConnectionPool->Pop();
 }
 
@@ -20,7 +20,9 @@ void DBService::Start(int32 threadCount, uint64 workedTick)
 
 	for (int32 i = 0; i < _threadCount; ++i)
 	{
-		GThreadManager->Launch([this]() {
+		GThreadManager->Launch(ThreadType::DB, [this]() {
+			// CoreTLS::OnThreadStart ê°€ ë©”ëª¨ë¦¬ TLS ì´ˆê¸°í™” ì™„ë£Œ
+			// DB ì—°ê²°ì€ DB ìŠ¤ë ˆë“œ ì „ìš© (ODBC í•¸ë“¤ì€ ìŠ¤ë ˆë“œë‹¹ í•˜ë‚˜)
 			InitTLS();
 			while (true)
 			{
@@ -35,6 +37,6 @@ void DBService::Start(int32 threadCount, uint64 workedTick)
 
 void DBService::DestroyTLS()
 {
-	// RefCount°¡ 0ÀÌ µÇ¸ç ÀÚµ¿À¸·Î Pool¿¡ ¹İ³³
+	// RefCountï¿½ï¿½ 0ï¿½ï¿½ ï¿½Ç¸ï¿½ ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ Poolï¿½ï¿½ ï¿½İ³ï¿½
 	LDBConnection = nullptr;
 }
