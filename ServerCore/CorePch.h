@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CoreConfig.h"   // Config::Memory 상수, AllocType, MemoryUtils - 반드시 최상단
 #include "Types.h"
 #include "CoreMacro.h"
 #include "CoreTLS.h"
@@ -10,7 +11,7 @@
 #include <iostream>
 using namespace std;
 
-// ���� �߿�
+// 네트워크
 #include <winsock2.h>
 #include <mswsock.h>
 #include <ws2tcpip.h>
@@ -26,3 +27,5 @@ using namespace std;
 #include "ObjectPool.h"
 #include "TypeCast.h"
 #include "JobQueue.h"
+#include "Logger.h"
+#include "ServerStats.h"

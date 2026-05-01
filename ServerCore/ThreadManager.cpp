@@ -5,92 +5,67 @@
 #include "GlobalQueue.h"
 
 /*----------------------
-	Threadmanager
+    Threadmanager
 -----------------------*/
 
 ThreadManager::ThreadManager()
 {
-	InitTLS();
+    // ë©”ì¸ ìŠ¤ë ˆë“œë„ ìŠ¤ë ˆë“œë‹¤ â€” TLSë¥¼ ì´ˆê¸°í™”í•´ì•¼ GMemory ê¸°ë°˜ í• ë‹¹ì´ ê°€ëŠ¥
+    // ID=0 ì€ ë©”ì¸ ìŠ¤ë ˆë“œ ì˜ˆì•½, ì‹¤ì œ Worker ëŠ” 1ë¶€í„° ì‹œì‘
+    CoreTLS::OnThreadStart(ThreadType::LOGIC, 0);
 }
 
 ThreadManager::~ThreadManager()
 {
-	Join();
-}
-
-void ThreadManager::Launch(function<void(void)> callback)
-{
-	LockGuard guard(_lock);
-
-	// ½º·¹µå »ı¼º -> ½ÇÇà -> °ü¸®
-	_threads.push_back(thread([callback]()
-		{
-			InitTLS();  // TLS µ¥ÀÌÅÍ ÃÊ±âÈ­
-			callback();
-			DestroyTLS();  // TLS µ¥ÀÌÅÍ Á¤¸®
-		}));
+    Join();
+    // ë©”ì¸ ìŠ¤ë ˆë“œ TLS í•´ì œ
+    CoreTLS::OnThreadEnd();
 }
 
 void ThreadManager::Join()
 {
-	for (thread& t : _threads)
-	{
-		if (t.joinable())
-			t.join();
-	}
-	_threads.clear();
-}
-
-
-void ThreadManager::InitTLS()
-{
-	// TLS ¾ÆÀÌµğ ÁöÁ¤
-	static Atomic<uint32> SThreadId = 1;
-	LThreadId = SThreadId.fetch_add(1);
-}
-
-/*
-* ½º·¹µå TLS ÀÚ¿ø Á¤¸®
-*/
-void ThreadManager::DestroyTLS()
-{
-	// µ¿Àû ÀÚ¿øÀÌ ÀÖ´Ù¸é ÇØÁ¦
+    for (std::thread& t : _threads)
+    {
+        if (t.joinable())
+            t.join();
+    }
+    _threads.clear();
 }
 
 void ThreadManager::DoGlobalQueueWork()
 {
-	while (true)
-	{
-		uint64 now = ::GetTickCount64();
-		if (now > LEndTickCount)
-			break;
+    while (true)
+    {
+        uint64 now = ::GetTickCount64();
+        if (now > LEndTickCount)
+            break;
 
-		JobQueueRef jobQueue = GGlobalQueue->Pop();
-		if (jobQueue == nullptr)
-			break;
+        JobQueueRef jobQueue = GGlobalQueue->Pop();
+        if (jobQueue == nullptr)
+            break;
 
-		jobQueue->Execute();
-	}
+        jobQueue->Execute();
+    }
 }
 
 void ThreadManager::DoDBQueueWork()
 {
-	while (true)
-	{
-		uint64 now = ::GetTickCount64();
-		if (now > LEndDBTickCount)
-			break;
+    while (true)
+    {
+        uint64 now = ::GetTickCount64();
+        if (now > LEndDBTickCount)
+            break;
 
-		JobQueueRef jobQueue = GDBQueue->Pop();
-		if (jobQueue == nullptr)
-			break;
+        JobQueueRef jobQueue = GDBQueue->Pop();
+        if (jobQueue == nullptr)
+            break;
 
-		jobQueue->Execute();
-	}
+        jobQueue->Execute();
+    }
 }
 
 void ThreadManager::DistributeReservedJobs()
 {
-	const uint64 now = ::GetTickCount64();
-	GJobTimer->Distribute(now);
+    const uint64 now = ::GetTickCount64();
+    GJobTimer->Distribute(now);
 }

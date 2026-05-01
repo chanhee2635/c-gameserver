@@ -157,6 +157,12 @@
     <ClInclude Include="GameMetrics.h">
       <Filter>소스 파일\Monitoring</Filter>
     </ClInclude>
+    <ClInclude Include="Logger.h">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerStats.h">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClInclude>
     <ClInclude Include="FileLogger.h">
       <Filter>소스 파일\Monitoring</Filter>
     </ClInclude>
@@ -280,6 +286,12 @@
       <Filter>소스 파일\Monitoring</Filter>
     </ClCompile>
     <ClCompile Include="GameMetrics.cpp">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClCompile>
+    <ClCompile Include="Logger.cpp">
+      <Filter>소스 파일\Monitoring</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerStats.cpp">
       <Filter>소스 파일\Monitoring</Filter>
     </ClCompile>
   </ItemGroup>

@@ -2,102 +2,134 @@
 #include "Memory.h"
 #include "MemoryPool.h"
 
-/*-----------
-	Memory
------------*/
+/*--------------
+	MemoryManager
+--------------*/
 
-Memory::Memory()
+MemoryManager::MemoryManager()
 {
-	int32 size = 0;
-	int32 tableIndex = 0;
+	for (int32 i = 0; i <= static_cast<int32>(MAX_POOL_SIZE); ++i)
+		_poolTable[i] = nullptr;
 
-	for (size = 32; size <= 1024; size += 32)
+	int32 currentSize = 0;
+	int32 tableIndex  = 1;
+
+	auto CreatePools = [&](int32 endSize, int32 step)
 	{
-		MemoryPool* pool = new MemoryPool(size);
-		_pools.push_back(pool);
-
-		while (tableIndex <= size)
+		for (int32 size = currentSize + step; size <= endSize; size += step)
 		{
-			_poolTable[tableIndex] = pool;
-			tableIndex++;
+			ASSERT_CRASH(_poolCount < static_cast<int32>(POOL_COUNT));
+			MemoryPool* pool = new MemoryPool(size);
+			_pools[_poolCount++] = pool;
+
+			while (tableIndex <= size && tableIndex <= static_cast<int32>(MAX_POOL_SIZE))
+				_poolTable[tableIndex++] = pool;
+
+			currentSize = size;
 		}
-	}
+	};
 
-	for (;size <= 2048; size += 128)
-	{
-		MemoryPool* pool = new MemoryPool(size);
-		_pools.push_back(pool);
-
-		while (tableIndex <= size)
-		{
-			_poolTable[tableIndex] = pool;
-			tableIndex++;
-		}
-	}
-
-	for (; size <= 4096; size += 256)
-	{
-		MemoryPool* pool = new MemoryPool(size);
-		_pools.push_back(pool);
-
-		while (tableIndex <= size)
-		{
-			_poolTable[tableIndex] = pool;
-			tableIndex++;
-		}
-	}
+	CreatePools(1024, 32);
+	CreatePools(2048, 128);
+	CreatePools(4096, 256);
 }
 
-Memory::~Memory()
+MemoryManager::~MemoryManager()
 {
-	for (MemoryPool* pool : _pools)
-		delete pool;
-
-	_pools.clear();
+	for (int32 i = 0; i < _poolCount; i++)
+		delete _pools[i];
 }
 
-void* Memory::Allocate(int32 size)
+void* MemoryManager::Allocate(uint32 size)
 {
-	MemoryHeader* header = nullptr;
-	const int32 allocSize = size + sizeof(MemoryHeader);
+	MemoryHeader* header   = nullptr;
+	const int32   allocSize = size + sizeof(MemoryHeader);
 
 #ifdef _STOMP
-	header = reinterpret_cast<MemoryHeader*>(StompAllocator::Alloc(allocSize));
+	return StompAllocator::Alloc(size);
 #else
-	if (allocSize > MAX_ALLOC_SIZE)
+	if (allocSize > static_cast<int32>(MAX_POOL_SIZE))
 	{
-		// 메모리 풀링 최대 크기를 벗어나면 일반 할당
-		header = reinterpret_cast<MemoryHeader*>(::_aligned_malloc(allocSize, SLIST_ALIGNMENT));
+		header = reinterpret_cast<MemoryHeader*>(::_aligned_malloc(allocSize, Config::Memory::SLIST_ALIGNMENT));
+		new(header) MemoryHeader(allocSize);
+	}
+	else if (LThreadMemory != nullptr) [[likely]]
+	{
+		header = LThreadMemory->Allocate(allocSize);
 	}
 	else
 	{
-		// 메모리 풀에서 꺼내온다
 		header = _poolTable[allocSize]->Pop();
 	}
-#endif
 
 	return MemoryHeader::AttachHeader(header, allocSize);
+#endif
 }
 
-void Memory::Release(void* ptr)
+void MemoryManager::Release(void* ptr)
 {
-	MemoryHeader* header = MemoryHeader::DetachHeader(ptr);
-
-	const int32 allocSize = header->allocSize;
-	ASSERT_CRASH(allocSize > 0);
+	if (ptr == nullptr) return;
 
 #ifdef _STOMP
-	StompAllocator::Release(header);
-#else
-	if (allocSize > MAX_ALLOC_SIZE)
-	{
-		// 메모리 풀링 최대 크기를 벗어나면 일반 해제
-		::_aligned_free(header);
-	}
-	else
-	{
-		// 메모리 풀에 반납한다.
-		_poolTable[allocSize]->Push(header);
-	}
+	StompAllocator::Release(ptr);
+	return;
 #endif
+
+	MemoryHeader* header    = MemoryHeader::DetachHeader(ptr);
+	const int32   allocSize = header->GetAllocSize();
+	ASSERT_CRASH(allocSize > 0);
+
+	if (allocSize > static_cast<int32>(MAX_POOL_SIZE))
+		::_aligned_free(header);
+	else if (LThreadMemory != nullptr) [[likely]]
+		LThreadMemory->Release(header);
+	else
+		_poolTable[allocSize]->Push(header);
+}
+
+/*-----------------
+	ThreadLocalMemory
+-----------------*/
+
+ThreadLocalMemory::ThreadLocalMemory()
+{
+	MemoryPool*    prevGlobal = nullptr;
+	TlsMemoryPool* prevTls    = nullptr;
+	int32          poolIndex  = 0;
+
+	for (int32 size = 1; size <= static_cast<int32>(MAX_POOL_SIZE); ++size)
+	{
+		MemoryPool* gPool = GMemory->GetPool(size);
+
+		if (gPool != prevGlobal)
+		{
+			prevTls              = new TlsMemoryPool(gPool);
+			_tlsPools[poolIndex++] = prevTls;
+			prevGlobal           = gPool;
+		}
+
+		_tlsPoolTable[size] = prevTls;
+	}
+}
+
+ThreadLocalMemory::~ThreadLocalMemory()
+{
+	for (int32 i = 0; i < static_cast<int32>(POOL_COUNT); ++i)
+	{
+		if (_tlsPools[i])
+		{
+			delete _tlsPools[i];
+			_tlsPools[i] = nullptr;
+		}
+	}
+}
+
+MemoryHeader* ThreadLocalMemory::Allocate(int32 allocSize)
+{
+	return _tlsPoolTable[allocSize]->Pop();
+}
+
+void ThreadLocalMemory::Release(MemoryHeader* header)
+{
+	_tlsPoolTable[header->GetAllocSize()]->Push(header);
 }

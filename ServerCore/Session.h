@@ -12,7 +12,6 @@ class Service;
 
 class Session : public IocpObject
 {
-	// ¾Æ·¡ Å¬·¡½º¿¡¼± SessionÀÇ ¸ğµç ¸â¹ö Á¢±Ù °¡´É
 	friend class Listener;
 	friend class IocpCore;
 	friend class Service;
@@ -22,19 +21,16 @@ public:
 	virtual ~Session();
 
 public:
-	// ¿ÜºÎ¿¡¼­ »ç¿ë
-	void					Init();
-	// ÆĞÅ¶ Àü¼Û ¿äÃ»
+	// ì™¸ë¶€ì—ì„œ ì‚¬ìš©
 	void					Send(SendBufferRef sendBuffer);
-	/*@brief Áï½Ã SendÇÏÁö ¾Ê°í Å¥¿¡ ÀúÀå*/
 	bool					Connect();
-	void					Disconnect(const WCHAR* cause);
+	void					Disconnect(const WCHAR* cause = L"");
 
 	shared_ptr<Service>		GetService() { return _service.lock(); }
-	void					SetService(shared_ptr<Service> service) { _service = service; Init(); }
+	void					SetService(shared_ptr<Service> service) { _service = service; }
 
 public:
-	// Á¤º¸ °ü·Ã
+	// ì„¸ì…˜ ì •ë³´
 	void					SetNetAddress(NetAddress address) { _netAddress = address; }
 	NetAddress				GetAddress() { return _netAddress; }
 	SOCKET					GetSocket() { return _socket; }
@@ -42,68 +38,68 @@ public:
 	SessionRef				GetSessionRef() { return static_pointer_cast<Session>(shared_from_this()); }
 
 public:
-	// ÀÎÅÍÆäÀÌ½º ±¸Çö
+	// ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„
 	virtual HANDLE			GetHandle() override;
 	virtual void			Dispatch(struct IocpEvent* iocpEvent, int32 numOfBytes = 0) override;
 
 private:
-	// Àü¼Û °ü·Ã
+	// ë“±ë¡ í•¨ìˆ˜
 	bool					RegisterConnect();
 	bool					RegisterDisconnect();
-	// ºñµ¿±â µ¥ÀÌÅÍ ¼ö½ÅÀ» Ä¿³Î¿¡ ¿¹¾à
 	void					RegisterRecv();
-	// ºñµ¿±â µ¥ÀÌÅÍ Àü¼ÛÀ» Ä¿³Î¿¡ ¿¹¾à
 	void					RegisterSend();
 
-	// Á¢¼Ó ¿Ï·á ÈÄ ¼¼¼ÇÀ» ½ÇÁúÀûÀ¸·Î °¡µ¿½ÃÅ²´Ù.
+	// ì™„ë£Œ ì²˜ë¦¬ í•¨ìˆ˜
 	void					ProcessConnect();
 	void					ProcessDisconnect();
-	// ºñµ¿±â ¼ö½Å ¿Ï·á ÈÄ µ¥ÀÌÅÍ¸¦ Ã³¸®ÇÏ°í ´ÙÀ½ ¼ö½Å ÁØºñ
 	void					ProcessRecv(int32 numOfBytes);
-	// ºñµ¿±â Àü¼Û ¿Ï·á ÈÄ ´ÙÀ½ Send¿¡ Àü¼ÛÇÏµµ·Ï ÁØºñ
-	void					ProcessSend(IocpEvent* sendEvent, int32 numOfBytes);
+	void					ProcessSend(int32 numOfBytes);  // sendEvent ëŠ” _sendEvent ë©¤ë²„ ì‚¬ìš©
 
-	// ¼ÒÄÏ ÀÛ¾÷ Áß ¹ß»ıÇÑ ¿¡·¯¸¦ Ã³¸®
 	void					HandleError(int32 errorCode);
 
 protected:
-	// ÄÁÅÙÃ÷ ÄÚµå¿¡¼­ ÀçÁ¤ÀÇ
 	virtual void			OnConnected() { }
 	virtual int32			OnRecv(BYTE* buffer, int32 len) { return len; }
 	virtual void			OnSend(int32 len) { }
 	virtual void			OnDisconnected() { }
 
 private:
-	weak_ptr<Service>		_service;  	/* ¼øÈ¯ ÂüÁ¶ ÇØ°áÀ» À§ÇØ weak_ptr »ç¿ë */
+	weak_ptr<Service>		_service;
 	SOCKET					_socket = INVALID_SOCKET;
 	NetAddress				_netAddress = {};
 	Atomic<bool>			_connected = false;
 
 private:
+	// â”€â”€â”€ ìˆ˜ì‹  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// ê°’ ë©¤ë²„: í™ í• ë‹¹ ì—†ìŒ, ìƒì„±ìì—ì„œ ë°”ë¡œ ì´ˆê¸°í™”
+	RecvBuffer				_recvBuffer;
+
+	// â”€â”€â”€ ì†¡ì‹  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	USE_LOCK;
 
-	// ¼ö½Å °ü·Ã
-	RecvBufferRef			_recvBuffer;
+	// ìƒì‚°ì(Send í˜¸ì¶œ) ê°€ ìŒ“ëŠ” í
+	Vector<SendBufferRef>	_sendQueue;
+	// RegisterSend ì—ì„œ swap í•œ ë’¤ WSASend ì— ë„˜ê¸°ëŠ” ë°°ì¹˜
+	Vector<SendBufferRef>	_sendPendingList;
 
-	// ¼Û½Å °ü·Ã
-	queue<SendBufferRef>	_sendQueue;
-	atomic<bool>			_sendRegistered = false;
+	Atomic<bool>			_sendRegistered = false;
 
 private:
-	// IocpEvent Àç»ç¿ë
-	IocpEvent				_connectEvent{ EventType::Connect };
-	IocpEvent				_disconnectEvent{ EventType::Disconnect };
-	IocpEvent				_recvEvent{ EventType::Recv };
+	// â”€â”€â”€ IOCP ì´ë²¤íŠ¸ (ëª¨ë‘ ê°’ ë©¤ë²„ â†’ í™ í• ë‹¹ ì—†ìŒ) â”€â”€â”€â”€â”€â”€â”€â”€
+	IocpEvent				_connectEvent    { EventType::Connect    };
+	IocpEvent				_disconnectEvent { EventType::Disconnect };
+	IocpEvent				_recvEvent       { EventType::Recv       };
+	SendEvent				_sendEvent;   // sendBuffers / wsaBufs ë‚´ì¥
 };
 
 /*-------------------
     PacketSession
 --------------------*/
 
-// Á¤Ã¥
+// íŒ¨í‚· êµ¬ì¡°
 // [ PacketHeader ]	[data]
 // [size(2)][id(2)]	[data]
-struct PacketHeader  
+struct PacketHeader
 {
 	uint16 size;
 	uint16 id;
@@ -118,12 +114,6 @@ public:
 	PacketSessionRef	GetPacketSessionRef() { return static_pointer_cast<PacketSession>(shared_from_this()); }
 
 protected:
-	/*
-	* @brief ¼ö½ÅµÈ ¹ÙÀÌÆ® ½ºÆ®¸²À» ÆĞÅ¶ ´ÜÀ§·Î Á¶¸³
-	* @param buffer ¼ö½Å ¹öÆÛÀÇ ÀĞ±â ½ÃÀÛ ÁöÁ¡
-	* @param len ÇöÀç ¹öÆÛ¿¡ ½×¿©ÀÖ´Â ÀüÃ¼ µ¥ÀÌÅÍ Å©±â
-	* @return Ã³¸® ¿Ï·áÇÑ ¹ÙÀÌÆ® Å©±â (´ÙÀ½ Ã³¸® ÁöÁ¡ÀÌ µÊ)
-	*/
 	virtual int32		OnRecv(BYTE* buffer, int32 len) sealed;
 	virtual void		OnRecvPacket(BYTE* buffer, int32 len) abstract;
 };

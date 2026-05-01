@@ -13,37 +13,30 @@ public:
     ~Listener();
 
 public:
-    // ¿ÜºÎ¿¡¼­ »ç¿ë
     /*
-    * @brief ¼ö½Å ´ë±â ¼ÒÄÏÀ» ÃÊ±âÈ­ÇÏ°í ºñµ¿±â Á¢¼Ó ¼ö¶ô ¿äÃ»À» µî·Ï
-    * @details ¼ÒÄÏ »ı¼º ¹× IOCP µî·Ï, ¼ÒÄÏ ¿É¼ÇÀ» ¼³Á¤ÇÏ°í, ÃÖ´ë ¼¼¼Ç ¼ö¸¸Å­ Ä¿³Î¿¡ AcceptEx ¿äÃ»À» ÇÑ´Ù.
+    * @brief ì„œë²„ ë¦¬ìŠ¤ë‹ ì†Œì¼“ì„ ì´ˆê¸°í™”í•˜ê³  ë¹„ë™ê¸° Accept ëŒ€ê¸° ìš”ì²­ì„ ê±´ë‹¤
     */
     bool                    StartAccept(ServiceRef service);
     void                    CloseSocket();
 
 public:
-    // ÀÎÅÍÆäÀÌ½º ±¸Çö
     virtual HANDLE          GetHandle() override;
-    /*
-    * @brief IOCP·ÎºÎÅÍ ¿Ï·á Åëº¸¸¦ ¹ŞÀº Accept ÀÌº¥Æ® Ã³¸®
-    * @param iocpEvent ¿Ï·áµÈ Accept ÀÛ¾÷ÀÇ Á¤º¸¸¦ ´ã°í ÀÖ´Â ÀÌº¥Æ® °´Ã¼
-    * @param numOfByte AcceptEx¿¡¼­´Â Åë»óÀûÀ¸·Î ¼ö½ÅÇÑ Ã¹ µ¥ÀÌÅÍ Å©±â (ÇöÀç ¼³Á¤ 0)
-    */
     virtual void            Dispatch(struct IocpEvent* iocpEvent, int32 numOfByte = 0) override;
 
 private:
-    // ¼ö½Å °ü·Ã
     /*
-    * @brief ºñµ¿±â Á¢¼Ó ¼ö¶ô(AcceptEx)À» Ä¿³Î¿¡ µî·Ï
+    * @brief ë¹„ë™ê¸° AcceptEx ë¥¼ íì— ë“±ë¡
     */
-    void                    RegisterAccept(IocpEvent* acceptEvent);
+    void                    RegisterAccept(AcceptEvent* acceptEvent);
     /*
-    * @brief ¿Ï·áµÈ Accept ÀÌº¥Æ®¸¦ Ã³¸®ÇÏ¿© ¼¼¼ÇÀ» È°¼ºÈ­
+    * @brief ì™„ë£Œëœ Accept ì´ë²¤íŠ¸ë¥¼ ì²˜ë¦¬í•˜ì—¬ ì„¸ì…˜ì„ í™œì„±í™”
     */
-    void                    ProcessAccept(IocpEvent* acceptEvent);
+    void                    ProcessAccept(AcceptEvent* acceptEvent);
 
 protected:
     SOCKET              _socket = INVALID_SOCKET;
-    vector<IocpEvent*>  _acceptEvents;
+    // AcceptEvent: ê°’ ë©¤ë²„ë¡œ ë³´ìœ  (IocpEvent* í™ í• ë‹¹ ì œê±°)
+    // â†’ StartAccept ì—ì„œ acceptCount í¬ê¸°ë¡œ resize í›„ ê³ ì •
+    Vector<AcceptEvent*>  _acceptEvents;
     ServiceRef          _service;
 };

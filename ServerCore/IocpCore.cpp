@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "IocpCore.h"
 #include "IocpEvent.h"
+#include "ServerStats.h"
 
 /*-----------------
      IocpCore
@@ -28,22 +29,49 @@ bool IocpCore::Dispatch(uint32 timeoutMs)
     ULONG_PTR key = 0;
     IocpEvent* iocpEvent = nullptr;
 
-    // Ä¿³Î·ÎºÎÅÍ ¿Ï·áµÈ ÀÛ¾÷(Overlapped)À» ²¨³»¿È
-    if (::GetQueuedCompletionStatus(_iocpHandle, OUT &numOfBytes, OUT &key, OUT reinterpret_cast<LPOVERLAPPED*>(&iocpEvent), timeoutMs))
+    if (::GetQueuedCompletionStatus(
+        _iocpHandle,
+        OUT &numOfBytes,
+        OUT &key,
+        OUT reinterpret_cast<LPOVERLAPPED*>(&iocpEvent),
+        timeoutMs))
     {
+        // â”€â”€ IOCP ì²˜ë¦¬ ì‹œê°„ ì¸¡ì • â†’ ServerStats.iocp ê¸°ë¡ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        LARGE_INTEGER freq, t0, t1;
+        ::QueryPerformanceFrequency(&freq);
+        ::QueryPerformanceCounter(&t0);
+
         IocpObjectRef iocpObject = iocpEvent->owner;
         iocpObject->Dispatch(iocpEvent, numOfBytes);
+
+        ::QueryPerformanceCounter(&t1);
+        uint64 elapsedUs = static_cast<uint64>((t1.QuadPart - t0.QuadPart) * 1000000
+                                               / freq.QuadPart);
+
+        auto& s = ServerStats::Get().iocp;
+        s.iocpCallCount.fetch_add(1, std::memory_order_relaxed);
+        s.totalProcessTimeUs.fetch_add(elapsedUs, std::memory_order_relaxed);
+
+#ifdef _DEBUG
+        if (elapsedUs > 10000)  // 10ms ì´ìƒ â†’ ê²½ê³ 
+            printf("[IocpCore] Slow dispatch: type=%d elapsed=%llu us\n",
+                   (int)iocpEvent->type, elapsedUs);
+#endif
     }
     else
     {
         int32 errCode = ::WSAGetLastError();
         switch (errCode)
         {
-        case WAIT_TIMEOUT:  // ½Ã°£ °æ°ú (INFINITE°¡ ¾Æ´Ò ¶§)
+        case WAIT_TIMEOUT:
             return false;
         default:
-            IocpObjectRef iocpObject = iocpEvent->owner;
-            iocpObject->Dispatch(iocpEvent, numOfBytes);
+            // ì†Œì¼“ ì˜¤ë¥˜ë¡œ ì¸í•œ ì‹¤íŒ¨ ì™„ë£Œ (Disconnect ë“±) â†’ ë™ì¼í•˜ê²Œ Dispatch
+            if (iocpEvent != nullptr && iocpEvent->owner != nullptr)
+            {
+                IocpObjectRef iocpObject = iocpEvent->owner;
+                iocpObject->Dispatch(iocpEvent, numOfBytes);
+            }
             break;
         }
     }

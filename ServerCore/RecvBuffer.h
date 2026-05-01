@@ -1,53 +1,61 @@
 #pragma once
 
-/*---------------
-	RecvBuffer
-----------------*/
+/*--------------------
+	  RecvBuffer
+	  (ìˆœí™˜ ë²„í¼, memmove ì œê±°)
+---------------------*/
 
 /*
-* @brief TCP ¼ö½Å µ¥ÀÌÅÍ¸¦ ÀúÀåÇÏ°í °ü¸®ÇÏ´Â °¡º¯ ¼±Çü ¹öÆÛ
-* @details Ä¿³ÎÀÌ µ¥ÀÌÅÍ¸¦ ³Ö´Â ÁöÁ¡(WritePos)°ú ÄÜÅÙÃ÷°¡ µ¥ÀÌÅÍ¸¦ ÀĞ´Â ÁöÁ¡(ReadPos)À» ºĞ¸® °ü¸®
-* µ¥ÀÌÅÍ°¡ ½×¿© ¹öÆÛ ³¡¿¡ µµ´ŞÇÏ¸é Clean()À» ÅëÇØ µ¥ÀÌÅÍ¸¦ ¾ÕÀ¸·Î ´ç°Ü °ø°£ È®º¸
+* @brief TCP ìˆ˜ì‹  ë°ì´í„°ë¥¼ ì €ì¥í•˜ëŠ” ìˆœí™˜(Circular) ë²„í¼
+* @details
+*  - _readPos / _writePos ëŠ” ì‹¤ì œ ë°°ì—´ ì¸ë±ìŠ¤ [0, _capacity)
+*  - _dataSize ë¡œ ì±„ì›Œì§„ ë°”ì´íŠ¸ ìˆ˜ë¥¼ ë³„ë„ ì¶”ì  â†’ ì˜¤ë²„í”Œë¡œìš° ì—†ì´ ì •í™•í•œ ìƒíƒœ ìœ ì§€
+*  - GetWriteSegments(): wrap-around ì‹œ ìµœëŒ€ 2ê°œ WSABUF ë°˜í™˜ â†’ WSARecv scatter/gather
+*  - Linearize()       : wrap ì—¬ë¶€ì— ê´€ê³„ì—†ì´ ì—°ì† ë©”ëª¨ë¦¬ í¬ì¸í„° ë°˜í™˜ (wrap ì‹œì—ë§Œ ë‚´ë¶€ ë³µì‚¬)
 */
 class RecvBuffer
 {
 public:
-	RecvBuffer(int32 bufferSize, int32 bufferCount);
-	~RecvBuffer();
+	explicit RecvBuffer(int32 capacity);
+	~RecvBuffer() = default;
+
+	// â”€â”€â”€ ì“°ê¸°(WSARecv ì™„ë£Œ) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	/*
+	* @brief WSARecv scatter/gather ìš© ì“°ê¸° ê°€ëŠ¥ ì„¸ê·¸ë¨¼íŠ¸ ë°˜í™˜
+	* @param outSegs WSABUF[2] ë°°ì—´ (ìµœëŒ€ 2ê°œ ì±„ì›Œì§ˆ ìˆ˜ ìˆìŒ)
+	* @return ì‹¤ì œ ì±„ì›Œì§„ ì„¸ê·¸ë¨¼íŠ¸ ê°œìˆ˜ (0 = ë²„í¼ ê°€ë“)
+	*/
+	int32		GetWriteSegments(WSABUF outSegs[2]);
 
 	/*
-	* @brief ¹öÆÛÀÇ ºó °ø°£ È®º¸¸¦ À§ÇØ ³²Àº µ¥ÀÌÅÍ¸¦ ¸Ç ¾ÕÀ¸·Î º¹»ç
-	* @details ÀĞ±â/¾²±â Ä¿¼­°¡ µ¿ÀÏÇÑ À§Ä¡¶ó¸é ¸®¼ÂÇÏ°í, ³²Àº °ø°£ÀÌ ºÎÁ·ÇÏ¸é ¸Ş¸ğ¸® º¹»ç¸¦ ¼öÇàÇÑ´Ù.
+	* @brief WSARecv ì™„ë£Œ í›„ ì“°ê¸° ì»¤ì„œë¥¼ në°”ì´íŠ¸ ì „ì§„
 	*/
-	void				Clean();
+	bool		OnWrite(int32 numOfBytes);
+
+	// â”€â”€â”€ ì½ê¸°(OnRecv ì²˜ë¦¬) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	/*
+	* @brief ì½ê¸° ê°€ëŠ¥í•œ ë°ì´í„°ë¥¼ ì—°ì† ë©”ëª¨ë¦¬ë¡œ ë°˜í™˜
+	* @details wrap ì—†ìœ¼ë©´ ë‚´ë¶€ í¬ì¸í„° ê·¸ëŒ€ë¡œ, wrap ìˆìœ¼ë©´ ì„ì‹œ ë²„í¼ì— ë³µì‚¬ í›„ ë°˜í™˜
+	* @return nullptr if DataSize() == 0
+	*/
+	BYTE*		Linearize();
 
 	/*
-	* @brief µ¥ÀÌÅÍ¸¦ ÀĞÀº ÈÄ ÀĞ±â Ä¿¼­¸¦ ÀÌµ¿
+	* @brief OnRecv ì²˜ë¦¬ í›„ ì½ê¸° ì»¤ì„œë¥¼ në°”ì´íŠ¸ ì „ì§„
 	*/
-	bool				OnRead(int32 numOfBytes);
+	bool		OnRead(int32 numOfBytes);
 
-	/*
-	* @brief Ä¿³ÎÀÌ µ¥ÀÌÅÍ¸¦ ±â·ÏÇÑ ÈÄ ¾²±â Ä¿¼­¸¦ ÀÌµ¿
-	*/
-	bool				OnWrite(int32 numOfBytes);
-
-	// ÇöÀç ÀĞ¾î¾ßÇÒ µ¥ÀÌÅÍÀÇ ½ÃÀÛ ÁÖ¼Ò
-	BYTE*				ReadPos() { return &_buffer[_readPos]; }
-
-	// Ä¿³ÎÀÌ ´ÙÀ½ µ¥ÀÌÅÍ¸¦ ±â·ÏÇÒ ÁÖ¼Ò
-	BYTE*				WritePos() { return &_buffer[_writePos]; }
-
-	// ¹öÆÛ¿¡ ½×¿© ¾ÆÁ÷ Ã³¸®µÇÁö ¾ÊÀº µ¥ÀÌÅÍ Å©±â
-	int32				DataSize() { return _writePos - _readPos; }
-
-	// Ä¿³ÎÀÌ Ãß°¡·Î µ¥ÀÌÅÍ¸¦ ±â·ÏÇÒ ¼ö ÀÖ´Â ³²Àº °ø°£ Å©±â
-	int32				FreeSize() { return _capacity - _writePos; }
+	// â”€â”€â”€ ìƒíƒœ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	int32		DataSize() const { return _dataSize; }
+	int32		FreeSize() const { return _capacity - _dataSize; }
+	bool		IsEmpty()  const { return _dataSize == 0; }
 
 private:
-	int32				_capacity = 0;
-	int32				_bufferSize = 0;
-	int32				_readPos = 0;
-	int32				_writePos = 0;
-	Vector<BYTE>		_buffer;
-};
+	int32			_capacity = 0;
+	int32			_readPos  = 0;   // ì‹¤ì œ ë°°ì—´ ì¸ë±ìŠ¤ [0, _capacity)
+	int32			_writePos = 0;   // ì‹¤ì œ ë°°ì—´ ì¸ë±ìŠ¤ [0, _capacity)
+	int32			_dataSize = 0;   // í˜„ì¬ ë³´ìœ  ë°”ì´íŠ¸ ìˆ˜
 
+	Vector<BYTE>	_buffer;         // ìˆœí™˜ ë°ì´í„° ë²„í¼
+	Vector<BYTE>	_linearBuf;      // Linearize() ì„ì‹œ ë²„í¼ (wrap ë°œìƒ ì‹œë§Œ ì‚¬ìš©)
+};

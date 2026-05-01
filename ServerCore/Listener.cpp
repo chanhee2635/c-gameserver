@@ -11,10 +11,9 @@
 
 Listener::~Listener()
 {
-    SocketUtils::Close(_socket); 
+    SocketUtils::Close(_socket);
 
-    // ¼øÈ¯ÂüÁ¶ ²÷±â
-    for (IocpEvent* acceptEvent : _acceptEvents) 
+    for (AcceptEvent* acceptEvent : _acceptEvents)
     {
         delete acceptEvent;
     }
@@ -26,28 +25,23 @@ bool Listener::StartAccept(ServiceRef service)
     _service = service;
     if (service == nullptr) return false;
 
-    // ¼­¹ö Åë½ÅÀ» À§ÇÑ ¸®½¼ ¼ÒÄÏ »ı¼º
     _socket = SocketUtils::CreateSocket();
     if (_socket == INVALID_SOCKET) return false;
 
-    // ¸®½º³Ê °´Ã¼¸¦ IOCP ÇÚµé¿¡ µî·ÏÇÏ¿© ¿Ï·á ÅëÁö¸¦ ¹Şµµ·Ï ¼³Á¤
     if (service->GetIocpCore()->Register(shared_from_this()) == false) return false;
 
-    // ¼ÒÄÏ ¿É¼Ç ¼³Á¤
     if (SocketUtils::SetReuseAddress(_socket, true) == false) return false;
     if (SocketUtils::SetLinger(_socket, 0, 0) == false) return false;
 
-    // ¼­¹ö ÁÖ¼Ò ¹ÙÀÎµù ¹× Ä¿³Î ¼ö½Å Å¥ È°¼ºÈ­
     if (SocketUtils::Bind(_socket, service->GetNetAddress()) == false) return false;
     if (SocketUtils::Listen(_socket) == false) return false;
 
-    // Á¢¼Ó ÆøÁÖ(ÃÊ´ç Á¢¼Ó ¼ö)¸¦ ´ëºñÇØ¼­ ¹Ì¸® Accept ÀÌº¥Æ®¸¦ »ı¼ºÇÏ¿© Ä¿³Î¿¡ µî·Ï
-    // ³Ê¹« ¸¹ÀÌ µî·ÏÇÏ¸é ¸Ş¸ğ¸® ³¶ºñ ¹ß»ı
     const int32 acceptCount = service->GetAcceptCount();
     for (int32 i = 0; i < acceptCount; i++)
     {
-        IocpEvent* acceptEvent = new IocpEvent(EventType::Accept); 
-        acceptEvent->owner = shared_from_this(); 
+        // AcceptEvent: ìì²´ addrBuffer ë³´ìœ  â†’ session->_recvBuffer ì˜¤ì—¼ ì—†ìŒ
+        AcceptEvent* acceptEvent = new AcceptEvent();
+        acceptEvent->owner = shared_from_this();
         _acceptEvents.push_back(acceptEvent);
         RegisterAccept(acceptEvent);
     }
@@ -65,63 +59,70 @@ HANDLE Listener::GetHandle()
     return reinterpret_cast<HANDLE>(_socket);
 }
 
-
 void Listener::Dispatch(IocpEvent* iocpEvent, int32 numOfByte)
 {
     if (iocpEvent->type == EventType::Accept)
-        ProcessAccept(iocpEvent);
+        ProcessAccept(static_cast<AcceptEvent*>(iocpEvent));
 }
 
-void Listener::RegisterAccept(IocpEvent* acceptEvent)
+void Listener::RegisterAccept(AcceptEvent* acceptEvent)
 {
-    // Á¢¼Ó Å¬¶óÀÌ¾ğÆ®¸¦ ´ãÀ» ¼¼¼Ç ¹Ì¸® »ı¼º
     SessionRef session = _service->CreateSession();
 
     acceptEvent->Init();
     acceptEvent->session = session;
+    // addrBuffer ì´ˆê¸°í™” (ì¬ì‚¬ìš© ì‹œ ì´ì „ ë°ì´í„° ì˜¤ì—¼ ë°©ì§€)
+    ::memset(acceptEvent->addrBuffer, 0, sizeof(acceptEvent->addrBuffer));
 
     DWORD bytesReceived = 0;
-    // ¼¼¼ÇÀÇ ¼ö½Å ¹öÆÛ¿¡ ÁÖ¼Ò Á¤º¸¸¦ Á÷Á¢ ÀúÀå ¹× Winsock Ç¥ÁØ¿¡ µû¸¥ ÁÖ¼Ò °ø°£ È®º¸(SOCKADDR_IN + 16)
-    if (false == SocketUtils::AcceptEx(_socket, session->GetSocket(), session->_recvBuffer->WritePos(), 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, OUT &bytesReceived, static_cast<LPOVERLAPPED>(acceptEvent)))
+    // AcceptEx: ì‹¤ì œ ë°ì´í„° ìˆ˜ì‹  í¬ê¸° = 0 (ì£¼ì†Œë§Œ ë°›ìŒ)
+    // ë¡œì»¬/ì›ê²© ì£¼ì†Œë¥¼ ê°ê° ADDR_BUFFER_SIZE ë°”ì´íŠ¸ì”© addrBuffer ì— ì €ì¥
+    if (false == SocketUtils::AcceptEx(
+        _socket,
+        session->GetSocket(),
+        acceptEvent->addrBuffer,          // ì£¼ì†Œ ì „ìš© ë²„í¼ (session ìˆ˜ì‹  ë²„í¼ ì˜¤ì—¼ ì—†ìŒ)
+        0,                                // ë°ì´í„° ìˆ˜ì‹  í¬ê¸° = 0
+        Config::Network::ADDR_BUFFER_SIZE,
+        Config::Network::ADDR_BUFFER_SIZE,
+        OUT &bytesReceived,
+        static_cast<LPOVERLAPPED>(acceptEvent)))
     {
         const int32 errorCode = ::WSAGetLastError();
         if (errorCode != WSA_IO_PENDING)
         {
-            // ¿¡·¯ ¹ß»ı ½Ã ·Î±× Ãâ·Â ¹× Àç½Ãµµ
             session->HandleError(errorCode);
             RegisterAccept(acceptEvent);
         }
     }
 }
 
-void Listener::ProcessAccept(IocpEvent* acceptEvent)
+void Listener::ProcessAccept(AcceptEvent* acceptEvent)
 {
     SessionRef session = acceptEvent->session;
 
-    // ¸®½¼ ¼ÒÄÏÀÇ ¼Ó¼ºÀ» »õ·Î Á¢¼ÓÇÑ ¼ÒÄÏ¿¡ »ó¼Ó
     if (false == SocketUtils::SetUpdateAcceptSocket(session->GetSocket(), _socket))
     {
         const int32 errorCode = ::WSAGetLastError();
-        session->HandleError(errorCode);    // ¹®Á¦ È®ÀÎ
-        RegisterAccept(acceptEvent);    // ½ÇÆĞ ½Ã Àç½Ãµµ
+        session->HandleError(errorCode);
+        RegisterAccept(acceptEvent);
         return;
     }
 
-    // ¿¬°áµÈ Å¬¶óÀÌ¾ğÆ® ÁÖ¼Ò Á¤º¸ ÃßÃâ
     SOCKADDR_IN sockAddress;
     int32 sizeOfSockAddr = sizeof(sockAddress);
-    if (SOCKET_ERROR == ::getpeername(session->GetSocket(), OUT reinterpret_cast<SOCKADDR*>(&sockAddress), &sizeOfSockAddr))
+    if (SOCKET_ERROR == ::getpeername(
+        session->GetSocket(),
+        OUT reinterpret_cast<SOCKADDR*>(&sockAddress),
+        &sizeOfSockAddr))
     {
         const int32 errorCode = ::WSAGetLastError();
-        session->HandleError(errorCode);    // ¹®Á¦ È®ÀÎ
-        RegisterAccept(acceptEvent);    // ½ÇÆĞ ½Ã Àç½Ãµµ
+        session->HandleError(errorCode);
+        RegisterAccept(acceptEvent);
         return;
     }
 
-    // ÁÖ¼Ò ÀúÀå ¹× ½ÇÁ¦ ¼­ºñ½º ½ÃÀÛ
     session->SetNetAddress(NetAddress(sockAddress));
     session->ProcessConnect();
 
-    // IocpEvent Àç»ç¿ëÀ¸·Î Ãß°¡ÀûÀÎ ¸Ş¸ğ¸® ÇÒ´çX
     RegisterAccept(acceptEvent);
 }

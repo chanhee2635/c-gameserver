@@ -49,13 +49,13 @@ int main()
 	bool isStarted = service->Start();
 	ASSERT_CRASH(isStarted);
 
-	GThreadManager->Launch([]() {
+	GThreadManager->Launch(ThreadType::IO, []() {
 		GRedisManager->SubscribeRedis();
 	});
 
 	for (int32 i = 0; i < serverConfig.workerThreadCount; i++)
 	{
-		GThreadManager->Launch([&service, workedTick = serverConfig.logicWorkedTick]()
+		GThreadManager->Launch(ThreadType::LOGIC, [&service, workedTick = serverConfig.logicWorkedTick]()
 			{
 				DoWorkerJob(service, workedTick);
 			});

@@ -69,12 +69,12 @@ void InputLoop()
 		if (diff > 0)
 		{
 			cout << "▶ " << diff << "명 추가 (" << current << "명 → " << input << "명)" << endl;
-			GThreadManager->Launch([diff]() { AddUsers(diff); });
+			GThreadManager->Launch(ThreadType::LOGIC, [diff]() { AddUsers(diff); });
 		}
 		else if (diff < 0)
 		{
 			cout << "▶ " << -diff << "명 제거 (" << current << "명 → " << input << "명)" << endl;
-			GThreadManager->Launch([diff]() { RemoveUsers(-diff); });
+			GThreadManager->Launch(ThreadType::LOGIC, [diff]() { RemoveUsers(-diff); });
 		}
 		else
 		{
@@ -117,14 +117,14 @@ int main()
 
 	for (int32 i = 0; i < 1; i++)
 	{
-		GThreadManager->Launch([=]()
+		GThreadManager->Launch(ThreadType::IO, [=]()
 			{
 				while (true)
 					GIocpCore->Dispatch(10);
 			});
 	}
 
-	GThreadManager->Launch([]()
+	GThreadManager->Launch(ThreadType::LOGIC, []()
 	{
 		while (true)
 		{
@@ -148,7 +148,7 @@ int main()
 		}
 	});
 
-	GThreadManager->Launch([]() { InputLoop(); });
+	GThreadManager->Launch(ThreadType::MONITOR, []() { InputLoop(); });
 
 	GThreadManager->Join();
 	SocketUtils::Clear();

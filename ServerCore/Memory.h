@@ -1,45 +1,63 @@
 #pragma once
 #include "Allocator.h"
+#include "MemoryPool.h"
 
-class MemoryPool;
+/*------------------
+	MemoryManager
+------------------*/
 
-/*-------------
-	Memory
----------------*/
-
-class Memory
+class MemoryManager
 {
-	enum
-	{
-		// ~1024±Ó¡ˆ 32¥‹¿ß, ~2048±Ó¡ˆ 128¥‹¿ß, ~4096±Ó¡ˆ 256¥‹¿ß
-		POOL_COUNT = (1024 / 32) + (1024 / 128) + (2048 / 256),
-		MAX_ALLOC_SIZE = 4096
-	};
-
 public:
-	Memory();
-	~Memory();
+	MemoryManager();
+	~MemoryManager();
 
-	void*	Allocate(int32 size);
-	void	Release(void* ptr);
+	void* Allocate(uint32 size);
+	void  Release(void* ptr);
+
+	MemoryPool* GetPool(uint32 allocSize) { return _poolTable[allocSize]; }
 
 private:
-	vector<MemoryPool*> _pools;
+	static constexpr uint32 MAX_POOL_SIZE = Config::Memory::MAX_POOL_SIZE;
+	static constexpr uint32 POOL_COUNT    = Config::Memory::POOL_COUNT;
 
-	// ∏ﬁ∏∏Æ ≈©±‚ <-> ∏ﬁ∏∏Æ «Æ
-	// O(1) ∫¸∏£∞‘ √£±‚ ¿ß«— ≈◊¿Ã∫Ì
-	MemoryPool* _poolTable[MAX_ALLOC_SIZE + 1];
+	int32       _poolCount = 0;
+	MemoryPool* _pools[POOL_COUNT];
+	MemoryPool* _poolTable[MAX_POOL_SIZE + 1];
 };
 
-/*
-* Type ≈©±‚¿« ∏ﬁ∏∏Æ ∞¯∞£¿ª «“¥Á«œ∞Ì ª˝º∫¿⁄ »£√‚ π◊ ∆˜¿Œ≈Õ π›»Ø
-*/
+/*-------------------
+	ThreadLocalMemory
+-------------------*/
+
+// Ïä§Î†àÎìúÎ≥Ñ TLS Î©îÎ™®Î¶¨ Ï∫êÏãú
+// CoreTLS::OnThreadStart()ÏóêÏÑú ÏÉùÏÑ±, OnThreadEnd()ÏóêÏÑú Ìï¥Ï†ú
+class ThreadLocalMemory
+{
+public:
+	ThreadLocalMemory();
+	~ThreadLocalMemory();
+
+	MemoryHeader* Allocate(int32 allocSize);
+	void          Release(MemoryHeader* header);
+
+private:
+	static constexpr uint32 MAX_POOL_SIZE = Config::Memory::MAX_POOL_SIZE;
+	static constexpr uint32 POOL_COUNT    = Config::Memory::POOL_COUNT;
+
+	TlsMemoryPool* _tlsPools[POOL_COUNT]              = {};
+	TlsMemoryPool* _tlsPoolTable[MAX_POOL_SIZE + 1]   = {};
+};
+
+/*---------
+	Helpers
+---------*/
+
 template<typename Type, typename... Args>
 Type* xnew(Args&&... args)
 {
-	Type* memory = static_cast<Type*>(PoolAllocator::Alloc(sizeof(Type)));
-	new(memory)Type(forward<Args>(args)...); // placement new
-	return memory;
+	void* memory = PoolAllocator::Alloc(sizeof(Type));
+	return new(memory) Type(std::forward<Args>(args)...);
 }
 
 template<typename Type>
@@ -50,7 +68,7 @@ void xdelete(Type* obj)
 }
 
 template<typename Type, typename... Args>
-shared_ptr<Type> MakeShared(Args&&... args)
+std::shared_ptr<Type> MakeShared(Args&&... args)
 {
-	return shared_ptr<Type>{ xnew<Type>(forward<Args>(args)...), xdelete<Type> };
+	return std::shared_ptr<Type>{ xnew<Type>(std::forward<Args>(args)...), xdelete<Type> };
 }
