@@ -6,12 +6,12 @@ using UnityEngine.UI;
 
 public class UI_SelectPlayerScene : UI_Scene
 {
-    UI_CreatePlayerPopup _popup = null;
-    Dictionary<string, UI_SelectPlayerScene_Item> _items = new Dictionary<string, UI_SelectPlayerScene_Item>();
-    string _selectPlayerName = "";
+    private UI_CreatePlayerPopup _popup;
+    private Dictionary<string, UI_SelectPlayerScene_Item> _items = new();
+    private string _selectPlayerName = "";
 
-    enum Images { PlayerInfo_1, PlayerInfo_2, PlayerInfo_3, Count }
-    enum Buttons{ CreateBtn, EnterBtn, ExitBtn }
+    enum Images  { PlayerInfo_1, PlayerInfo_2, PlayerInfo_3, Count }
+    enum Buttons { CreateBtn, EnterBtn, ExitBtn }
 
     protected override void Init()
     {
@@ -23,46 +23,45 @@ public class UI_SelectPlayerScene : UI_Scene
         GetButton((int)Buttons.EnterBtn).gameObject.BindEvent(OnClickEnterButton);
     }
 
-    public void SetPlayerSummaries(List<PlayerSummary> summaries)
+    public void SetPlayerSummaries(IEnumerable<PlayerSummary> summaries)
     {
-        for (int i = 0; i< (int)Images.Count; ++i)
+        int index = 0;
+        foreach (var summary in summaries)
         {
-            if (i < summaries.Count)
-                AddPlayerItem(i, summaries[i]);
+            if (index >= (int)Images.Count) break;
+            AddPlayerItem(index++, summary);
         }
     }
 
-    void AddPlayerItem(int index, PlayerSummary summary)
+    private void AddPlayerItem(int index, PlayerSummary summary)
     {
         GameObject go = Managers.Resource.Instantiate("UI/SubItem/UI_SelectPlayerScene_Item", GetImage(index).transform);
-        UI_SelectPlayerScene_Item item = go.GetOrAddComponent<UI_SelectPlayerScene_Item>();
+        var item      = go.GetOrAddComponent<UI_SelectPlayerScene_Item>();
         item.Summary = summary;
-        item.Parent = this;
+        item.Parent  = this;
         item.SetPlayerInfo();
-
         _items[summary.Name] = item;
     }
 
-    void OnClickCreateButton(PointerEventData evt)
+    private void OnClickCreateButton(PointerEventData evt)
     {
         if (_popup == null)
             _popup = Managers.UI.ShowPopupUI<UI_CreatePlayerPopup>();
     }
 
-    void OnClickEnterButton(PointerEventData evt)
+    private void OnClickEnterButton(PointerEventData evt)
     {
-        if (_selectPlayerName == "") return;
+        if (string.IsNullOrEmpty(_selectPlayerName)) return;
 
-        C_EnterGame packet = new C_EnterGame();
-        packet.Name = _selectPlayerName;
-        Managers.Network.Send(packet);
+        Managers.Network.Send(new CEnterGame { Name = _selectPlayerName });
+        Managers.Scene.LoadScene(Define.Scene.Game);
     }
 
     public void SelectPlayer(string playerName)
     {
         _selectPlayerName = playerName;
         foreach (var item in _items)
-            item.Value.SetColor(item.Key == playerName ? Color.yellow : Color.white);
+            item.Value.SetColor(item.Key == playerName ? UnityEngine.Color.yellow : UnityEngine.Color.white);
     }
 
     public void SetCreateResult(PlayerSummary summary)

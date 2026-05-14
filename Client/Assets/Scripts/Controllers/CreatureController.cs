@@ -3,23 +3,28 @@ using UnityEngine;
 public class CreatureController : BaseController
 {
     protected Animator _animator;
+    protected int _templateId;
+    protected float _baseSpeed;
+    private bool _initialized;
 
     public Protocol.CreatureState State { get; protected set; } = Protocol.CreatureState.Idle;
+    public string Name { get; protected set; }
     public int Level { get; protected set; }
     public int MaxHp { get; protected set; }
     public int Hp { get; protected set; }
-    public string Name { get; protected set; }
-    protected int _templateId;
-    protected float _baseSpeed;
 
     private Vector3 _destPos;
     private Quaternion _destDir;
-    private LayerMask _groundMask;
-
-    private float _noUpdateTimer = 0f;
+    private float _noUpdateTimer;
     private const float NO_UPDATE_TIMEOUT = 0.35f;
     private const float SERVER_TICK_SEC = 0.1f;
-    private bool _initialized = false;
+    private LayerMask _groundMask;
+
+    private Canvas _summaryCanvas;
+    private UI_Summary _summaryUI;
+    private bool _isUIShowing;
+    private const float UI_SHOW_DIST_SQ = 200.0f;
+    private const float UI_HIDE_DIST_SQ = 220.0f;
 
     protected virtual void Awake()
     {
@@ -27,130 +32,157 @@ public class CreatureController : BaseController
         _groundMask = LayerMask.GetMask("Ground");
     }
 
-    private void OnEnable()
+    private void OnDisable()
     {
-        if (!_initialized) return;
-
-        Vector3 snapped = _destPos;
-        if (Physics.Raycast(snapped + Vector3.up * 20f, Vector3.down, out RaycastHit hit, 40f, _groundMask))
-            snapped.y = hit.point.y;
-
-        transform.position = snapped;
-        transform.rotation = _destDir;
+        ClearUI();
     }
 
     protected virtual void Update()
     {
-        if (State == Protocol.CreatureState.Dead) return;
+        if (!_initialized || State == Protocol.CreatureState.Dead) return;
 
-        float moveSpeed = (State == Protocol.CreatureState.Sprinting) ? _baseSpeed * 1.5f : _baseSpeed;
-        Vector3 nextPos = Vector3.MoveTowards(transform.position, _destPos, moveSpeed * Time.deltaTime);
-
-        if (Physics.Raycast(nextPos + Vector3.up * 20f, Vector3.down, out RaycastHit hit, 40f, _groundMask))
-            nextPos.y = hit.point.y;
-
-        transform.position = nextPos;
-        transform.rotation = Quaternion.Slerp(transform.rotation, _destDir, Time.deltaTime * 10f);
-
-        if (State == Protocol.CreatureState.Moving || State == Protocol.CreatureState.Sprinting)
-        {
-            _noUpdateTimer += Time.deltaTime;
-            if (_noUpdateTimer >= NO_UPDATE_TIMEOUT)
-            {
-                State = Protocol.CreatureState.Idle;
-                _noUpdateTimer = 0f;
-            }
-        }
-        else
-        {
-            _noUpdateTimer = 0f;
-        }
-
-        float moveAnim = (State == Protocol.CreatureState.Sprinting) ? 1.0f
-                       : (State == Protocol.CreatureState.Moving) ? 0.5f : 0.0f;
-        _animator.SetFloat("Move", moveAnim, 0.15f, Time.deltaTime);
+        UpdatePositionAndRotation();
+        UpdateTimeout();
+        UpdateAnimation();
     }
 
-    public override void SetInfo(Protocol.ObjectInfo info, Vector3 position, Quaternion rotation)
+    private void UpdatePositionAndRotation()
     {
-        base.SetInfo(info, position, rotation);
+        transform.rotation = Quaternion.Slerp(transform.rotation, _destDir, Time.deltaTime * 20f);
 
-        _templateId = info.Summary.TemplateId;
-        Name = info.Summary.Name;
-        Level = info.Summary.Level;
-        Hp = info.StatInfo.Hp;
+        Vector3 currentPos = transform.position;
+        float distSq = (new Vector2(_destPos.x, _destPos.z) - new Vector2(currentPos.x, currentPos.z)).sqrMagnitude;
 
-        if (_objectType == Protocol.GameObjectType.Player)
+        if (distSq > 0.0001f)
         {
-            MaxHp = Managers.Data.GetMaxHp(_templateId, Level);
-            _baseSpeed = Managers.Data.GetSpeed(_templateId, Level);
+            float speed = (State == Protocol.CreatureState.Sprinting) ? _baseSpeed * 1.5f : _baseSpeed;
+            Vector3 nextPos = Vector3.MoveTowards(currentPos, _destPos, speed * Time.deltaTime);
+
+            float lerpSpeed = (nextPos.y < currentPos.y) ? 35f : 20f;
+            nextPos.y = Mathf.Lerp(currentPos.y, _destPos.y, Time.deltaTime * lerpSpeed);
+
+            transform.position = nextPos;
         }
-        else if (_objectType == Protocol.GameObjectType.Monster)
+        else if (Mathf.Abs(currentPos.y - _destPos.y) > 0.01f)
         {
-            MaxHp = Managers.Data.GetMonsterMaxHp(_templateId);
-            _baseSpeed = Managers.Data.GetMonsterSpeed(_templateId);
+            transform.position = new Vector3(currentPos.x, Mathf.Lerp(currentPos.y, _destPos.y, Time.deltaTime * 15f), currentPos.z);
         }
-
-        State = info.PosInfo.State;
-        _destPos = position;
-        _destDir = rotation;
-        _noUpdateTimer = 0f;
-
-        transform.position = position;
-        transform.rotation = rotation;
-
-        _initialized = true;
     }
 
     public void OnMoveUpdate(Protocol.PosInfo posInfo)
     {
-        Vector3 serverPos = new Vector3(posInfo.Pos.X, posInfo.Pos.Y, posInfo.Pos.Z);
-        Quaternion serverRot = Quaternion.Euler(0, posInfo.Yaw, 0);
-
         _noUpdateTimer = 0f;
         State = posInfo.State;
-        _destDir = serverRot;
+        _destDir = Quaternion.Euler(0, posInfo.Yaw, 0);
 
-        if (posInfo.State == Protocol.CreatureState.Moving ||
-             posInfo.State == Protocol.CreatureState.Sprinting)
+        Vector3 serverPos = new Vector3(posInfo.Pos.X, posInfo.Pos.Y, posInfo.Pos.Z);
+
+        if (State == Protocol.CreatureState.Moving || State == Protocol.CreatureState.Sprinting)
         {
-            float speed = (posInfo.State == Protocol.CreatureState.Sprinting)
-                ? _baseSpeed * 1.5f : _baseSpeed;
-            Vector3 dir = serverRot * Vector3.forward;
-            _destPos = serverPos + dir * speed * SERVER_TICK_SEC;
+            float speed = (State == Protocol.CreatureState.Sprinting) ? _baseSpeed * 1.5f : _baseSpeed;
+            _destPos = serverPos + (_destDir * Vector3.forward * speed * SERVER_TICK_SEC);
         }
         else
         {
             _destPos = serverPos;
         }
 
+        if (Physics.Raycast(_destPos + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f, _groundMask))
+            _destPos.y = hit.point.y;
 
-        // 5m ¿ÃªÛ ø¿¬˜∏È ¡ÔΩ√ øˆ«¡ (≈⁄∑π∆˜∆Æ, æ¿ ¿¸»Ø)
-        if (Vector3.Distance(transform.position, serverPos) > 5f)
-        {
+        if ((transform.position - serverPos).sqrMagnitude > 25.0f)
             transform.position = serverPos;
-            transform.rotation = serverRot;
+    }
+
+    public void UpdateUIByDistance(float distSq)
+    {
+        if (distSq > UI_HIDE_DIST_SQ)
+        {
+            if (_isUIShowing) ToggleUI(false);
+            return;
+        }
+
+        if (distSq < UI_SHOW_DIST_SQ)
+        {
+            if (_summaryCanvas == null) SetupUI();
+            if (!_isUIShowing) ToggleUI(true);
         }
     }
 
-    public float GetHpRatio() => MaxHp > 0 ? (float)Hp / MaxHp : 0f;
-
-    protected void SetUI()
+    private void SetupUI()
     {
-        Transform root = transform.Find("UIRoot");
-        Transform parent = (root != null) ? root : transform;
+        Transform uiRoot = transform.Find("UIRoot") ?? transform;
+        GameObject go = Managers.Resource.Instantiate("UI/UI_Summary"); // Î∂ÄÎ™® ÏóÜÏù¥ ÏÉùÏÑ±
 
-        GameObject go = Managers.Resource.Instantiate("UI/UI_Summary", parent);
-        UI_Summary summary = go.GetOrAddComponent<UI_Summary>();
-        summary.owner = this;
+        _summaryCanvas = go.GetComponent<Canvas>();
+        _summaryUI = go.GetComponent<UI_Summary>();
+
+        if (_summaryCanvas) _summaryCanvas.worldCamera = Camera.main;
+        if (_summaryUI)
+        {
+            _summaryUI.Owner = this;
+            _summaryUI.SetFollowTarget(uiRoot);
+            _summaryUI.RefreshInfo();
+        }
     }
 
-    public void OnAttack(Protocol.S_Attack packet)
+    private void ToggleUI(bool show)
+    {
+        _isUIShowing = show;
+        if (_summaryCanvas) _summaryCanvas.enabled = show;
+        if (show) _summaryUI?.RefreshInfo();
+    }
+
+    private void ClearUI()
+    {
+        if (_summaryUI != null)
+        {
+            Managers.Resource.Destroy(_summaryUI.gameObject);
+            _summaryUI = null;
+            _summaryCanvas = null;
+            _isUIShowing = false;
+        }
+    }
+
+    public override void SetInfo(Protocol.ObjectInfo info, Vector3 position, Quaternion rotation)
+    {
+        base.SetInfo(info, position, rotation);
+        var summary = info.Summary;
+        _templateId = summary.TemplateId;
+        Name = summary.Name;
+        Level = summary.Level;
+        Hp = info.StatInfo.Hp;
+
+        // Stat Ï†ïÎ≥¥ Ï¥àÍ∏∞Ìôî (Player/Monster Î∂ÑÍ∏∞)
+        InitStatByObjectType(summary.ObjectType);
+
+        State = info.PosInfo.State;
+        _destPos = position;
+        _destDir = rotation;
+        _noUpdateTimer = 0f;
+
+        transform.SetPositionAndRotation(position, rotation);
+        _initialized = true;
+    }
+
+    private void InitStatByObjectType(Protocol.GameObjectType type)
+    {
+        if (type == Protocol.GameObjectType.Player)
+        {
+            MaxHp = Managers.Data.GetMaxHp(_templateId, Level);
+            _baseSpeed = Managers.Data.GetSpeed(_templateId, Level);
+        }
+        else if (type == Protocol.GameObjectType.Monster)
+        {
+            MaxHp = Managers.Data.GetMonsterMaxHp(_templateId);
+            _baseSpeed = Managers.Data.GetMonsterSpeed(_templateId);
+        }
+    }
+
+    public void OnAttack(Protocol.SAttack packet)
     {
         Vector3 serverPos = new Vector3(packet.Pos.X, packet.Pos.Y, packet.Pos.Z);
-        float dist = Vector3.Distance(transform.position, serverPos);
-
-        if (dist >= 5f)
+        if ((transform.position - serverPos).sqrMagnitude > 25f)
             transform.position = serverPos;
 
         _destPos = serverPos;
@@ -159,37 +191,56 @@ public class CreatureController : BaseController
         _animator.SetInteger("ComboIndex", packet.ComboIndex);
         _animator.SetTrigger("Attack");
     }
-    
+
     public void OnChangeHp(int hp, int damage)
     {
         Hp = hp;
-
         GameObject go = Managers.Resource.Instantiate("UI/UI_Damage");
-        if (go == null) return;
-
-        go.transform.position = transform.position + Vector3.up * 1.4f;
-
-        UI_Damage ui = go.GetComponent<UI_Damage>();
-        ui.SetInfo(damage);
+        if (go != null)
+        {
+            go.transform.position = transform.position + Vector3.up * 1.4f;
+            go.GetComponent<UI_Damage>()?.SetInfo(damage);
+        }
+        if (_isUIShowing) _summaryUI?.RefreshInfo();
     }
 
     public void OnDead()
     {
         if (State == Protocol.CreatureState.Dead) return;
-
         State = Protocol.CreatureState.Dead;
         _animator.SetBool("IsDead", true);
         _animator.SetFloat("Move", 0f);
+        ClearUI(); // Ï£ΩÏúºÎ©¥ UI Ï†úÍ±∞
     }
 
-    public virtual void OnLevelUp(int level, int maxHp, int hp)
+    private void UpdateTimeout()
     {
-        Level = level;
-        MaxHp = maxHp;
-        Hp = hp;
-
-        GameObject go = Managers.Resource.Instantiate("Effects/LevelUpEffect");
-        if (go == null) return;
-        go.transform.position = transform.position + Vector3.up;
+        if (State == Protocol.CreatureState.Moving || State == Protocol.CreatureState.Sprinting)
+        {
+            _noUpdateTimer += Time.deltaTime;
+            if (_noUpdateTimer >= NO_UPDATE_TIMEOUT)
+            {
+                State = Protocol.CreatureState.Idle;
+                _destPos = transform.position; // ÌòÑÏû¨ ÏúÑÏπòÏóê Í≥†Ï†ï
+            }
+        }
     }
+
+    private void UpdateAnimation()
+    {
+        if (!_animator) return;
+        float moveAnim = State == Protocol.CreatureState.Sprinting ? 1.0f
+                       : State == Protocol.CreatureState.Moving    ? 0.5f
+                       : 0.0f;
+        _animator.SetFloat("Move", moveAnim, 0.15f, Time.deltaTime);
+    }
+
+    public float GetHpRatio()
+    {
+        if (MaxHp <= 0) return 0f;
+        return (float)Hp / MaxHp;
+    }
+
+    private void OnBecameVisible() { if (_animator) _animator.enabled = true; }
+    private void OnBecameInvisible() { if (_animator) _animator.enabled = false; }
 }

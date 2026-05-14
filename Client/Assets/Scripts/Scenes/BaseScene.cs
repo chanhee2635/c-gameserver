@@ -7,14 +7,15 @@ public abstract class BaseScene : MonoBehaviour
 {
     public Define.Scene SceneType { get; protected set; } = Define.Scene.Unknown;
 
-    void Awake()
+    private void Awake()
     {
+        Managers.Scene.RegisterCurrentScene(this);
         Init();
     }
 
     protected virtual void Init()
     {
-        Object obj = GameObject.FindObjectOfType(typeof(EventSystem));
+        Object obj = GameObject.FindFirstObjectByType(typeof(EventSystem));
         if (obj == null)
             Managers.Resource.Instantiate("UI/EventSystem").name = "@EventSystem";
     }

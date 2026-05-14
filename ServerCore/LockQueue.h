@@ -4,37 +4,54 @@ template<typename T>
 class LockQueue
 {
 public:
-	void Push(T item)
-	{
-		WRITE_LOCK;
-		_items.push(item);
-	}
+    LockQueue() = default;
+    LockQueue(const LockQueue&) = delete;
+    LockQueue& operator=(const LockQueue&) = delete;
 
-	T Pop()
-	{
-		WRITE_LOCK;
-		if (_items.empty())
-			return T();
+    void Push(T item)
+    {
+        WRITE_LOCK;
+        _items.push(std::move(item));
+    }
 
-		T ret = _items.front();
-		_items.pop();
-		return ret;
-	}
+    bool TryPop(OUT T& item)
+    {
+        WRITE_LOCK;
+        if (_items.empty())
+            return false;
 
-	void PopAll(OUT Vector<T>& items)
-	{
-		WRITE_LOCK;
-		while (T item = Pop())
-			items.push_back(item);
-	}
+        item = std::move(_items.front());
+        _items.pop();
+        return true;
+    }
 
-	void Clear()
-	{
-		WRITE_LOCK;
-		_items = Queue<T>();
-	}
+    void PopAll(OUT Vector<T>& items)
+    {
+        WRITE_LOCK;
+        if (_items.empty())
+            return;
+
+        while (!_items.empty())
+        {
+            items.push_back(std::move(_items.front()));
+            _items.pop();
+        }
+    }
+
+    void Clear()
+    {
+        WRITE_LOCK;
+        Queue<T> empty;
+        std::swap(_items, empty);
+    }
+
+    bool Empty()
+    {
+        READ_LOCK;
+        return _items.empty();
+    }
 
 private:
-	USE_LOCK;
-	Queue<T> _items;
+    USE_LOCK;
+    Queue<T> _items;
 };

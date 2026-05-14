@@ -1,360 +1,287 @@
 #include "pch.h"
 #include "Session.h"
-#include "SocketUtils.h"
 #include "Service.h"
-#include "GameMetrics.h"
-#include "ServerStats.h"
-
-/*----------------
-	  Session
------------------*/
 
 Session::Session()
-	: _recvBuffer(Config::Session::RECV_BUFFER_SIZE)  // 순환 버퍼 값 초기화
 {
-	_socket = SocketUtils::CreateSocket();
+    _socket = SocketUtils::CreateSocket();
 }
 
 Session::~Session()
 {
-	SocketUtils::Close(_socket);
+    SocketUtils::Close(_socket);
 }
 
 void Session::Send(SendBufferRef sendBuffer)
 {
-	if (IsConnected() == false)
-		return;
+    if (!_connected)
+        return;
 
-	bool registerSend = false;
-	{
-		WRITE_LOCK;
-		_sendQueue.push_back(sendBuffer);
-		// exchange: false → true 이면 최초 등록자 → RegisterSend 호출 권한 획득
-		registerSend = _sendRegistered.exchange(true) == false;
-	}
+    bool registerSend = false;
+    {
+        LockGuard guard(_sendLock);
+        _sendQueue.push_back(sendBuffer);
 
-	if (registerSend)
-		RegisterSend();
-}
+        if (!_isSendRegistered)
+        {
+            _isSendRegistered = true;
+            registerSend = true;
+        }
+    }
 
-bool Session::Connect()
-{
-	return RegisterConnect();
-}
-
-void Session::Disconnect(const WCHAR* cause)
-{
-	// 이미 끊긴 세션의 중복 호출 방지
-	if (_connected.exchange(false) == false) return;
-
-	// DisconnectEx 를 통해 재사용 가능 소켓으로 정리
-	RegisterDisconnect();
-}
-
-HANDLE Session::GetHandle()
-{
-	return reinterpret_cast<HANDLE>(_socket);
-}
-
-void Session::Dispatch(IocpEvent* iocpEvent, int32 numOfBytes)
-{
-	switch (iocpEvent->type)
-	{
-	case EventType::Connect:
-		ProcessConnect();
-		break;
-	case EventType::Disconnect:
-		ProcessDisconnect();
-		break;
-	case EventType::Recv:
-		ProcessRecv(numOfBytes);
-		break;
-	case EventType::Send:
-		ProcessSend(numOfBytes);
-		break;
-	default:
-		break;
-	}
-}
-
-bool Session::RegisterConnect()
-{
-	if (IsConnected()) return false;
-	if (GetService()->GetServiceType() != ServiceType::Client) return false;
-	if (SocketUtils::SetReuseAddress(_socket, true) == false) return false;
-	if (SocketUtils::BindAnyAddress(_socket, 0) == false) return false;
-
-	_connectEvent.Init();
-	_connectEvent.owner = shared_from_this();
-
-	DWORD numOfBytes = 0;
-	SOCKADDR_IN sockAddr = GetService()->GetNetAddress().GetSockAddr();
-	if (false == SocketUtils::ConnectEx(_socket,
-		reinterpret_cast<SOCKADDR*>(&sockAddr), sizeof(sockAddr),
-		nullptr, 0, &numOfBytes, &_connectEvent))
-	{
-		int32 errorCode = ::WSAGetLastError();
-		if (errorCode != WSA_IO_PENDING)
-		{
-			_connectEvent.owner = nullptr;
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool Session::RegisterDisconnect()
-{
-	_disconnectEvent.Init();
-	_disconnectEvent.owner = shared_from_this();
-
-	if (false == SocketUtils::DisconnectEx(_socket, &_disconnectEvent, TF_REUSE_SOCKET, 0))
-	{
-		int32 errorCode = ::WSAGetLastError();
-		if (errorCode != WSA_IO_PENDING)
-		{
-			_disconnectEvent.owner = nullptr;
-			return false;
-		}
-	}
-
-	return true;
-}
-
-void Session::RegisterRecv()
-{
-	if (IsConnected() == false) return;
-
-	_recvEvent.Init();
-	_recvEvent.owner = shared_from_this();
-
-	// 순환 버퍼: wrap-around 시 최대 2개 세그먼트로 분산 수신 (memmove 제거)
-	WSABUF wsaBufs[2];
-	int32 segCount = _recvBuffer.GetWriteSegments(wsaBufs);
-	if (segCount == 0)
-	{
-		// 수신 버퍼 가득 참 → 프로토콜 이상 (패킷 처리가 따라오지 못하는 상황)
-		ServerStats::Get().recvBuffer.bufferFullCount.fetch_add(1, std::memory_order_relaxed);
-		Disconnect(L"RecvBuffer Full");
-		return;
-	}
-
-	DWORD numOfBytes = 0;
-	DWORD flags = 0;
-	if (SOCKET_ERROR == ::WSARecv(_socket, wsaBufs, segCount,
-		OUT &numOfBytes, OUT &flags, &_recvEvent, nullptr))
-	{
-		int32 errorCode = ::WSAGetLastError();
-		if (errorCode != WSA_IO_PENDING)
-		{
-			HandleError(errorCode);
-			_recvEvent.owner = nullptr;
-		}
-	}
-}
-
-void Session::RegisterSend()
-{
-	if (IsConnected() == false) return;
-
-	// ── Swap 패턴: 락 보유 시간을 O(1)로 최소화 ──────────────
-	{
-		WRITE_LOCK;
-		// _sendQueue(생산자 큐) ↔ _sendPendingList(전송 배치) 를 O(1) 교체
-		_sendQueue.swap(_sendPendingList);
-	}
-
-	if (_sendPendingList.empty())
-	{
-		// 교체했더니 실제 데이터 없음 → 등록 해제
-		_sendRegistered.store(false);
-		return;
-	}
-
-	// ── SendEvent 재사용: 힙 할당 없음 ───────────────────────
-	_sendEvent.Init();
-	_sendEvent.owner = shared_from_this();
-
-	_sendEvent.wsaBufs.clear();
-	_sendEvent.wsaBufs.reserve(_sendPendingList.size());
-	for (const SendBufferRef& sb : _sendPendingList)
-	{
-		WSABUF wsaBuf;
-		wsaBuf.buf = reinterpret_cast<char*>(sb->Buffer());
-		wsaBuf.len = static_cast<ULONG>(sb->WriteSize());
-		_sendEvent.wsaBufs.push_back(wsaBuf);
-	}
-
-	// sendBuffers 는 전송 완료 시까지 ref-count 유지 (ProcessSend 에서 clear)
-	_sendEvent.sendBuffers = _sendPendingList;
-
-	DWORD numOfBytes = 0;
-	if (SOCKET_ERROR == ::WSASend(_socket,
-		_sendEvent.wsaBufs.data(),
-		static_cast<DWORD>(_sendEvent.wsaBufs.size()),
-		OUT &numOfBytes, 0, &_sendEvent, nullptr))
-	{
-		int32 errorCode = ::WSAGetLastError();
-		if (errorCode != WSA_IO_PENDING)
-		{
-			HandleError(errorCode);
-			_sendEvent.owner = nullptr;
-			_sendEvent.sendBuffers.clear();
-			_sendEvent.wsaBufs.clear();
-			_sendRegistered.store(false);
-		}
-	}
+    if (registerSend)
+        RegisterSend();
 }
 
 void Session::ProcessConnect()
 {
-	_connectEvent.owner = nullptr;
+    ::setsockopt(_socket, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, nullptr, 0);
 
-	_connected.store(true);
+    _connected = true;
 
-	GMetrics.connectedSessions.fetch_add(1);
-	GMetrics.totalConnections.fetch_add(1);
+    if (auto service = _service.lock())
+        service->AddSession(GetRef());
 
-	GetService()->AddSession(GetSessionRef());
-	OnConnected();
-	RegisterRecv();
+    OnConnected();
+    RegisterRecv();
 }
 
-void Session::ProcessDisconnect()
+void Session::Disconnect()
 {
-	_disconnectEvent.owner = nullptr;
+    if (!_connected.exchange(false))
+        return;
 
-	GMetrics.connectedSessions.fetch_sub(1);
-	GMetrics.totalDisconnections.fetch_add(1);
+    OnDisconnected();
 
-	OnDisconnected();
-	GetService()->ReleaseSession(GetSessionRef());
+    if (auto service = _service.lock())
+        service->ReleaseSession(GetRef());
 
-	::setsockopt(_socket, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, nullptr, 0);
+    SocketUtils::Close(_socket);
+}
+
+void Session::RegisterConnect(const NetAddress& address)
+{
+    _connectEvent.Init();
+    _connectEvent.SetOwner(shared_from_this());
+
+    if (!SocketUtils::BindAnyAddress(_socket, 0))
+    {
+        LOG_ERROR(L"RegisterConnect: BindAnyAddress failed");
+        return;
+    }
+
+    DWORD numBytes = 0;
+    SOCKADDR_IN serverAddr = address.GetSockAddr();
+    if (!SocketUtils::ConnectEx(_socket,
+        reinterpret_cast<SOCKADDR*>(&serverAddr), sizeof(serverAddr),
+        nullptr, 0, &numBytes, &_connectEvent))
+    {
+        int32 errCode = ::WSAGetLastError();
+        if (errCode != WSA_IO_PENDING)
+        {
+            LOG_ERROR(L"ConnectEx failed errCode=" + std::to_wstring(errCode));
+            _connectEvent.SetOwner(nullptr);
+        }
+    }
+}
+
+void Session::Dispatch(IocpEvent* iocpEvent, int32 numOfBytes)
+{
+    switch (iocpEvent->GetType())
+    {
+    case IocpEventType::Recv:
+        ProcessRecv(numOfBytes);
+        break;
+    case IocpEventType::Send:
+        ProcessSend(numOfBytes);
+        break;
+    case IocpEventType::Connect:
+        _connectEvent.SetOwner(nullptr);
+        ProcessConnect();
+        break;
+    default:
+        break;
+    }
+}
+
+void Session::RegisterRecv()
+{
+    if (!_connected)
+        return;
+
+    _recvEvent.Init();
+    _recvEvent.SetOwner(shared_from_this());
+
+    WSABUF wsaBufs[2];
+    uint32 bufCount = _recvBuffer.GetWriteSegments(wsaBufs);
+    if (bufCount == 0)
+    {
+        Disconnect();
+        return;
+    }
+
+    DWORD numOfBytes = 0;
+    DWORD flags = 0;
+
+    if (::WSARecv(_socket, wsaBufs, bufCount, &numOfBytes, &flags, &_recvEvent, nullptr) == SOCKET_ERROR)
+    {
+        int32 errCode = ::WSAGetLastError();
+        if (errCode != WSA_IO_PENDING)
+        {
+            LOG_ERROR(L"WSARecv failed errCode=" + std::to_wstring(errCode));
+            _recvEvent.SetOwner(nullptr);
+            Disconnect();
+        }
+    }
 }
 
 void Session::ProcessRecv(int32 numOfBytes)
 {
-	_recvEvent.owner = nullptr;
 
-	if (numOfBytes == 0)
-	{
-		GMetrics.disconnectRecv0.fetch_add(1);
-		Disconnect(L"Recv 0");
-		return;
-	}
+    _recvEvent.SetOwner(nullptr);
 
-	GMetrics.totalPacketsReceived.fetch_add(1);
-	GMetrics.totalBytesReceived.fetch_add(numOfBytes);
+    if (numOfBytes == 0)
+    {
+        Disconnect();
+        return;
+    }
 
-	// 쓰기 커서 전진
-	if (_recvBuffer.OnWrite(numOfBytes) == false)
-	{
-		GMetrics.disconnectRecvOverflow.fetch_add(1);
-		Disconnect(L"OnWrite Overflow");
-		return;
-	}
+    GServerStats->network.recvBytes.fetch_add(numOfBytes, std::memory_order_relaxed);
 
-	// Linearize(): wrap 없으면 O(1) 포인터 반환, wrap 있으면 임시 복사
-	int32 dataSize = _recvBuffer.DataSize();
-	BYTE* data = _recvBuffer.Linearize();
-	int32 processLen = OnRecv(data, dataSize);
+    if (!_recvBuffer.OnWrite(numOfBytes))
+    {
+        LOG_WARN(L"RecvBuffer full addr=" + GetNetAddress().GetIpAddress());
+        Disconnect();
+        return;
+    }
 
-	if (processLen < 0 || dataSize < processLen || _recvBuffer.OnRead(processLen) == false)
-	{
-		GMetrics.invalidPackets.fetch_add(1);
-		Disconnect(L"OnRead Overflow");
-		return;
-	}
+    while (_recvBuffer.GetDataSize() > 0)
+    {
+        auto segment = _recvBuffer.ReadSegment();
+        int32 processLen = OnRecv(segment.data(), static_cast<uint32>(segment.size()));
 
-	RegisterRecv();
+        if (processLen < 0)
+        {
+            LOG_WARN(L"Invalid packet addr=" + GetNetAddress().GetIpAddress());
+            Disconnect();
+            return;
+        }
+
+        if (processLen == 0)
+        {
+            if (segment.size() < _recvBuffer.GetDataSize())
+            {
+                _recvBuffer.Linearize();
+                continue;
+            }
+            break;
+        }
+
+        if (!_recvBuffer.OnRead(static_cast<uint32>(processLen)))
+        {
+            Disconnect();
+            return;
+        }
+    }
+    RegisterRecv();
+}
+
+void Session::RegisterSend()
+{
+    if (!_connected)
+        return;
+
+    _sendEvent.Init();
+    _sendEvent.SetOwner(shared_from_this());
+
+    {
+        LockGuard guard(_sendLock);
+        _sendPendingList.swap(_sendQueue);
+
+        if (_sendPendingList.empty())
+        {
+            _isSendRegistered = false;
+            _sendEvent.SetOwner(nullptr);
+            return;
+        }
+    }
+
+    FrameVector<WSABUF> wsaBufs;
+    wsaBufs.reserve(_sendPendingList.size());
+
+    for (auto& buffer : _sendPendingList)
+    {
+        WSABUF wsaBuf;
+        wsaBuf.buf = reinterpret_cast<char*>(buffer->GetBuffer());
+        wsaBuf.len = static_cast<ULONG>(buffer->GetWriteSize());
+        wsaBufs.push_back(wsaBuf);
+    }
+
+    DWORD numOfBytes = 0;
+    if (::WSASend(_socket, wsaBufs.data(), static_cast<DWORD>(wsaBufs.size()),
+        &numOfBytes, 0, &_sendEvent, nullptr) == SOCKET_ERROR)
+    {
+        int32 errCode = ::WSAGetLastError();
+        if (errCode != WSA_IO_PENDING)
+        {
+            LOG_ERROR(L"WSASend failed errCode=" + std::to_wstring(errCode));
+            _sendEvent.SetOwner(nullptr);
+            Disconnect();
+        }
+    }
 }
 
 void Session::ProcessSend(int32 numOfBytes)
 {
-	// 멤버 이벤트 정리 (힙 delete 없음)
-	_sendEvent.owner = nullptr;
-	_sendEvent.sendBuffers.clear();   // SendBuffer ref 해제
-	_sendEvent.wsaBufs.clear();
-	_sendPendingList.clear();
+    _sendEvent.SetOwner(nullptr);
+    _sendPendingList.clear();
 
-	if (numOfBytes == 0)
-	{
-		GMetrics.disconnectSend0.fetch_add(1);
-		Disconnect(L"Send 0");
-		return;
-	}
+    if (numOfBytes == 0)
+    {
+        Disconnect();
+        return;
+    }
 
-	GMetrics.totalPacketsSent.fetch_add(1);
-	GMetrics.totalBytesSent.fetch_add(numOfBytes);
+    GServerStats->network.sendBytes.fetch_add(numOfBytes, std::memory_order_relaxed);
+    GServerStats->network.sendPackets.fetch_add(1, std::memory_order_relaxed);
 
-	OnSend(numOfBytes);
+    OnSend(numOfBytes);
 
-	// _sendQueue 에 추가된 항목이 있으면 연속 전송
-	bool registerSend = false;
-	{
-		WRITE_LOCK;
-		if (_sendQueue.empty())
-			_sendRegistered.store(false);
-		else
-			registerSend = true;
-	}
+    bool registerSend = false;
+    {
+        LockGuard guard(_sendLock);
+        if (_sendQueue.empty())
+            _isSendRegistered = false;
+        else
+            registerSend = true;
+    }
 
-	if (registerSend)
-		RegisterSend();
+    if (registerSend)
+        RegisterSend();
 }
 
-void Session::HandleError(int32 errorCode)
+int32 PacketSession::OnRecv(const BYTE* buffer, uint32 len)
 {
-	switch (errorCode)
-	{
-	case WSAECONNRESET:
-	case WSAECONNABORTED:
-		GMetrics.disconnectHandleError.fetch_add(1);
-		Disconnect(L"HandleError");
-		break;
-	default:
-		cout << "Handle Error : " << errorCode << endl;
-		break;
-	}
-}
+    std::span<const BYTE> data{ buffer, len };
+    uint32 processLen = 0;
 
-/*-------------------
-	PacketSession
---------------------*/
+    while (data.size() >= sizeof(PacketHeader))
+    {
+        PacketHeader header;
+        std::memcpy(&header, data.data(), sizeof(PacketHeader));
 
-PacketSession::PacketSession()
-{
-}
+        if (header.size < sizeof(PacketHeader) || header.size > MAX_PACKET_SIZE) [[unlikely]]
+            return -1;
 
-PacketSession::~PacketSession()
-{
-}
+        if (data.size() < header.size) [[unlikely]]
+            break;
 
-int32 PacketSession::OnRecv(BYTE* buffer, int32 len)
-{
-	int processLen = 0;
+        OnRecvPacket(data.first(header.size), header.type);
+        GServerStats->network.recvPackets.fetch_add(1, std::memory_order_relaxed);
 
-	while (true)
-	{
-		int32 dataSize = len - processLen;
-		if (dataSize < sizeof(PacketHeader))
-			break;
+        data = data.subspan(header.size);
+        processLen += header.size;
+    }
 
-		PacketHeader* header = reinterpret_cast<PacketHeader*>(&buffer[processLen]);
-
-		if (header->size < sizeof(PacketHeader) ||
-			header->size > GetService()->GetConfig().recvBufferSize)
-			return -1;
-
-		if (dataSize < header->size)
-			break;
-
-		OnRecvPacket(&buffer[processLen], header->size);
-
-		processLen += header->size;
-	}
-
-	return processLen;
+    return static_cast<int32>(processLen);
 }

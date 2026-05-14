@@ -23,30 +23,21 @@
     <Filter Include="소스 파일\Job">
       <UniqueIdentifier>{a8bfd18f-7406-4e5f-aa20-b1eea58297ca}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\DB">
-      <UniqueIdentifier>{864fbc2f-0165-4aa4-9abb-68f2e9a6996b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Log">
-      <UniqueIdentifier>{95dbdbde-e482-49b7-8265-8c02c671c1f7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\Monitoring">
       <UniqueIdentifier>{5a13b72b-244a-4f6c-be48-7f694e06ed5e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Container">
+      <UniqueIdentifier>{3ec488f3-90f2-4235-b324-d67ba5c0d8de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\DB">
+      <UniqueIdentifier>{7d02fe25-a078-42ed-8e47-ad44de0c0df1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>소스 파일\Main</Filter>
-    </ClInclude>
-    <ClInclude Include="Types.h">
-      <Filter>소스 파일\Main</Filter>
-    </ClInclude>
     <ClInclude Include="CoreGlobal.h">
       <Filter>소스 파일\Main</Filter>
     </ClInclude>
     <ClInclude Include="CoreMacro.h">
-      <Filter>소스 파일\Main</Filter>
-    </ClInclude>
-    <ClInclude Include="CorePch.h">
       <Filter>소스 파일\Main</Filter>
     </ClInclude>
     <ClInclude Include="CoreTLS.h">
@@ -82,21 +73,6 @@
     <ClInclude Include="SendBuffer.h">
       <Filter>소스 파일\Network</Filter>
     </ClInclude>
-    <ClInclude Include="BufferWriter.h">
-      <Filter>소스 파일\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="BufferReader.h">
-      <Filter>소스 파일\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Lock.h">
-      <Filter>소스 파일\Thread</Filter>
-    </ClInclude>
-    <ClInclude Include="DeadLockProfiler.h">
-      <Filter>소스 파일\Thread</Filter>
-    </ClInclude>
-    <ClInclude Include="RefCounting.h">
-      <Filter>소스 파일\Memory</Filter>
-    </ClInclude>
     <ClInclude Include="Allocator.h">
       <Filter>소스 파일\Memory</Filter>
     </ClInclude>
@@ -109,20 +85,8 @@
     <ClInclude Include="MemoryPool.h">
       <Filter>소스 파일\Memory</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectPool.h">
-      <Filter>소스 파일\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="TypeCast.h">
-      <Filter>소스 파일\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="Job.h">
-      <Filter>소스 파일\Job</Filter>
-    </ClInclude>
     <ClInclude Include="JobQueue.h">
       <Filter>소스 파일\Job</Filter>
-    </ClInclude>
-    <ClInclude Include="LockQueue.h">
-      <Filter>소스 파일\Utils</Filter>
     </ClInclude>
     <ClInclude Include="GlobalQueue.h">
       <Filter>소스 파일\Job</Filter>
@@ -130,32 +94,8 @@
     <ClInclude Include="JobTimer.h">
       <Filter>소스 파일\Job</Filter>
     </ClInclude>
-    <ClInclude Include="DBConnection.h">
-      <Filter>소스 파일\DB</Filter>
-    </ClInclude>
-    <ClInclude Include="DBConnectionPool.h">
-      <Filter>소스 파일\DB</Filter>
-    </ClInclude>
-    <ClInclude Include="DBBind.h">
-      <Filter>소스 파일\DB</Filter>
-    </ClInclude>
-    <ClInclude Include="FileUtils.h">
-      <Filter>소스 파일\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="ConsoleLog.h">
-      <Filter>소스 파일\Log</Filter>
-    </ClInclude>
     <ClInclude Include="Utils.h">
       <Filter>소스 파일\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="ConfigManager.h">
-      <Filter>소스 파일\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="DBService.h">
-      <Filter>소스 파일\DB</Filter>
-    </ClInclude>
-    <ClInclude Include="GameMetrics.h">
-      <Filter>소스 파일\Monitoring</Filter>
     </ClInclude>
     <ClInclude Include="Logger.h">
       <Filter>소스 파일\Monitoring</Filter>
@@ -163,24 +103,33 @@
     <ClInclude Include="ServerStats.h">
       <Filter>소스 파일\Monitoring</Filter>
     </ClInclude>
-    <ClInclude Include="FileLogger.h">
-      <Filter>소스 파일\Monitoring</Filter>
+    <ClInclude Include="Types.h">
+      <Filter>소스 파일\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="PrometheusServer.h">
-      <Filter>소스 파일\Monitoring</Filter>
+    <ClInclude Include="CorePch.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreConfig.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="LockQueue.h">
+      <Filter>소스 파일\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="DbBind.h">
+      <Filter>소스 파일\DB</Filter>
+    </ClInclude>
+    <ClInclude Include="DbConnection.h">
+      <Filter>소스 파일\DB</Filter>
+    </ClInclude>
+    <ClInclude Include="DbConnectionPool.h">
+      <Filter>소스 파일\DB</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
-      <Filter>소스 파일\Main</Filter>
-    </ClCompile>
     <ClCompile Include="CoreGlobal.cpp">
-      <Filter>소스 파일\Main</Filter>
-    </ClCompile>
-    <ClCompile Include="CoreMacro.cpp">
-      <Filter>소스 파일\Main</Filter>
-    </ClCompile>
-    <ClCompile Include="CorePch.cpp">
       <Filter>소스 파일\Main</Filter>
     </ClCompile>
     <ClCompile Include="CoreTLS.cpp">
@@ -216,21 +165,6 @@
     <ClCompile Include="SendBuffer.cpp">
       <Filter>소스 파일\Network</Filter>
     </ClCompile>
-    <ClCompile Include="BufferReader.cpp">
-      <Filter>소스 파일\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="BufferWriter.cpp">
-      <Filter>소스 파일\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Lock.cpp">
-      <Filter>소스 파일\Thread</Filter>
-    </ClCompile>
-    <ClCompile Include="DeadLockProfiler.cpp">
-      <Filter>소스 파일\Thread</Filter>
-    </ClCompile>
-    <ClCompile Include="RefCounting.cpp">
-      <Filter>소스 파일\Memory</Filter>
-    </ClCompile>
     <ClCompile Include="Allocator.cpp">
       <Filter>소스 파일\Memory</Filter>
     </ClCompile>
@@ -240,14 +174,8 @@
     <ClCompile Include="MemoryPool.cpp">
       <Filter>소스 파일\Memory</Filter>
     </ClCompile>
-    <ClCompile Include="Job.cpp">
-      <Filter>소스 파일\Job</Filter>
-    </ClCompile>
     <ClCompile Include="JobQueue.cpp">
       <Filter>소스 파일\Job</Filter>
-    </ClCompile>
-    <ClCompile Include="LockQueue.cpp">
-      <Filter>소스 파일\Utils</Filter>
     </ClCompile>
     <ClCompile Include="GlobalQueue.cpp">
       <Filter>소스 파일\Job</Filter>
@@ -255,44 +183,23 @@
     <ClCompile Include="JobTimer.cpp">
       <Filter>소스 파일\Job</Filter>
     </ClCompile>
-    <ClCompile Include="DBConnection.cpp">
-      <Filter>소스 파일\DB</Filter>
-    </ClCompile>
-    <ClCompile Include="DBConnectionPool.cpp">
-      <Filter>소스 파일\DB</Filter>
-    </ClCompile>
-    <ClCompile Include="DBBind.cpp">
-      <Filter>소스 파일\DB</Filter>
-    </ClCompile>
-    <ClCompile Include="FileUtils.cpp">
-      <Filter>소스 파일\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="ConsoleLog.cpp">
-      <Filter>소스 파일\Log</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils.cpp">
-      <Filter>소스 파일\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="ConfigManager.cpp">
-      <Filter>소스 파일\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="DBService.cpp">
-      <Filter>소스 파일\DB</Filter>
-    </ClCompile>
-    <ClCompile Include="PrometheusServer.cpp">
-      <Filter>소스 파일\Monitoring</Filter>
-    </ClCompile>
-    <ClCompile Include="FileLogger.cpp">
-      <Filter>소스 파일\Monitoring</Filter>
-    </ClCompile>
-    <ClCompile Include="GameMetrics.cpp">
-      <Filter>소스 파일\Monitoring</Filter>
-    </ClCompile>
     <ClCompile Include="Logger.cpp">
       <Filter>소스 파일\Monitoring</Filter>
     </ClCompile>
     <ClCompile Include="ServerStats.cpp">
       <Filter>소스 파일\Monitoring</Filter>
+    </ClCompile>
+    <ClCompile Include="CorePch.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="DbConnection.cpp">
+      <Filter>소스 파일\DB</Filter>
+    </ClCompile>
+    <ClCompile Include="DbConnectionPool.cpp">
+      <Filter>소스 파일\DB</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

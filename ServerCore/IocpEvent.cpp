@@ -1,20 +1,12 @@
 #include "pch.h"
 #include "IocpEvent.h"
 
-/*-----------------
-	 IocpEvent
------------------*/
-
-IocpEvent::IocpEvent(EventType type) : type(type)
+IocpEvent::IocpEvent(IocpEventType type) : _eventType(type)
 {
-	Init();
+    Init();
 }
 
 void IocpEvent::Init()
 {
-	hEvent = 0;
-	Internal = 0;
-	InternalHigh = 0;
-	Offset = 0;
-	OffsetHigh = 0;
+    ::ZeroMemory(static_cast<OVERLAPPED*>(this), sizeof(OVERLAPPED));
 }

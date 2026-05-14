@@ -2,84 +2,64 @@
 
 class SendBufferChunk;
 
-/*--------------
-	SendBuffer
----------------*/
-
 class SendBuffer
 {
 public:
-	SendBuffer(SendBufferChunkRef owner, BYTE* buffer, uint32 allocSize);
-	~SendBuffer();
+    SendBuffer(SendBufferChunkRef owner, BYTE* buffer, uint32 allocSize);
 
-	BYTE*			Buffer() { return _buffer; }
-	uint32			AllocSize() { return _allocSize; }
-	uint32			WriteSize() { return _writeSize; }
-	/*
-	* @brief ��Ŷ ����� �Ϸ��ϰ� ���� ����� ������ ũ�⸦ Ȯ��
-	* @param writeSize ������ ���ۿ� ����� ����Ʈ ũ��
-	*/
-	void			Close(uint32 writeSize);
+    BYTE* GetBuffer() { return _buffer; }
+    uint32 GetWriteSize() const { return _writeSize; }
+    void   Close(uint32 writeSize);
 
 private:
-	BYTE*				_buffer;
-	uint32				_allocSize = 0;
-	uint32				_writeSize = 0;
-	SendBufferChunkRef	_owner;
+    SendBufferChunkRef _owner;
+    BYTE* _buffer = nullptr;
+    uint32 _allocSize = 0;
+    uint32 _writeSize = 0;
 };
 
-/*--------------------
-	SendBufferChunk
----------------------*/
-
-class SendBufferChunk : public enable_shared_from_this<SendBufferChunk>
+class SendBufferChunk   
 {
+    friend class SendBuffer;
+    friend struct SendBufferChunkNode;
+
 public:
-	SendBufferChunk();
-	~SendBufferChunk();
+    SendBufferChunk() = default;
 
-	void			Reset();
-	/* @brief ûũ ���� �޸𸮿��� allocSize��ŭ �Ҵ��� SendBuffer ��ȯ */
-	SendBufferRef	Open(uint32 allocSize);
-	/* @brief ���� ���� �Ҵ� ��û�� �ݰ�, ���� ��뷮�� Ȯ�� */
-	void			Close(uint32 writeSize);
-
-	bool			IsOpen() { return _open; }
-	BYTE*			Buffer() { return &_buffer[_usedSize]; }
-	uint32			FreeSize() { return static_cast<uint32>(_buffer.size() - _usedSize); }
+    void          Reset();
+    SendBufferRef Open(uint32 allocSize, SendBufferChunkRef self);
+    bool          IsOpen()      const { return _open; }
+    uint32        GetFreeSize() const { return CHUNK_SIZE - _usedSize; }
 
 private:
-	Array<BYTE, SEND_BUFFER_CHUNK_SIZE>		_buffer = {};
-	bool									_open = false;
-	uint32									_usedSize = 0;
+    void  Close(uint32 writeSize);
+    BYTE* GetWritePos() { return _buffer + _usedSize; }
+
+    static constexpr uint32 CHUNK_SIZE = Config::Buffer::SEND_BUFFER_CHUNK_SIZE;
+
+    BYTE   _buffer[CHUNK_SIZE] = {};
+    uint32 _usedSize = 0;
+    bool   _open = false;
 };
 
-/*---------------------
-	SendBufferManager
-----------------------*/
+
+struct alignas(MEMORY_ALLOCATION_ALIGNMENT) SendBufferChunkNode : public SLIST_ENTRY
+{
+    SendBufferChunk chunk;
+};
 
 class SendBufferManager
 {
 public:
-	/*
-	* @brief ���ۿ� ����� �޸� ���۸� �Ҵ�
-	* @param size ��û�� ���� ũ��
-	* @return �Ҵ�� ������ �����ϴ� SendBufferRef
-	* @details �Ź� �Ҵ����� �ʰ� TLS Chunk���� ���������� ������ �߶� ���� (Lock-Free)
-	*/
-	SendBufferRef		Open(uint32 size);
+    SendBufferManager();
+    ~SendBufferManager();
+
+    SendBufferRef Open(uint32 allocSize);
+    void          Push(SendBufferChunk* chunk);
 
 private:
-	/*
-	* @brief ���� Ǯ���� ��� ������ SendBufferChunk�� �ϳ� ����
-	* @details Ǯ�� ����ִٸ� ���� ����, ���� Ƚ���� 0�� �Ǹ� �ڵ����� Ǯ�� �ݳ�
-	*/
-	SendBufferChunkRef	Pop();
-	void				Push(SendBufferChunkRef buffer);
+    SendBufferChunkRef Pop();
+    static void        PushGlobal(SendBufferChunk* chunk);
 
-	static void			PushGlobal(SendBufferChunk* buffer);
-
-private:
-	USE_LOCK;
-	Vector<SendBufferChunkRef> _sendBufferChunks;
+    SLIST_HEADER _listHeader;
 };

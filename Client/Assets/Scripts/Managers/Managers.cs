@@ -1,78 +1,91 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Managers : MonoBehaviour
 {
-    static Managers s_Instance;
-    public static Managers Instance { get { Init(); return s_Instance; } }
+    private const int MaxPacketsPerFrame = 100;
 
+    private static Managers s_instance;
+    private static bool s_isQuitting;
 
-    NetworkManager _network = new NetworkManager();
-    public static NetworkManager Network { get { return Instance._network; } }
-
-    DataManager _data = new DataManager();
-    ObjectManager _object = new ObjectManager();
-    PoolManager _pool = new PoolManager();
-    ResourceManager _resource = new ResourceManager();
-    SceneManagerEx _scene = new SceneManagerEx();
-    SoundManager _sound = new SoundManager();
-    UIManager _ui = new UIManager();
-    public static DataManager Data { get { return Instance._data; } }
-    public static ObjectManager Object { get { return Instance._object; } }
-    public static PoolManager Pool { get { return Instance._pool; } }
-    public static ResourceManager Resource { get { return Instance._resource; } }
-    public static SceneManagerEx Scene { get { return Instance._scene; } }
-    public static SoundManager Sound { get { return Instance._sound; } }
-    public static UIManager UI { get { return Instance._ui; } }
-
-    void Awake()
+    public static Managers Instance
     {
-        QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = 30;
-        QualitySettings.shadows = ShadowQuality.Disable;
-        QualitySettings.pixelLightCount = 0;
-        QualitySettings.antiAliasing = 0;
-        Screen.SetResolution(1280, 720, false);
-        Application.runInBackground = true;
+        get
+        {
+            if (s_isQuitting) return null;
+            if (s_instance == null) Bootstrap();
+            return s_instance;
+        }
     }
 
-    void Start()
+    public static WebManager Web => s_instance._web;
+    public static NetworkManager  Network  => s_instance._network;
+    public static UIManager       UI       => s_instance._ui;
+    public static ResourceManager Resource => s_instance._resource;
+    public static SoundManager    Sound    => s_instance._sound;
+    public static SceneManagerEx  Scene    => s_instance._scene;
+    public static DataManager     Data     => s_instance._data;
+    public static PoolManager     Pool     => s_instance._pool;
+    public static ObjectManager   Object   => s_instance._object;
+
+    private WebManager _web  = new();
+    private NetworkManager  _network  = new();
+    private UIManager       _ui       = new();
+    private ResourceManager _resource = new();
+    private SoundManager    _sound    = new();
+    private SceneManagerEx  _scene    = new();
+    private DataManager     _data     = new();
+    private PoolManager     _pool     = new();
+    private ObjectManager   _object   = new();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Bootstrap()
     {
-        Init();
+        if (s_instance != null) return;
+
+        GameObject go = new GameObject("@Managers");
+        DontDestroyOnLoad(go);
+        s_instance = go.AddComponent<Managers>();
+        s_instance.Init();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Init()
     {
+        _data.Init();
+        _sound.Init();
+        _pool.Init();
+    }
+
+    private void Update()
+    {
+        PacketQueue.Instance.Flush(MaxPacketsPerFrame);
         _network.Update();
         _object.Update();
     }
 
-    private static void Init()
+    private void OnApplicationQuit()
     {
-        if (s_Instance == null)
-        {
-            GameObject go = GameObject.Find("@Managers");
-            if (go == null)
-            {
-                go = new GameObject { name = "@Managers" };
-                go.AddComponent<Managers>();
-            }
-            DontDestroyOnLoad(go);
-            s_Instance = go.GetComponent<Managers>();
-
-            s_Instance._data.Init();
-            s_Instance._pool.Init();
-            s_Instance._sound.Init();
-        }
+        s_isQuitting = true;
+        Clear();
     }
 
-    public static void Clear()
+    public void ClearScene()
     {
-        Sound.Clear();
-        Scene.Clear();
-        UI.Clear();
-        Pool.Clear();
+        _scene?.Clear(); 
+        _object?.Clear();
+        _sound?.Clear();
+        _pool?.Clear();
+    }
+
+    public void Clear()
+    {
+        _network?.Clear();
+        _sound?.Clear();
+        _pool?.Clear();
+    }
+
+    private void OnDestroy()
+    {
+        if (s_instance == this)
+            s_instance = null;
     }
 }

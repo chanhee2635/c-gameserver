@@ -1,118 +1,77 @@
 #pragma once
-#include "DBConnection.h"
-
-template<int32 C>
-struct FullBits { enum { value = (1 << (C -1)) | FullBits<C-1>::value }; };
-
-template<>
-struct FullBits<1> { enum { value = 1 }; };
-
-template<>
-struct FullBits<0> { enum { value = 0 }; };
+#include "DbConnection.h"
 
 template<int32 ParamCount, int32 ColumnCount>
-class DBBind
+class DbBind
 {
 public:
-	DBBind(DBConnection& dbConnection, const WCHAR* query) : _dbConnection(dbConnection), _query(query)
-	{
-		::memset(_paramIndex, 0, sizeof(_paramIndex));
-		::memset(_columnIndex, 0, sizeof(_columnIndex));
-		_paramFlag = 0;
-		_columnFlag = 0;
-		_dbConnection.Unbind();
-	}
+    DbBind(DbConnection& conn, const WCHAR* query)
+        : _conn(conn), _query(query)
+    {
+        ::memset(_paramIndex,  0, sizeof(_paramIndex));
+        ::memset(_columnIndex, 0, sizeof(_columnIndex));
+    }
 
-	bool Validate()
-	{
-		return _paramFlag == FullBits<ParamCount>::value && _columnFlag == FullBits<ColumnCount>::value;
-	}
+    // ── Input parameters ─────────────────────────────────────────────────────
 
-	bool Execute()
-	{
-		bool validate = Validate();
-		ASSERT_CRASH(validate);
-		return _dbConnection.Execute(_query);
-	}
+    template<typename T>
+    void BindParam(T& value)
+    {
+        _conn.BindParam(_paramIdx + 1, value, &_paramIndex[_paramIdx]);
+        _paramIdx++;
+    }
 
-	bool Fetch()
-	{
-		return _dbConnection.Fetch();
-	}
+    void BindParam(WCHAR* str)
+    {
+        _conn.BindParam(_paramIdx + 1, str, &_paramIndex[_paramIdx]);
+        _paramIdx++;
+    }
 
-	int32 GetRowCount()
-	{
-		return _dbConnection.GetRowCount();
-	}
+    void BindParam(BYTE* bin, int32 size)
+    {
+        _conn.BindParam(_paramIdx + 1, bin, size, &_paramIndex[_paramIdx]);
+        _paramIdx++;
+    }
 
-public:
-	template<typename T>
-	void BindParam(int32 idx, T& value)
-	{
-		_dbConnection.BindParam(idx + 1, &value, &_paramIndex[idx]);
-		_paramFlag |= (1LL << idx);
-	}
+    // ── Output columns ───────────────────────────────────────────────────────
 
-	void BindParam(int32 idx, const WCHAR* value)
-	{
-		_dbConnection.BindParam(idx + 1, value, &_paramIndex[idx]);
-		_paramFlag |= (1LL << idx);
-	}
+    template<typename T>
+    void BindCol(T& value)
+    {
+        _conn.BindCol(_columnIdx + 1, value, &_columnIndex[_columnIdx]);
+        _columnIdx++;
+    }
 
-	template<int32 N>
-	void BindParam(int32 idx, WCHAR(&value)[N])
-	{
-		_dbConnection.BindParam(idx + 1, value, &_paramIndex[idx]);
-		_paramFlag |= (1LL << idx);
-	}
+    void BindCol(WCHAR* str, int32 size)
+    {
+        _conn.BindCol(_columnIdx + 1, str, size, &_columnIndex[_columnIdx]);
+        _columnIdx++;
+    }
 
-	template<typename T, int32 N>
-	void BindParam(int32 idx, T(&value)[N])
-	{
-		_dbConnection.BindParam(idx + 1, (const BYTE*)value, size32(T) * N, & _paramIndex[idx]);
-		_paramFlag |= (1LL << idx);
-	}
+    void BindCol(BYTE* bin, int32 size)
+    {
+        _conn.BindCol(_columnIdx + 1, bin, size, &_columnIndex[_columnIdx]);
+        _columnIdx++;
+    }
 
-	template<typename T>
-	void BindParam(int32 idx, T* value, int32 N)
-	{
-		_dbConnection.BindParam(idx + 1, (const BYTE*)value, size32(T) * N, &_paramIndex[idx]);
-		_paramFlag |= (1LL << idx);
-	}
+    // ── Execute ──────────────────────────────────────────────────────────────
 
-	template<typename T>
-	void BindCol(int32 idx, T& value)
-	{
-		_dbConnection.BindCol(idx + 1, &value, &_columnIndex[idx]);
-		_columnFlag |= (1LL << idx);
-	}
+    bool Execute()
+    {
+        ASSERT_CRASH(_paramIdx  == ParamCount);
+        ASSERT_CRASH(_columnIdx == ColumnCount);
 
-	template<int32 N>
-	void BindCol(int32 idx, WCHAR(& value)[N])
-	{
-		_dbConnection.BindCol(idx + 1, value, N - 1, &_columnIndex[idx]);
-		_columnFlag |= (1LL << idx);
-	}
+        if (!_conn.Prepare(_query)) return false;
+        return _conn.Execute();
+    }
 
-	void BindCol(int32 idx, WCHAR* value, int32 len)
-	{
-		_dbConnection.BindCol(idx + 1, value, len - 1, &_columnIndex[idx]);
-		_columnFlag |= (1LL << idx);
-	}
+private:
+    DbConnection& _conn;
+    const WCHAR*  _query;
 
-	template<typename T, int32 N>
-	void BindCol(int32 idx, T(&value)[N])
-	{
-		_dbConnection.BindCol(idx + 1, value, size32(T) * N, &_columnIndex[idx]);
-		_columnFlag |= (1LL << idx);
-	}
+    int32  _paramIdx  = 0;
+    int32  _columnIdx = 0;
 
-protected:
-	DBConnection&	_dbConnection;
-	const WCHAR*	_query;
-	SQLLEN			_paramIndex[ParamCount > 0 ? ParamCount : 1];
-	SQLLEN			_columnIndex[ColumnCount > 0 ? ColumnCount : 1];
-	uint64			_paramFlag;
-	uint64			_columnFlag;
+    SQLLEN _paramIndex [ParamCount  == 0 ? 1 : ParamCount];
+    SQLLEN _columnIndex[ColumnCount == 0 ? 1 : ColumnCount];
 };
-

@@ -1,48 +1,53 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    public GameObject MyPlayer;
-    private float distance = 4f;
-    private float speed = 1.5f;
+    public GameObject MyPlayer { get; set; }
 
-    Quaternion rotation;
+    [SerializeField] private float distance    = 4f;
+    [SerializeField] private float sensitivity = 2.0f;
+    [SerializeField] private float smoothSpeed = 10.0f;
+
     public float X { get; set; }
     public float Y { get; set; }
-    float yMinLimit = -20f;
-    float yMaxLimit = 20f;
 
-    private void Start()
-    {
-        //Cursor.lockState = CursorLockMode.Locked;
-        //Cursor.visible = false;
-    }
+    private const float Y_MIN_LIMIT = -20f;
+    private const float Y_MAX_LIMIT =  50f;
+    private Quaternion _rotation;
 
-    void LateUpdate()
+    private void LateUpdate()
     {
         if (MyPlayer == null) return;
 
-        RotationCam();
+        // 마우스 입력 처리
+        X += Input.GetAxis("Mouse X") * sensitivity;
+        Y -= Input.GetAxis("Mouse Y") * sensitivity;
+        Y = ClampAngle(Y, Y_MIN_LIMIT, Y_MAX_LIMIT);
 
-        transform.position = MyPlayer.transform.position + rotation * new Vector3(0, distance * 0.8f, -distance);
-        transform.LookAt(MyPlayer.transform.position + (transform.up * 0.5f));
+        _rotation = Quaternion.Euler(Y, X, 0);
+
+        Vector3 playerPos = MyPlayer.transform.position;
+        Vector3 targetPos = playerPos + _rotation * new Vector3(0, 1.5f, -distance);
+
+        transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * smoothSpeed);
+        transform.LookAt(playerPos + (Vector3.up * 1.0f));
     }
 
-    void RotationCam()
+    public void SetPosition()
     {
-        X += Input.GetAxis("Mouse X") * speed;
-        Y -= Input.GetAxis("Mouse Y") * speed;
-        Y = ClampAngle(Y, yMinLimit, yMaxLimit);
-        rotation = Quaternion.Euler(Y, X, 0);
+        if (MyPlayer == null) return;
+
+        _rotation = Quaternion.Euler(Y, X, 0);
+        Vector3 targetPos = MyPlayer.transform.position + _rotation * new Vector3(0, 1.5f, -distance);
+
+        transform.position = targetPos;
+        transform.LookAt(MyPlayer.transform.position + (Vector3.up * 1.0f));
     }
 
-    float ClampAngle(float angle, float min, float max)
+    private float ClampAngle(float angle, float min, float max)
     {
         if (angle < -360) angle += 360;
-        else if (angle > 360) angle -= 360;
-
+        if (angle > 360)  angle -= 360;
         return Mathf.Clamp(angle, min, max);
     }
 }

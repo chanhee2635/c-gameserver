@@ -1,18 +1,14 @@
 using Protocol;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
-using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class UI_CreatePlayerPopup : UI_Popup
 {
-    int _chooseTemplateId = -1;
+    private int _chooseTemplateId = -1;
 
-    enum Buttons { WarriorBtn, ThiefBtn, CreateBtn, ExitBtn }
-    enum Texts { WarriorChk, ThiefChk, NamePlaceholder }
+    enum Buttons     { WarriorBtn, ThiefBtn, CreateBtn, ExitBtn }
+    enum Texts       { WarriorChk, ThiefChk, NamePlaceholder }
     enum InputFields { NameInput }
 
     protected override void Init()
@@ -28,40 +24,35 @@ public class UI_CreatePlayerPopup : UI_Popup
         GetButton((int)Buttons.ExitBtn).gameObject.BindEvent(OnClickExitButton);
     }
 
-    void SelectClass(int templateId)
+    private void SelectClass(int templateId)
     {
         _chooseTemplateId = templateId;
         GetText((int)Texts.WarriorChk).text = "";
-        GetText((int)Texts.ThiefChk).text = "";
+        GetText((int)Texts.ThiefChk).text   = "";
 
-        PrefabData data = Managers.Data.PrefabDataDict[templateId];
-        if (templateId == 1) GetText((int)Texts.WarriorChk).text = "¡Ü";
-        else if (templateId == 2) GetText((int)Texts.ThiefChk).text = "¡Ü";
+        var data = Managers.Data.PrefabDataDict[templateId];
+        if (templateId == 1)      GetText((int)Texts.WarriorChk).text = "â—";
+        else if (templateId == 2) GetText((int)Texts.ThiefChk).text   = "â—";
     }
 
-    public void OnClickWarriorButton(PointerEventData evt) { SelectClass(1); }
-    public void OnClickThiefButton(PointerEventData evt) { SelectClass(2); }
-    public void OnClickCreateButton(PointerEventData evt)
+    private void OnClickWarriorButton(PointerEventData evt) => SelectClass(1);
+    private void OnClickThiefButton(PointerEventData evt)   => SelectClass(2);
+
+    private void OnClickCreateButton(PointerEventData evt)
     {
         if (_chooseTemplateId == -1) return;
 
         string name = GetInputField((int)InputFields.NameInput).text;
         if (string.IsNullOrEmpty(name))
         {
-            SetWarningMessage("´Ð³×ÀÓÀ» ÀÔ·ÂÇØÁÖ¼¼¿ä!");
+            SetWarningMessage("ìºë¦­í„° ì´ë¦„ì„ ìž…ë ¥í•˜ì„¸ìš”!");
             return;
         }
 
-        C_CreatePlayer packet = new C_CreatePlayer();
-        packet.TemplateId = _chooseTemplateId;
-        packet.Name = name;
-        Managers.Network.Send(packet);
+        Managers.Network.Send(new CCreatePlayer { TemplateId = _chooseTemplateId, Name = name });
     }
 
-    public void OnClickExitButton(PointerEventData evt)
-    {
-        ClosePopupUI();
-    }
+    private void OnClickExitButton(PointerEventData evt) => ClosePopupUI();
 
     public void SetWarningMessage(string text)
     {

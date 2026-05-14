@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)Libraries\Libs\ServerCore\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Libraries\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)Libraries\Libs\ServerCore\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Libraries\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)Libraries\Libs\ServerCore\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Libraries\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Libraries\Libs\ServerCore\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Libraries\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -90,7 +90,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -108,7 +108,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -127,7 +127,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -145,7 +145,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -158,80 +158,52 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h" />
-    <ClInclude Include="BufferReader.h" />
-    <ClInclude Include="BufferWriter.h" />
-    <ClInclude Include="ConfigManager.h" />
-    <ClInclude Include="ConsoleLog.h" />
     <ClInclude Include="Container.h" />
+    <ClInclude Include="CoreConfig.h" />
     <ClInclude Include="CoreGlobal.h" />
     <ClInclude Include="CoreMacro.h" />
     <ClInclude Include="CorePch.h" />
     <ClInclude Include="CoreTLS.h" />
-    <ClInclude Include="DBBind.h" />
-    <ClInclude Include="DBConnection.h" />
-    <ClInclude Include="DBConnectionPool.h" />
-    <ClInclude Include="DBService.h" />
-    <ClInclude Include="DeadLockProfiler.h" />
-    <ClInclude Include="FileLogger.h" />
-    <ClInclude Include="FileUtils.h" />
-    <ClInclude Include="GameMetrics.h" />
+    <ClInclude Include="DbBind.h" />
+    <ClInclude Include="DbConnection.h" />
+    <ClInclude Include="DbConnectionPool.h" />
+    <ClInclude Include="LockQueue.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="ServerStats.h" />
     <ClInclude Include="GlobalQueue.h" />
     <ClInclude Include="IocpCore.h" />
     <ClInclude Include="IocpEvent.h" />
-    <ClInclude Include="Job.h" />
     <ClInclude Include="JobTimer.h" />
-    <ClInclude Include="LockQueue.h" />
     <ClInclude Include="JobQueue.h" />
     <ClInclude Include="Listener.h" />
-    <ClInclude Include="Lock.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="MemoryPool.h" />
     <ClInclude Include="NetAddress.h" />
-    <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="PrometheusServer.h" />
     <ClInclude Include="RecvBuffer.h" />
-    <ClInclude Include="RefCounting.h" />
     <ClInclude Include="SendBuffer.h" />
     <ClInclude Include="Service.h" />
     <ClInclude Include="Session.h" />
     <ClInclude Include="SocketUtils.h" />
     <ClInclude Include="ThreadManager.h" />
-    <ClInclude Include="TypeCast.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Allocator.cpp" />
-    <ClCompile Include="BufferReader.cpp" />
-    <ClCompile Include="BufferWriter.cpp" />
-    <ClCompile Include="ConfigManager.cpp" />
-    <ClCompile Include="ConsoleLog.cpp" />
     <ClCompile Include="CoreGlobal.cpp" />
-    <ClCompile Include="CoreMacro.cpp" />
     <ClCompile Include="CorePch.cpp" />
     <ClCompile Include="CoreTLS.cpp" />
-    <ClCompile Include="DBBind.cpp" />
-    <ClCompile Include="DBConnection.cpp" />
-    <ClCompile Include="DBConnectionPool.cpp" />
-    <ClCompile Include="DBService.cpp" />
-    <ClCompile Include="DeadLockProfiler.cpp" />
-    <ClCompile Include="FileLogger.cpp" />
-    <ClCompile Include="FileUtils.cpp" />
-    <ClCompile Include="GameMetrics.cpp" />
+    <ClCompile Include="DbConnection.cpp" />
+    <ClCompile Include="DbConnectionPool.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="ServerStats.cpp" />
     <ClCompile Include="GlobalQueue.cpp" />
     <ClCompile Include="IocpCore.cpp" />
     <ClCompile Include="IocpEvent.cpp" />
-    <ClCompile Include="Job.cpp" />
     <ClCompile Include="JobTimer.cpp" />
-    <ClCompile Include="LockQueue.cpp" />
     <ClCompile Include="JobQueue.cpp" />
     <ClCompile Include="Listener.cpp" />
-    <ClCompile Include="Lock.cpp" />
     <ClCompile Include="Memory.cpp" />
     <ClCompile Include="MemoryPool.cpp" />
     <ClCompile Include="NetAddress.cpp" />
@@ -241,15 +213,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="PrometheusServer.cpp" />
     <ClCompile Include="RecvBuffer.cpp" />
-    <ClCompile Include="RefCounting.cpp" />
     <ClCompile Include="SendBuffer.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Session.cpp" />
     <ClCompile Include="SocketUtils.cpp" />
     <ClCompile Include="ThreadManager.cpp" />
-    <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

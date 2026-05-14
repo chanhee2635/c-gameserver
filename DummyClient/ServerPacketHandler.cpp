@@ -1,129 +1,51 @@
-#include "pch.h"
-#include "ServerPacketHandler.h"
-#include "GameSession.h"
-#include "ChatSession.h"
+﻿#include "pch.h"
+#include "Protocol/ServerPacketHandler.h"
 
-PacketHandlerFunc GPacketHandler[UINT16_MAX];
-
-bool Handle_INVALID(PacketSessionRef& session, BYTE* buffer, int32 len)
+bool ServerPacketHandler::OnHandle_S_PLAYER_LIST(DummySessionRef session, const Protocol::SPlayerList& pkt)
 {
-	PacketHeader* header = reinterpret_cast<PacketHeader*>(buffer);
-	return false;
+    return true;
 }
-
-bool S_LoginAuthHandler(PacketSessionRef& session, Protocol::S_LoginAuth& pkt)
+bool ServerPacketHandler::OnHandle_S_CREATE_PLAYER(DummySessionRef session, const Protocol::SCreatePlayer& pkt)
 {
-	return true;
+    return true;
 }
-
-bool S_JoinHandler(PacketSessionRef& session, Protocol::S_Join& pkt)
+bool ServerPacketHandler::OnHandle_S_ENTER_GAME(DummySessionRef session, const Protocol::SEnterGame& pkt)
 {
-	return true;
+    return true;
 }
-
-bool S_PlayerListHandler(PacketSessionRef& session, Protocol::S_PlayerList& pkt)
+bool ServerPacketHandler::OnHandle_S_ATTACK(DummySessionRef session, const Protocol::SAttack& pkt)
 {
-	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
-
-	if (pkt.players_size() == 0)
-	{
-		Protocol::C_CreatePlayer createPacket;
-		createPacket.set_name("Dummy_" + to_string(gameSession->_dummyId));
-		createPacket.set_template_id(rand() % 2 + 1);
-		auto sendBuffer = ServerPacketHandler::MakeSendBuffer(createPacket);
-		gameSession->Send(sendBuffer);
-		return true;
-	}
-
-	const Protocol::PlayerSummary& info = pkt.players(0);
-	Protocol::C_EnterGame packet;
-	packet.set_name(info.name());
-	auto sendBuffer = ServerPacketHandler::MakeSendBuffer(packet);
-	gameSession->Send(sendBuffer);
-
-	return true;
+    return true;
 }
-
-bool S_CreatePlayerHandler(PacketSessionRef& session, Protocol::S_CreatePlayer& pkt)
+bool ServerPacketHandler::OnHandle_S_DIE(DummySessionRef session, const Protocol::SDie& pkt)
 {
-	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
-
-	if (!pkt.success()) return false;
-
-	Protocol::C_EnterGame packet;
-	packet.set_name(pkt.player().name());
-	auto sendBuffer = ServerPacketHandler::MakeSendBuffer(packet);
-	gameSession->Send(sendBuffer);
-
-	return true;
+    return true;
 }
-
-bool S_EnterGameHandler(PacketSessionRef& session, Protocol::S_EnterGame& pkt)
+bool ServerPacketHandler::OnHandle_S_CHANGE_HP(DummySessionRef session, const Protocol::SChangeHp& pkt)
 {
-	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
-	gameSession->SetObjectInfo(pkt.my_player());
-
-	Protocol::C_LoadCompleted packet;
-	auto sendBuffer = ServerPacketHandler::MakeSendBuffer(packet);
-	gameSession->Send(sendBuffer);
-
-	return true;
+    return true;
 }
-
-bool S_UpdateSceneHandler(PacketSessionRef& session, Protocol::S_UpdateScene& pkt)
+bool ServerPacketHandler::OnHandle_S_CHANGE_EXP(DummySessionRef session, const Protocol::SChangeExp& pkt)
 {
-	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
-	DummyUserRef owner = gameSession->GetOwner();
-	if (owner && !owner->IsChatConnected()) 
-		owner->ConnectToChat();
-
-	return true;
+    return true;
 }
-
-bool S_ReviveHandler(PacketSessionRef& session, Protocol::S_Revive& pkt)
+bool ServerPacketHandler::OnHandle_S_CHANGE_LEVEL(DummySessionRef session, const Protocol::SChangeLevel& pkt)
 {
-	return false;
+    return true;
 }
-
-bool S_AttackHandler(PacketSessionRef& session, Protocol::S_Attack& pkt)
+bool ServerPacketHandler::OnHandle_S_UPDATE_SCENE(DummySessionRef session, const Protocol::SUpdateScene& pkt)
 {
-	return true;
+    return true;
 }
-
-bool S_DieHandler(PacketSessionRef& session, Protocol::S_Die& pkt)
+bool ServerPacketHandler::OnHandle_S_REVIVE(DummySessionRef session, const Protocol::SRevive& pkt)
 {
-	return true;
+    return true;
 }
-
-bool S_ChangeHpHandler(PacketSessionRef& session, Protocol::S_ChangeHp& pkt)
+bool ServerPacketHandler::OnHandle_S_CHAT_LOGIN(DummySessionRef session, const Protocol::SChatLogin& pkt)
 {
-	return true;
+    return true;
 }
-
-bool S_ChangeExpHandler(PacketSessionRef& session, Protocol::S_ChangeExp& pkt)
+bool ServerPacketHandler::OnHandle_S_CHAT(DummySessionRef session, const Protocol::SChat& pkt)
 {
-	return true;
-}
-
-
-bool S_ChangeLevelHandler(PacketSessionRef& session, Protocol::S_ChangeLevel& pkt)
-{
-	return true;
-}
-
-bool S_ChatLoginHandler(PacketSessionRef& session, Protocol::S_ChatLogin& pkt)
-{
-	ChatSessionRef chatSession = static_pointer_cast<ChatSession>(session);
-
-	DummyUserRef owner = chatSession->GetOwner();
-	if (owner == nullptr) return false;
-
-	owner->ConnectCompleted();
-
-	return true;
-}
-
-bool S_ChatHandler(PacketSessionRef& session, Protocol::S_Chat& pkt)
-{
-	return true;
+    return true;
 }

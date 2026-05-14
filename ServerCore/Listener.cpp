@@ -1,47 +1,37 @@
 #include "pch.h"
 #include "Listener.h"
-#include "SocketUtils.h"
 #include "IocpEvent.h"
 #include "Session.h"
 #include "Service.h"
 
-/*---------------
-     Listener
----------------*/
+static constexpr int32 SOCKADDR_BUFFER_SIZE = sizeof(SOCKADDR_IN) + 16;
 
 Listener::~Listener()
 {
-    SocketUtils::Close(_socket);
-
+    SocketUtils::Close(_listenSocket);
     for (AcceptEvent* acceptEvent : _acceptEvents)
-    {
-        delete acceptEvent;
-    }
-    _service = nullptr;
+        xdelete(acceptEvent);
+    _acceptEvents.clear();
 }
 
-bool Listener::StartAccept(ServiceRef service)
+bool Listener::StartAccept(ServerServiceRef service)
 {
     _service = service;
-    if (service == nullptr) return false;
+    _listenSocket = SocketUtils::CreateSocket();
+    if (_listenSocket == INVALID_SOCKET) return false;
 
-    _socket = SocketUtils::CreateSocket();
-    if (_socket == INVALID_SOCKET) return false;
+    if (!_service->GetIocpCore()->Register(shared_from_this())) return false;
 
-    if (service->GetIocpCore()->Register(shared_from_this()) == false) return false;
+    if (!SocketUtils::SetReuseAddress(_listenSocket, true)) return false;
+    if (!SocketUtils::SetLinger(_listenSocket, 0, 0))       return false;
+    if (!SocketUtils::Bind(_listenSocket, _service->GetAddress())) return false;
+    if (!SocketUtils::Listen(_listenSocket))                return false;
 
-    if (SocketUtils::SetReuseAddress(_socket, true) == false) return false;
-    if (SocketUtils::SetLinger(_socket, 0, 0) == false) return false;
-
-    if (SocketUtils::Bind(_socket, service->GetNetAddress()) == false) return false;
-    if (SocketUtils::Listen(_socket) == false) return false;
-
-    const int32 acceptCount = service->GetAcceptCount();
-    for (int32 i = 0; i < acceptCount; i++)
+    const int32 acceptCount = _service->GetMaxSessionCount();
+    for (int32 i = 0; i < acceptCount; ++i)
     {
-        // AcceptEvent: 자체 addrBuffer 보유 → session->_recvBuffer 오염 없음
-        AcceptEvent* acceptEvent = new AcceptEvent();
-        acceptEvent->owner = shared_from_this();
+        AcceptEvent* acceptEvent = xnew<AcceptEvent>();
+        acceptEvent->SetOwner(shared_from_this());
         _acceptEvents.push_back(acceptEvent);
         RegisterAccept(acceptEvent);
     }
@@ -49,48 +39,33 @@ bool Listener::StartAccept(ServiceRef service)
     return true;
 }
 
-void Listener::CloseSocket()
+void Listener::Close()
 {
-    SocketUtils::Close(_socket);
+    SocketUtils::Close(_listenSocket);
 }
 
-HANDLE Listener::GetHandle()
+void Listener::Dispatch(IocpEvent* iocpEvent, int32 numOfBytes)
 {
-    return reinterpret_cast<HANDLE>(_socket);
-}
-
-void Listener::Dispatch(IocpEvent* iocpEvent, int32 numOfByte)
-{
-    if (iocpEvent->type == EventType::Accept)
-        ProcessAccept(static_cast<AcceptEvent*>(iocpEvent));
+    ASSERT_CRASH(iocpEvent->GetType() == IocpEventType::Accept);
+    ProcessAccept(static_cast<AcceptEvent*>(iocpEvent));
 }
 
 void Listener::RegisterAccept(AcceptEvent* acceptEvent)
 {
     SessionRef session = _service->CreateSession();
-
+    acceptEvent->SetSession(session);
     acceptEvent->Init();
-    acceptEvent->session = session;
-    // addrBuffer 초기화 (재사용 시 이전 데이터 오염 방지)
-    ::memset(acceptEvent->addrBuffer, 0, sizeof(acceptEvent->addrBuffer));
 
     DWORD bytesReceived = 0;
-    // AcceptEx: 실제 데이터 수신 크기 = 0 (주소만 받음)
-    // 로컬/원격 주소를 각각 ADDR_BUFFER_SIZE 바이트씩 addrBuffer 에 저장
-    if (false == SocketUtils::AcceptEx(
-        _socket,
-        session->GetSocket(),
-        acceptEvent->addrBuffer,          // 주소 전용 버퍼 (session 수신 버퍼 오염 없음)
-        0,                                // 데이터 수신 크기 = 0
-        Config::Network::ADDR_BUFFER_SIZE,
-        Config::Network::ADDR_BUFFER_SIZE,
-        OUT &bytesReceived,
-        static_cast<LPOVERLAPPED>(acceptEvent)))
+    if (!SocketUtils::AcceptEx(_listenSocket, session->GetSocket(),
+        acceptEvent->GetAddressBuffer(), 0,
+        SOCKADDR_BUFFER_SIZE, SOCKADDR_BUFFER_SIZE,
+        OUT &bytesReceived, static_cast<LPOVERLAPPED>(acceptEvent)))
     {
-        const int32 errorCode = ::WSAGetLastError();
-        if (errorCode != WSA_IO_PENDING)
+        const int32 errCode = ::WSAGetLastError();
+        if (errCode != WSA_IO_PENDING)
         {
-            session->HandleError(errorCode);
+            LOG_ERROR(L"AcceptEx failed errCode=" + std::to_wstring(errCode));
             RegisterAccept(acceptEvent);
         }
     }
@@ -98,31 +73,27 @@ void Listener::RegisterAccept(AcceptEvent* acceptEvent)
 
 void Listener::ProcessAccept(AcceptEvent* acceptEvent)
 {
-    SessionRef session = acceptEvent->session;
+    SessionRef session = acceptEvent->GetSession();
 
-    if (false == SocketUtils::SetUpdateAcceptSocket(session->GetSocket(), _socket))
+    if (!SocketUtils::SetUpdateAcceptSocket(session->GetSocket(), _listenSocket))
     {
-        const int32 errorCode = ::WSAGetLastError();
-        session->HandleError(errorCode);
+        LOG_WARN(L"SetUpdateAcceptSocket failed, retrying accept");
         RegisterAccept(acceptEvent);
         return;
     }
 
-    SOCKADDR_IN sockAddress;
-    int32 sizeOfSockAddr = sizeof(sockAddress);
-    if (SOCKET_ERROR == ::getpeername(
-        session->GetSocket(),
-        OUT reinterpret_cast<SOCKADDR*>(&sockAddress),
-        &sizeOfSockAddr))
-    {
-        const int32 errorCode = ::WSAGetLastError();
-        session->HandleError(errorCode);
-        RegisterAccept(acceptEvent);
-        return;
-    }
+    SOCKADDR_IN* localAddr  = nullptr;
+    SOCKADDR_IN* remoteAddr = nullptr;
+    int32 localLen  = 0;
+    int32 remoteLen = 0;
+    ::GetAcceptExSockaddrs(acceptEvent->GetAddressBuffer(), 0,
+        SOCKADDR_BUFFER_SIZE, SOCKADDR_BUFFER_SIZE,
+        reinterpret_cast<SOCKADDR**>(&localAddr),  &localLen,
+        reinterpret_cast<SOCKADDR**>(&remoteAddr), &remoteLen);
 
-    session->SetNetAddress(NetAddress(sockAddress));
+    if (remoteAddr)
+        session->SetNetAddress(NetAddress(*remoteAddr));
+
     session->ProcessConnect();
-
     RegisterAccept(acceptEvent);
 }

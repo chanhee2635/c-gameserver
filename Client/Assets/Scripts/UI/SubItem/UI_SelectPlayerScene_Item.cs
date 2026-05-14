@@ -20,7 +20,7 @@ public class UI_SelectPlayerScene_Item : UI_Base
         gameObject.BindEvent(OnClickEvent);
     }
 
-    void OnClickEvent(PointerEventData evt)
+    private void OnClickEvent(PointerEventData evt)
     {
         if (Parent == null || Summary == null) return;
         Parent.SelectPlayer(Summary.Name);

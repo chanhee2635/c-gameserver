@@ -1,40 +1,27 @@
 #pragma once
-
-struct JobData
-{
-	JobData(weak_ptr<JobQueue> owner, JobRef job) : owner(owner), job(job)
-	{
-	}
-
-	weak_ptr<JobQueue>	owner;
-	JobRef				job;
-};
+#include "JobQueue.h"
 
 struct TimerItem
 {
-	bool operator<(const TimerItem& other) const
-	{
-		return executeTick > other.executeTick;
-	}
+    uint64          executeTick = 0;
+    JobQueueWeakRef owner;
+    Job             job;
 
-	uint64 executeTick = 0;
-	JobData* jobData = nullptr;
+    bool operator>(const TimerItem& other) const
+    {
+        return executeTick > other.executeTick;
+    }
 };
-
-/*------------
-	JobTimer
--------------*/
 
 class JobTimer
 {
 public:
-	void Reserve(uint64 tickAfter, weak_ptr<JobQueue> owner, JobRef job);
-	void Distribute(uint64 now);
-	void Clear();
+    void Reserve(uint32 afterMs, JobQueueRef owner, Job job);
+    void Distribute(uint64 nowTick);
+    static uint64 Now() { return ::GetTickCount64(); }
 
 private:
-	USE_LOCK;
-	PriorityQueue<TimerItem>	_items;
-	Atomic<bool>				_distributing = false;
+    USE_LOCK;
+    PriorityQueue<TimerItem, Vector<TimerItem>, std::greater<TimerItem>> _items;
+    Atomic<bool> _distributing = false;
 };
-

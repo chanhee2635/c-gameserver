@@ -36,17 +36,17 @@ namespace ServerCore
             }
         }
 
-        void RegisterConnect(SocketAsyncEventArgs args)
+        private void RegisterConnect(SocketAsyncEventArgs args)
         {
             ConnectContext context = args.UserToken as ConnectContext;
             if (context == null) return;
 
             bool pending = context.Socket.ConnectAsync(args);
-            if (pending == false)
+            if (!pending)
                 OnConnectCompleted(null, args);
         }
 
-        void OnConnectCompleted(object sender, SocketAsyncEventArgs args)
+        private void OnConnectCompleted(object sender, SocketAsyncEventArgs args)
         {
             ConnectContext context = args.UserToken as ConnectContext;
             if (context == null) return;

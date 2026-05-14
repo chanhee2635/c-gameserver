@@ -11,88 +11,64 @@
     <Filter Include="소스 파일\Protocol\Proto">
       <UniqueIdentifier>{877d6e1f-e0b6-4af7-a835-9a406b66d791}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Main">
+      <UniqueIdentifier>{d3c61ebf-3d3d-4dc7-a19b-639d1b3c662f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Protocol\Common.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="Protocol\Game.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="Protocol\Login.pb.cc">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="DummySession.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
     <ClCompile Include="DummyClient.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\Main</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
+      <Filter>소스 파일\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="Protocol\ServerPacketHandler_Generated.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="ServerPacketHandler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="DummyUser.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="GameSession.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="ChatSession.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="Chat.pb.cc">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="Client.pb.cc">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="Enum.pb.cc">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="Game.pb.cc">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="Login.pb.cc">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Protocol\Common.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="Protocol\Game.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="Protocol\Login.pb.h">
+      <Filter>소스 파일\Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="DummySession.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
+      <Filter>소스 파일\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="Protocol\ServerPacketHandler.h">
       <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="ServerPacketHandler.h">
-      <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="ChatSession.h">
-      <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="DummyUser.h">
-      <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="GameSession.h">
-      <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Chat.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="Client.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="Enum.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="Game.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="Login.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Common\protoc-3.21.12-win64\bin\Enum.proto">
+    <None Include="..\Common\Protocol\Common.proto">
       <Filter>소스 파일\Protocol\Proto</Filter>
     </None>
-    <None Include="..\Common\protoc-3.21.12-win64\bin\GenPackets.bat">
+    <None Include="..\Common\Protocol\Game.proto">
       <Filter>소스 파일\Protocol\Proto</Filter>
     </None>
-    <None Include="..\Common\protoc-3.21.12-win64\bin\Client.proto">
-      <Filter>소스 파일\Protocol\Proto</Filter>
-    </None>
-    <None Include="..\Common\protoc-3.21.12-win64\bin\Game.proto">
-      <Filter>소스 파일\Protocol\Proto</Filter>
-    </None>
-    <None Include="..\Common\protoc-3.21.12-win64\bin\Login.proto">
+    <None Include="..\Common\Protocol\Login.proto">
       <Filter>소스 파일\Protocol\Proto</Filter>
     </None>
   </ItemGroup>

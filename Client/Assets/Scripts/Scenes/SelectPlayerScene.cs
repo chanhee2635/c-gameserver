@@ -1,11 +1,10 @@
 using Protocol;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class SelectPlayerScene : BaseScene
 {
-    UI_SelectPlayerScene _sceneUI;
+    private UI_SelectPlayerScene _sceneUI;
 
     protected override void Init()
     {
@@ -14,7 +13,7 @@ public class SelectPlayerScene : BaseScene
         _sceneUI = Managers.UI.ShowSceneUI<UI_SelectPlayerScene>();
     }
 
-    public void SetPlayerSummaries(List<PlayerSummary> summaries)
+    public void SetPlayerSummaries(IEnumerable<PlayerSummary> summaries)
     {
         _sceneUI.SetPlayerSummaries(summaries);
     }
@@ -29,5 +28,5 @@ public class SelectPlayerScene : BaseScene
         _sceneUI.SetWarningMessage(reason);
     }
 
-    public override void Clear() {}
+    public override void Clear() { }
 }

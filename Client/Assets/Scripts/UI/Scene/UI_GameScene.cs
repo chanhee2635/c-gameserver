@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -7,15 +8,17 @@ using UnityEngine.UI;
 
 public class UI_GameScene : UI_Scene
 {
-    public List<UI_Chat_Item> chats { get; } = new List<UI_Chat_Item>();
+    public List<UI_Chat_Item> Chats { get; } = new List<UI_Chat_Item>();
 
-    enum Texts { LevelText }
-    enum Sliders { HPSlider, MPSlider, EXPSlider }
-    enum ChatItem { ChatItem }
-    enum Dropdowns { ChatType }
+    enum Texts       { LevelText }
+    enum Sliders     { HPSlider, MPSlider, EXPSlider }
+    enum ChatItem    { ChatItem }
+    enum Dropdowns   { ChatType }
     enum InputFields { ChatInput }
-    enum Buttons { AttackBtn, SendBtn, CurrentReviveBtn, NearbyReviveBtn, ExitYesBtn, ExitNoBtn }
-    enum Images { AttackCool, RevivePopup, ExitPopup }
+    enum Buttons     { AttackBtn, SendBtn, CurrentReviveBtn, NearbyReviveBtn, ExitYesBtn, ExitNoBtn }
+    enum Images      { AttackCool, RevivePopup, ExitPopup, UI_Minimap }
+
+    public UI_Minimap Minimap { get; private set; }
 
     protected override void Init()
     {
@@ -36,6 +39,10 @@ public class UI_GameScene : UI_Scene
         GetButton((int)Buttons.ExitNoBtn).gameObject.BindEvent(OnClickExitNoButton);
         GetButton((int)Buttons.AttackBtn).gameObject.BindEvent(OnClickAttackButton);
 
+        GameObject minimapGo = GetImage((int)Images.UI_Minimap).gameObject;
+        if (minimapGo != null)
+            Minimap = minimapGo.GetComponent<UI_Minimap>();
+
         foreach (Transform child in Get<VerticalLayoutGroup>((int)ChatItem.ChatItem).transform.Cast<Transform>().ToList())
             Managers.Resource.Destroy(child.gameObject);
 
@@ -48,48 +55,41 @@ public class UI_GameScene : UI_Scene
         MyPlayerController player = Managers.Object.MyPlayer;
         if (player == null) return;
 
-        GetText((int)Texts.LevelText).text = player.Level.ToString();
-        Get<Slider>((int)Sliders.HPSlider).value = player.GetHpRatio();
-        Get<Slider>((int)Sliders.MPSlider).value = player.GetMpRatio();
+        GetText((int)Texts.LevelText).text    = player.Level.ToString();
+        Get<Slider>((int)Sliders.HPSlider).value  = player.GetHpRatio();
+        Get<Slider>((int)Sliders.MPSlider).value  = player.GetMpRatio();
         Get<Slider>((int)Sliders.EXPSlider).value = player.GetExpRatio();
 
         player.SetAttackCool(GetImage((int)Images.AttackCool));
     }
 
-    void Update()
+    private void Update()
     {
         MyPlayerController player = Managers.Object.MyPlayer;
         if (player == null) return;
 
         GetText((int)Texts.LevelText).text = player.Level.ToString();
-        Get<Slider>((int)Sliders.HPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.HPSlider).value, player.GetHpRatio(), Time.deltaTime * 20f); ;
-        Get<Slider>((int)Sliders.MPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.MPSlider).value, player.GetMpRatio(), Time.deltaTime * 20f); ;
-        Get<Slider>((int)Sliders.EXPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.EXPSlider).value, player.GetExpRatio(), Time.deltaTime * 20f); ;
+        Get<Slider>((int)Sliders.HPSlider).value  = Mathf.Lerp(Get<Slider>((int)Sliders.HPSlider).value,  player.GetHpRatio(),  Time.deltaTime * 20f);
+        Get<Slider>((int)Sliders.MPSlider).value  = Mathf.Lerp(Get<Slider>((int)Sliders.MPSlider).value,  player.GetMpRatio(),  Time.deltaTime * 20f);
+        Get<Slider>((int)Sliders.EXPSlider).value = Mathf.Lerp(Get<Slider>((int)Sliders.EXPSlider).value, player.GetExpRatio(), Time.deltaTime * 20f);
 
         if (Input.GetKeyDown(KeyCode.Escape))
             ShowExitPopup();
+
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            HandleChatInput();
     }
 
-    public void OnClickSendButton(PointerEventData evt) { SendChatting(); }
-    public void OnClickExitYesButton(PointerEventData evt)
+    private void OnClickSendButton(PointerEventData evt)    => SendChatting();
+    private void OnClickExitNoButton(PointerEventData evt)  => GetImage((int)Images.ExitPopup).gameObject.SetActive(false);
+    private void OnClickAttackButton(PointerEventData evt)  => Managers.Object.MyPlayer?.TryAttack();
+
+    private void OnClickExitYesButton(PointerEventData evt)
     {
         GetImage((int)Images.ExitPopup).gameObject.SetActive(false);
-
-        Managers.Network.Send(new Protocol.C_Quit());
-        Managers.Network.DisconnectToChatServer();
+        Managers.Network.Send(new Protocol.CLeaveGame());
+        Managers.Network.Clear();
         Managers.Scene.LoadScene(Define.Scene.Login);
-    }
-
-    public void OnClickExitNoButton(PointerEventData evt)
-    {
-        GetImage((int)Images.ExitPopup).gameObject.SetActive(false);
-    }
-
-    public void OnClickAttackButton(PointerEventData evt)
-    {
-        MyPlayerController player = Managers.Object.MyPlayer;
-        if (player == null) return;
-        player.TryAttack();
     }
 
     private void SendRevivePacket(bool isCurrentPos)
@@ -97,8 +97,25 @@ public class UI_GameScene : UI_Scene
         MyPlayerController player = Managers.Object.MyPlayer;
         if (player == null || player.State != Protocol.CreatureState.Dead) return;
 
-        Managers.Network.Send(new Protocol.C_Revive { IsCurrentPos = isCurrentPos });
+        Managers.Network.Send(new Protocol.CRevive { IsCurrentPos = isCurrentPos });
         GetImage((int)Images.RevivePopup).gameObject.SetActive(false);
+    }
+
+    private void HandleChatInput()
+    {
+        TMP_InputField chatInput = Get<TMP_InputField>((int)InputFields.ChatInput);
+
+        if (EventSystem.current.currentSelectedGameObject != chatInput.gameObject)
+        {
+            chatInput.ActivateInputField();
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(chatInput.text))
+                SendChatting();
+            chatInput.text = "";
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 
     public void SendChatting()
@@ -106,31 +123,24 @@ public class UI_GameScene : UI_Scene
         string msg = Get<TMP_InputField>((int)InputFields.ChatInput).text.Trim();
         if (string.IsNullOrEmpty(msg)) return;
 
-        Managers.Network.SendToChat(new Protocol.C_Chat
-        {
-            ToServer = Get<TMP_Dropdown>((int)Dropdowns.ChatType).value == 1,
-            Msg = msg
-        });
-
+        Managers.Network.Send(new Protocol.CChat { Chat = msg });
         Get<TMP_InputField>((int)InputFields.ChatInput).text = null;
     }
 
-    public void RecvChatting(Protocol.S_Chat packet)
+    public void RecvChatting(Protocol.SChat packet)
     {
-        if (chats.Count > 20)
+        if (Chats.Count > 20)
         {
-            Managers.Resource.Destroy(chats[0].gameObject);
-            chats.RemoveAt(0);
+            Managers.Resource.Destroy(Chats[0].gameObject);
+            Chats.RemoveAt(0);
         }
 
-        string type = packet.ToServer ? "서버" : "일반";
-        Color color = packet.ToServer ? Color.green : Color.black;
-        string msg = $"[{type}] {packet.Name} : {packet.Msg}";
+        string msg = $"{packet.Name} : {packet.Chat}";
 
         UI_Chat_Item item = Managers.UI.MakeSubItem<UI_Chat_Item>(Get<VerticalLayoutGroup>((int)ChatItem.ChatItem).transform);
         item.transform.localScale = Vector3.one;
-        item.SetText(msg, color);
-        chats.Add(item);
+        item.SetText(msg, UnityEngine.Color.black);
+        Chats.Add(item);
     }
 
     public void ShowRevivePopup()
@@ -146,4 +156,6 @@ public class UI_GameScene : UI_Scene
         GameObject popup = GetImage((int)Images.ExitPopup).gameObject;
         popup.SetActive(!popup.activeSelf);
     }
+
+    public void HideReviveUI() => GetImage((int)Images.RevivePopup).gameObject.SetActive(false);
 }

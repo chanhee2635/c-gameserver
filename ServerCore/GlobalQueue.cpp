@@ -1,24 +1,11 @@
 #include "pch.h"
-#include "GlobalQueue.h"
-
-/*-----------------
-	GlobalQueue
-------------------*/
-
-GlobalQueue::GlobalQueue()
-{
-}
-
-GlobalQueue::~GlobalQueue()
-{
-}
 
 void GlobalQueue::Push(JobQueueRef jobQueue)
 {
-	_jobQueues.Push(jobQueue);
+    _jobQueues.Push(jobQueue);
 }
 
-JobQueueRef GlobalQueue::Pop()
+bool GlobalQueue::TryPop(OUT JobQueueRef& jobQueue)
 {
-	return _jobQueues.Pop();
+    return _jobQueues.TryPop(OUT jobQueue);
 }

@@ -1,35 +1,68 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UI_Summary : MonoBehaviour
 {
-    public CreatureController owner { get; set; }
+    public CreatureController Owner { get; set; }
 
-    [SerializeField]
-    Slider HpSlider;
+    [SerializeField] private Slider           HpSlider;
+    [SerializeField] private TextMeshProUGUI  InfoText;
 
-    [SerializeField]
-    TextMeshProUGUI InfoText;
+    private Camera _mainCam;
+    private Transform _followTarget;
+    private float _targetRatio;
 
-    //bool ready = false;
+    public void SetFollowTarget(Transform target) => _followTarget = target;
 
-    /*void Awake()
+    private void Start()
     {
-        if (InfoText == null)
-            InfoText = GetComponentInChildren<TextMeshProUGUI>(true);
-        if (HpSlider == null)
-            HpSlider = GetComponentInChildren<Slider>(true);
+        _mainCam = Camera.main;
+    }
 
-        ready = InfoText != null && HpSlider != null;
-    }*/
-
-    void Update()
+    private void OnEnable()
     {
-        if (owner == null) return;
+        RefreshInfo();
+        if (Owner != null && HpSlider != null)
+            HpSlider.value = Owner.GetHpRatio();
+    }
 
-        transform.rotation = Camera.main.transform.rotation;
-        InfoText.text = $"Lv.{owner.Level} {owner.Name}";
-        HpSlider.value = Mathf.Lerp(HpSlider.value, owner.GetHpRatio(), Time.deltaTime * 20f);
+    public void RefreshInfo()
+    {
+        if (Owner == null) return;
+
+        if (InfoText != null)
+            InfoText.text = $"Lv.{Owner.Level} {Owner.Name}";
+
+        _targetRatio = Owner.GetHpRatio();
+    }
+
+    private void Update()
+    {
+        if (Owner == null) return;
+
+        if (_followTarget != null)
+            transform.position = _followTarget.position;
+
+        if (_mainCam != null)
+            transform.rotation = _mainCam.transform.rotation;
+
+        UpdateHpBar();
+    }
+
+    private void UpdateHpBar()
+    {
+        if (HpSlider == null) return;
+
+        float currentActualRatio = Owner.GetHpRatio();
+
+        if (Mathf.Abs(HpSlider.value - currentActualRatio) < 0.001f)
+        {
+            HpSlider.value = currentActualRatio;
+            return;
+        }
+
+        HpSlider.value = Mathf.Lerp(HpSlider.value, currentActualRatio, Time.deltaTime * 10f);
     }
 }

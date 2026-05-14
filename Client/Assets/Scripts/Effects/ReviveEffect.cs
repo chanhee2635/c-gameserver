@@ -2,27 +2,27 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// ºÎÈ° ÀÌÆåÆ®
-/// - ÃÊ·Ïºû ÀÔÀÚµéÀÌ Ä³¸¯ÅÍ ÁÖÀ§¸¦ µ¹¸ç À§·Î ¿Ã¶ó°¨
+/// ë¶€í™œ ì´í™íŠ¸
+/// - ì´ˆë¡ë¹› íŒŒí‹°í´ì´ ìºë¦­í„° ì£¼ë³€ì„ ê°ì‹¸ë©° ìœ„ë¡œ ì˜¬ë¼ì˜´
 /// </summary>
 public class ReviveEffect : MonoBehaviour
 {
-    [Header("ÆÄÆ¼Å¬")]
-    [SerializeField] ParticleSystem _orbitRiseParticle;  // ÁÖÀ§¸¦ µ¹¸ç »ó½ÂÇÏ´Â ºû
-    [SerializeField] ParticleSystem _groundParticle;     // ¹Ù´Ú ÆÛÁü
+    [Header("íŒŒí‹°í´")]
+    [SerializeField] private ParticleSystem _orbitRiseParticle;  // ì£¼ìœ„ë¥¼ ê°ì‹¸ë©° ì˜¬ë¼ì˜¤ëŠ” ë¹›
+    [SerializeField] private ParticleSystem _groundParticle;     // ë°”ë‹¥ íš¨ê³¼
 
-    [Header("Å¸ÀÌ¹Ö")]
-    [SerializeField] float _lifetime = 3.0f;
+    [Header("íƒ€ì´ë°")]
+    [SerializeField] private float _lifetime = 3.0f;
 
-    Poolable _poolable;
-    Coroutine _returnCoroutine;
+    private Poolable  _poolable;
+    private Coroutine _returnCoroutine;
 
-    void Awake()
+    private void Awake()
     {
         _poolable = GetComponent<Poolable>();
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
         Play(_orbitRiseParticle);
         Play(_groundParticle);
@@ -32,14 +32,14 @@ public class ReviveEffect : MonoBehaviour
         _returnCoroutine = StartCoroutine(ReturnToPool());
     }
 
-    void Play(ParticleSystem ps)
+    private void Play(ParticleSystem ps)
     {
         if (ps == null) return;
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         ps.Play();
     }
 
-    IEnumerator ReturnToPool()
+    private IEnumerator ReturnToPool()
     {
         yield return new WaitForSeconds(_lifetime);
 

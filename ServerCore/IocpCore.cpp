@@ -15,66 +15,55 @@ IocpCore::IocpCore()
 
 IocpCore::~IocpCore()
 {
-    ::CloseHandle(_iocpHandle);
+    if (_iocpHandle != INVALID_HANDLE_VALUE)
+        ::CloseHandle(_iocpHandle);
 }
 
 bool IocpCore::Register(IocpObjectRef iocpObject)
 {
-    return ::CreateIoCompletionPort(iocpObject->GetHandle(), _iocpHandle, /*key*/0, 0);
+    return ::CreateIoCompletionPort(iocpObject->GetHandle(), _iocpHandle, reinterpret_cast<ULONG_PTR>(iocpObject.get()), 0) != NULL;
 }
 
 bool IocpCore::Dispatch(uint32 timeoutMs)
 {
-    DWORD numOfBytes = 0;
-    ULONG_PTR key = 0;
-    IocpEvent* iocpEvent = nullptr;
+    DWORD       numOfBytes = 0;
+    IocpObject* iocpObject = nullptr;
+    OVERLAPPED* overlapped = nullptr;
 
-    if (::GetQueuedCompletionStatus(
-        _iocpHandle,
-        OUT &numOfBytes,
-        OUT &key,
-        OUT reinterpret_cast<LPOVERLAPPED*>(&iocpEvent),
-        timeoutMs))
+    if (::GetQueuedCompletionStatus(_iocpHandle, OUT & numOfBytes, OUT reinterpret_cast<PULONG_PTR>(&iocpObject), OUT & overlapped, timeoutMs))
     {
-        // ── IOCP 처리 시간 측정 → ServerStats.iocp 기록 ──────────────
-        LARGE_INTEGER freq, t0, t1;
-        ::QueryPerformanceFrequency(&freq);
-        ::QueryPerformanceCounter(&t0);
-
-        IocpObjectRef iocpObject = iocpEvent->owner;
-        iocpObject->Dispatch(iocpEvent, numOfBytes);
-
-        ::QueryPerformanceCounter(&t1);
-        uint64 elapsedUs = static_cast<uint64>((t1.QuadPart - t0.QuadPart) * 1000000
-                                               / freq.QuadPart);
-
-        auto& s = ServerStats::Get().iocp;
-        s.iocpCallCount.fetch_add(1, std::memory_order_relaxed);
-        s.totalProcessTimeUs.fetch_add(elapsedUs, std::memory_order_relaxed);
-
-#ifdef _DEBUG
-        if (elapsedUs > 10000)  // 10ms 이상 → 경고
-            printf("[IocpCore] Slow dispatch: type=%d elapsed=%llu us\n",
-                   (int)iocpEvent->type, elapsedUs);
-#endif
+        if (iocpObject && overlapped)
+            ProcessEvent(iocpObject, static_cast<IocpEvent*>(overlapped), numOfBytes);
     }
     else
     {
-        int32 errCode = ::WSAGetLastError();
-        switch (errCode)
-        {
-        case WAIT_TIMEOUT:
+        const int32 errCode = ::WSAGetLastError();
+        if (overlapped)
+            ProcessEvent(iocpObject, static_cast<IocpEvent*>(overlapped), numOfBytes);
+        else if (errCode != WAIT_TIMEOUT)
             return false;
-        default:
-            // 소켓 오류로 인한 실패 완료 (Disconnect 등) → 동일하게 Dispatch
-            if (iocpEvent != nullptr && iocpEvent->owner != nullptr)
-            {
-                IocpObjectRef iocpObject = iocpEvent->owner;
-                iocpObject->Dispatch(iocpEvent, numOfBytes);
-            }
-            break;
-        }
     }
 
     return true;
+}
+
+void IocpCore::ProcessEvent(IocpObject* obj, IocpEvent* event, int32 bytes)
+{
+    ASSERT_CRASH(obj != nullptr);
+    ASSERT_CRASH(event != nullptr);
+
+#ifdef _DEBUG
+    auto start = std::chrono::high_resolution_clock::now();
+#endif 
+    IocpObjectRef ref = event->GetOwner();
+    obj->Dispatch(event, bytes);
+
+#ifdef _DEBUG
+    auto end = std::chrono::high_resolution_clock::now();
+    auto us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    GServerStats->iocp.iocpCallCount.fetch_add(1, std::memory_order_relaxed);
+    GServerStats->iocp.totalProcessTimeUs.fetch_add(us, std::memory_order_relaxed);
+#else
+    GServerStats->iocp.iocpCallCount.fetch_add(1, std::memory_order_relaxed);
+#endif
 }

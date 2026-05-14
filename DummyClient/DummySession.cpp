@@ -1,0 +1,28 @@
+#include "pch.h"
+#include "DummySession.h"
+#include "ServerPacketHandler.h"
+#include "Game.pb.h"
+
+void DummySession::OnConnected()
+{
+    _state = ESessionState::AUTH;
+
+    Protocol::CAuthToken pkt;
+    pkt.set_auth_token(_authToken);
+    auto sendBuffer = MakeSendBuffer<Protocol::C_AUTH_TOKEN>(pkt);
+    Send(sendBuffer);
+}
+
+void DummySession::OnDisconnected()
+{
+}
+
+void DummySession::OnRecvPacket(std::span<const BYTE> packet, uint16 type)
+{
+    ServerPacketHandler::Handle(
+        static_pointer_cast<DummySession>(shared_from_this()), packet, type);
+}
+
+void DummySession::OnSend(uint32 len)
+{
+}

@@ -1,122 +1,96 @@
 #include "pch.h"
 #include "SendBuffer.h"
-#include "GameMetrics.h"
 
 SendBuffer::SendBuffer(SendBufferChunkRef owner, BYTE* buffer, uint32 allocSize)
-	: _owner(owner), _buffer(buffer), _allocSize(allocSize)
-{
-
-}
-
-SendBuffer::~SendBuffer()
-{
-}
+    : _owner(owner)
+    , _buffer(buffer)
+    , _allocSize(allocSize)
+{}
 
 void SendBuffer::Close(uint32 writeSize)
 {
-	ASSERT_CRASH(_allocSize >= writeSize);
-	_writeSize = writeSize;
-	_owner->Close(writeSize);
-}
-
-/*--------------------
-	SendBufferChunk
----------------------*/
-
-SendBufferChunk::SendBufferChunk()
-{
-}
-
-SendBufferChunk::~SendBufferChunk()
-{
+    ASSERT_CRASH(writeSize <= _allocSize);
+    _writeSize = writeSize;
+    _owner->Close(writeSize);
 }
 
 void SendBufferChunk::Reset()
 {
-	_open = false;
-	_usedSize = 0;
+    _usedSize = 0;
+    _open = false;
 }
 
-SendBufferRef SendBufferChunk::Open(uint32 allocSize)
+SendBufferRef SendBufferChunk::Open(uint32 allocSize, SendBufferChunkRef self)
 {
-	ASSERT_CRASH(allocSize <= Config::Buffer::SEND_BUFFER_CHUNK_SIZE);
-	ASSERT_CRASH(_open == false);
+    ASSERT_CRASH(allocSize <= GetFreeSize());
+    ASSERT_CRASH(!_open);
 
-	if (allocSize > FreeSize()) return nullptr;
-
-	_open = true;
-	// SendBuffer ��ü ���� �� ��ȯ
-	return ObjectPool<SendBuffer>::MakeShared(shared_from_this(), Buffer(), allocSize);
+    _open = true;
+    return MakeShared<SendBuffer>(self, GetWritePos(), allocSize);
 }
-
 void SendBufferChunk::Close(uint32 writeSize)
 {
-	ASSERT_CRASH(_open == true);
-	_open = false;
-	_usedSize += writeSize;
+    ASSERT_CRASH(_open);
+    _usedSize += writeSize;
+    _open = false;
 }
 
-/*---------------------
-	SendBufferManager
-----------------------*/
-
-SendBufferRef SendBufferManager::Open(uint32 size)
+SendBufferManager::SendBufferManager()
 {
-	// ������ ���� Chunk�� ���� ��� �ʱ�ȭ
-	if (LSendBufferChunk == nullptr)
-	{
-		// ���� Pool���� ū �޸� ��� �ϳ��� ������
-		LSendBufferChunk = Pop();
-		LSendBufferChunk->Reset();
-	}
+    ::InitializeSListHead(&_listHeader);
+}
 
-	// �ߺ� ȣ�� üũ (Close �� ���� ���� ���)
-	ASSERT_CRASH(LSendBufferChunk->IsOpen() == false);
 
-	// Chunk�� ���� ������ ��û�� ũ�⺸�� ���� ��� 
-	if (LSendBufferChunk->FreeSize() < size)
-	{
-		// ���� Chunk ��ü
-		// (���� Chunk�� RefCount�� 0�� �Ǹ� �ڵ����� PushGlobal ȣ��Ǿ� Pool�� �ݳ�)
-		LSendBufferChunk = Pop();
-		LSendBufferChunk->Reset();
-	}
+SendBufferManager::~SendBufferManager()
+{
+    SLIST_ENTRY* entry;
+    while ((entry = ::InterlockedPopEntrySList(&_listHeader)) != nullptr)
+        xdelete(static_cast<SendBufferChunkNode*>(entry));
+}
 
-	// Chunk���� ��û�� ũ�⸸ŭ ������ �����Ͽ� SendBuffer ��ü ��ȯ
-	return LSendBufferChunk->Open(size);
+SendBufferRef SendBufferManager::Open(uint32 allocSize)
+{
+    ASSERT_CRASH(allocSize <= Config::Buffer::SEND_BUFFER_CHUNK_SIZE);
+
+    if (LSendBufferChunk == nullptr)
+        LSendBufferChunk = Pop();
+
+    ASSERT_CRASH(!LSendBufferChunk->IsOpen());
+
+    if (LSendBufferChunk->GetFreeSize() < allocSize)
+        LSendBufferChunk = Pop();
+
+    return LSendBufferChunk->Open(allocSize, LSendBufferChunk);
 }
 
 SendBufferChunkRef SendBufferManager::Pop()
 {
-	{
-		// ���� Ǯ�� �����ϱ� ���� LOCK
-		WRITE_LOCK;
-		// Ǯ�� ���� ������ ûũ�� �����ִ��� Ȯ��
-		if (_sendBufferChunks.empty() == false)
-		{
-			GMetrics.sendBufferChunkReuse.fetch_add(1);
+    SLIST_ENTRY* entry = ::InterlockedPopEntrySList(&_listHeader);
+    if (entry != nullptr)
+    {
+        SendBufferChunkNode* node = static_cast<SendBufferChunkNode*>(entry);
+        return SendBufferChunkRef(&node->chunk, PushGlobal);
+    }
 
-			// LIFO ��� ������� ���� ����ȭ (ĳ�ÿ� �޸� �ּҰ� �������� ���ɼ���)
-			SendBufferChunkRef sendBufferChunk = _sendBufferChunks.back();
-			_sendBufferChunks.pop_back();
-			return sendBufferChunk;
-		}
-	}
-
-	GMetrics.sendBufferChunkAlloc.fetch_add(1);
-
-	// Ǯ�� ����ִٸ� ���ο� ûũ�� ���� (RefCount�� 0�� �Ǹ� PushGlobal �Լ��� ȣ���Ͽ� Ǯ�� �ݳ�)
-	return SendBufferChunkRef(xnew<SendBufferChunk>(), PushGlobal);
+    SendBufferChunkNode* node = xnew<SendBufferChunkNode>();
+    return SendBufferChunkRef(&node->chunk, PushGlobal);
 }
 
-void SendBufferManager::Push(SendBufferChunkRef buffer)
+void SendBufferManager::Push(SendBufferChunk* chunk)
 {
-	WRITE_LOCK;
-	_sendBufferChunks.push_back(buffer);
+    SendBufferChunkNode* node = CONTAINING_RECORD(chunk, SendBufferChunkNode, chunk);
+    ::InterlockedPushEntrySList(&_listHeader, node);
 }
 
-void SendBufferManager::PushGlobal(SendBufferChunk* buffer)
+void SendBufferManager::PushGlobal(SendBufferChunk* chunk)
 {
-	GSendBufferManager->Push(SendBufferChunkRef(buffer, PushGlobal));
-}
+    if (GSendBufferManager == nullptr)
+    {
+        SendBufferChunkNode* node = CONTAINING_RECORD(chunk, SendBufferChunkNode, chunk);
+        xdelete(node);
+        return;
+    }
 
+    chunk->Reset();
+    GSendBufferManager->Push(chunk);
+}

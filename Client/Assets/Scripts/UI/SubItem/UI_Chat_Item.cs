@@ -1,12 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UI_Chat_Item : UI_Base
 {
-    TextMeshProUGUI _text;
+    private TextMeshProUGUI _text;
 
     protected override void Init()
     {

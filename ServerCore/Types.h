@@ -1,60 +1,49 @@
 #pragma once
-#include <mutex>
-#include <atomic>
+#include <cstdint>
 
-// ── 스레드 역할 식별자 ────────────────────────────────────────────────
-// LThreadType TLS 변수에 저장, 런타임 디버깅 및 역할별 분기에 활용
-enum class ThreadType : uint8
-{
-    NONE    = 0,
-    LOGIC   = 1,  // 게임 로직 / IOCP Worker
-    IO      = 2,  // IOCP Dispatch 전용
-    DB      = 3,  // DB 비동기 처리
-    MONITOR = 4,  // 통계 / 모니터링
-};
-
-using BYTE		= unsigned char;
-using int8		= __int8;
-using int16		= __int16;
-using int32		= __int32;
-using int64		= __int64;
-using uint8		= unsigned __int8;
-using uint16	= unsigned __int16;
-using uint32	= unsigned __int32;
-using uint64	= unsigned __int64;
-using uintptr	= uintptr_t;
+using int8    = std::int8_t;
+using int16   = std::int16_t;
+using int32   = std::int32_t;
+using int64   = std::int64_t;
+using uint8   = std::uint8_t;
+using uint16  = std::uint16_t;
+using uint32  = std::uint32_t;
+using uint64  = std::uint64_t;
+using intptr  = std::intptr_t;
+using uintptr = std::uintptr_t;
+using string  = std::string;
+using wstring = std::wstring;
 
 template<typename T>
-using Atomic		= std::atomic<T>;
-using Mutex			= std::mutex;
-using CondVar		= std::condition_variable;
-using UniqueLock	= std::unique_lock<std::mutex>;
-using LockGuard		= std::lock_guard<std::mutex>;
+using Atomic      = std::atomic<T>;
+using Mutex       = std::mutex;
+using Thread      = std::thread;
+using CondVar     = std::condition_variable;
+using UniqueLock  = std::unique_lock<std::mutex>;
+using LockGuard   = std::lock_guard<std::mutex>;
 
-// shared_ptr
+using IocpCoreRef        = std::shared_ptr<class IocpCore>;
+using IocpObjectRef      = std::shared_ptr<class IocpObject>;
+using SessionRef         = std::shared_ptr<class Session>;
+using ListenerRef        = std::shared_ptr<class Listener>;
+using ServiceRef         = std::shared_ptr<class Service>;
+using ServiceWeakRef     = std::weak_ptr<class Service>;
+using ServerServiceRef   = std::shared_ptr<class ServerService>;
+using ClientServiceRef   = std::shared_ptr<class ClientService>;
+using SendBufferRef      = std::shared_ptr<class SendBuffer>;
+using SendBufferChunkRef = std::shared_ptr<class SendBufferChunk>;
+using PacketSessionRef   = std::shared_ptr<class PacketSession>;
+using JobQueueRef        = std::shared_ptr<class JobQueue>;
+using JobQueueWeakRef    = std::weak_ptr<class JobQueue>;
 
-#define USING_SHARED_PTR(name) using name##Ref = std::shared_ptr<class name>;
-USING_SHARED_PTR(IocpCore);
-USING_SHARED_PTR(IocpObject);
-USING_SHARED_PTR(Session);
-USING_SHARED_PTR(PacketSession);
-USING_SHARED_PTR(Listener);
-USING_SHARED_PTR(Service);
-USING_SHARED_PTR(ServerService);
-USING_SHARED_PTR(ClientService);
-USING_SHARED_PTR(LoginService);
-USING_SHARED_PTR(ChatService);
-// RecvBufferRef 제거: RecvBuffer 는 Session 값 멤버로 변경됨
-USING_SHARED_PTR(SendBuffer);
-USING_SHARED_PTR(SendBufferChunk);
-USING_SHARED_PTR(Job);
-USING_SHARED_PTR(JobQueue);
-USING_SHARED_PTR(DBJobQueue);
-USING_SHARED_PTR(DBConnection);
+#define size16(val) static_cast<int16>(sizeof(val))
+#define size32(val) static_cast<int32>(sizeof(val))
+template<typename T, size_t N>
+constexpr int16 len16(T(&arr)[N]) { return static_cast<int16>(N); }
+template<typename T, size_t N>
+constexpr int32 len32(T(&arr)[N]) { return static_cast<int32>(N); }
 
-#define size16(val)		static_cast<int16>(sizeof(val))
-#define size32(val)		static_cast<int32>(sizeof(val))
-#define len16(arr)		static_cast<int16>(sizeof(arr)/sizeof(arr[0]))
-#define len32(arr)		static_cast<int32>(sizeof(arr)/sizeof(arr[0]))
+enum class AllocType { Frame, Stomp, Pool };
+enum class ThreadType : uint8 { NONE, WORKER, DB, MONITOR };
 
 //#define _STOMP

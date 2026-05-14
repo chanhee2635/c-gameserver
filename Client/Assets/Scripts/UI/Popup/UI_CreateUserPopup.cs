@@ -1,34 +1,16 @@
-using Protocol;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
-using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class UI_CreateUserPopup : UI_Popup
 {
-    enum Texts
-    {
-        StatusText
-    }
-
-    enum InputFields
-    {
-        IDInput,
-        PWInput
-    }
-
-    enum Buttons
-    {
-        JoinBtn,
-        ExitBtn
-    }
+    enum Texts       { StatusText }
+    enum InputFields { IDInput, PWInput }
+    enum Buttons     { JoinBtn, ExitBtn }
 
     protected override void Init()
     {
         base.Init();
-
         Bind<TextMeshProUGUI>(typeof(Texts));
         Bind<TMP_InputField>(typeof(InputFields));
         Bind<Button>(typeof(Buttons));
@@ -37,25 +19,26 @@ public class UI_CreateUserPopup : UI_Popup
         GetButton((int)Buttons.ExitBtn).gameObject.BindEvent(OnClickExitButton);
     }
 
-    public void OnClickJoinButton(PointerEventData evt)
+    private void OnClickJoinButton(PointerEventData evt)
     {
         string id = GetInputField((int)InputFields.IDInput).text;
         string pw = GetInputField((int)InputFields.PWInput).text;
 
-        // TODO: ∫Òπ–π¯»£ ¿Á»Æ¿Œ « ø‰ (øÏº± ¡§»Æ«œ¥Ÿ ∆«¥‹)
+        CreateAccountReq packet = new CreateAccountReq() { AccountName = id, Password = pw };
 
-        // SSL/TLS «¡∑Œ≈‰ƒ› º€Ω≈ « ø‰ («ÿ≈∑ ¿ß«Ë)
-        C_Join pkt = new C_Join() { ID = id, PW = pw };
-        Managers.Network.SendToLogin(pkt);
+        Managers.Web.SendPostRequest<CreateAccountRes>("create", packet, (res) =>
+        {
+            if (res == null)
+            {
+                GetText((int)Texts.StatusText).text = "ÏÑúÎ≤Ñ Ïó∞Í≤∞ Ïã§Ìå®";
+                return;
+            }
+
+            GetText((int)Texts.StatusText).text = res.Success ? "ÌöåÏõêÍ∞ÄÏûÖ ÏÑ±Í≥µ!" : "ÌöåÏõêÍ∞ÄÏûÖ Ïã§Ìå®!";
+            GetInputField((int)InputFields.IDInput).text = "";
+            GetInputField((int)InputFields.PWInput).text = "";
+        });
     }
 
-    public void OnClickExitButton(PointerEventData evt)
-    {
-        ClosePopupUI();
-    }
-
-    public void SetJoinResult(bool success)
-    {
-        GetText((int)Texts.StatusText).text = success ? "∞Ë¡§ ª˝º∫ º∫∞¯!" : "∞Ë¡§ ª˝º∫ Ω«∆–!";
-    }
+    private void OnClickExitButton(PointerEventData evt) => ClosePopupUI();
 }

@@ -1,42 +1,40 @@
 #pragma once
 #include "IocpCore.h"
-#include "NetAddress.h"
-
-/*---------------
-     Listener
----------------*/
+#include "IocpEvent.h"
 
 class Listener : public IocpObject
 {
+private:
+    class AcceptEvent : public IocpEvent
+    {
+    public:
+        AcceptEvent() : IocpEvent(IocpEventType::Accept) {}
+
+        SessionRef GetSession() const { return _session; }
+        void       SetSession(SessionRef s) { _session = s; }
+        char*      GetAddressBuffer() { return _addressBuffer; }
+
+    private:
+        SessionRef _session = nullptr;
+        alignas(Config::Network::ADDR_BUFFER_ALIGNMENT)
+            char _addressBuffer[Config::Network::ADDR_BUFFER_SIZE] = {};
+    };
+
 public:
     Listener() = default;
     ~Listener();
 
-public:
-    /*
-    * @brief 서버 리스닝 소켓을 초기화하고 비동기 Accept 대기 요청을 건다
-    */
-    bool                    StartAccept(ServiceRef service);
-    void                    CloseSocket();
+    bool StartAccept(ServerServiceRef service);
+    void Close();
 
-public:
-    virtual HANDLE          GetHandle() override;
-    virtual void            Dispatch(struct IocpEvent* iocpEvent, int32 numOfByte = 0) override;
+    virtual HANDLE GetHandle() const override { return reinterpret_cast<HANDLE>(_listenSocket); }
+    virtual void   Dispatch(IocpEvent* iocpEvent, int32 numOfBytes = 0) override;
 
 private:
-    /*
-    * @brief 비동기 AcceptEx 를 큐에 등록
-    */
-    void                    RegisterAccept(AcceptEvent* acceptEvent);
-    /*
-    * @brief 완료된 Accept 이벤트를 처리하여 세션을 활성화
-    */
-    void                    ProcessAccept(AcceptEvent* acceptEvent);
+    void RegisterAccept(AcceptEvent* acceptEvent);
+    void ProcessAccept(AcceptEvent* acceptEvent);
 
-protected:
-    SOCKET              _socket = INVALID_SOCKET;
-    // AcceptEvent: 값 멤버로 보유 (IocpEvent* 힙 할당 제거)
-    // → StartAccept 에서 acceptCount 크기로 resize 후 고정
-    Vector<AcceptEvent*>  _acceptEvents;
-    ServiceRef          _service;
+    SOCKET               _listenSocket = INVALID_SOCKET;
+    Vector<AcceptEvent*> _acceptEvents;
+    ServerServiceRef     _service;
 };

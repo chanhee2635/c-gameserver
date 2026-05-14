@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
+﻿using Unity.VisualScripting;
 using UnityEngine;
 
 public class Util
@@ -27,7 +25,7 @@ public class Util
         if (go == null)
             return null;
 
-        if (recursive == false)
+        if (!recursive)
         {
             for (int i = 0; i < go.transform.childCount; i++)
             {

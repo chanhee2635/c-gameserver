@@ -1,64 +1,79 @@
-# --- [Visual Studio / C++ 항목] ---
+# --- [빌드 결과물] ---
+*.exe
+*.dll
+*.lib
+*.pdb
+*.exp
+
+# --- [중간 빌드 파일] ---
+*.obj
+*.ilk
+*.pch
+*.idb
+*.tlog
+*.lastbuildstate
+*.recipe
+*.iobj
+*.ipdb
+*.aps
+*.ncb
+*.cache
+*.FileListAbsolute.txt
+
+# --- [Visual Studio 설정] ---
 .vs/
-Video/ 
-Common/
-Intermediate/
-Libraries/
-NavDataGenerator/
+*.user
+*.suo
+*.vcxproj.user
+
+# --- [빌드 폴더] ---
 Debug/
 Release/
 x64/
 x86/
-*.obj
-*.exe
-*.dll
-*.lib
-*.exp
-*.user
-*.suo
-*.pdb
-*.ilk
-*.aps
-*.ncb
-*.cache
-*.zip
 bin/
 obj/
+Intermediate/
+Libraries/
+Common/
+Video/
+NavDataGenerator/
 
-# --- [Unity 항목] ---
-[LogFiles]/
-Library/
-Temp/
-Obj/
-Build/
-Builds/
-Logs/
-UserSettings/
+# --- [Unity 제외] ---
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
 MemoryCaptures/
-*.csproj
-*.unityproj
-*.sln
-*.suo
-*.tmp
-*.user
-*.userprefs
-*.pidb
-*.booproj
-*.svntmp
+*.meta
+*.asset
+*.prefab
+*.unity
+*.FBX
+*.fbx
+*.renderTexture
 
-# --- [Protobuf / 공용 항목] ---
-# 자동 생성된 소스파일을 제외하고 싶다면 추가 (직접 관리한다면 생략)
+# --- [Protobuf 생성 파일] ---
 *.pb.cc
 *.pb.h
 
-# OS 관련
+# --- [설정/로그] ---
+*.log
+server.json
+config.json
+*.zip
+
+# --- [OS 파일] ---
 .DS_Store
 Thumbs.db
 
-# Config 파일
-config.json
-
-"Video/" 
-"*.zip" 
-"Common/config.json" 
-"Libraries/" 
+# --- [Claude Code 관련] ---
+.claude/
+CLAUDE.md
+HANDOFF.md
+CODEFLOW.md
+CONVENTIONS.md
+SERVERCORE_GUIDE.md

@@ -1,19 +1,15 @@
 #pragma once
-
-/*-----------------
-	GlobalQueue
-------------------*/
+#include "LockQueue.h"
 
 class GlobalQueue
 {
 public:
-	GlobalQueue();
-	~GlobalQueue();
+    GlobalQueue() = default;
+    ~GlobalQueue() = default;
 
-	void			Push(JobQueueRef jobQueue);
-	JobQueueRef		Pop();
+    void Push(JobQueueRef jobQueue);
+    bool TryPop(OUT JobQueueRef& jobQueue);
 
 private:
-	LockQueue<JobQueueRef> _jobQueues;
+    LockQueue<JobQueueRef>  _jobQueues;
 };
-

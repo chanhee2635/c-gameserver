@@ -1,58 +1,97 @@
 #include "pch.h"
 #include "CoreGlobal.h"
-#include "Memory.h"
 #include "ThreadManager.h"
-#include "DeadLockProfiler.h"
-#include "SendBuffer.h"
-#include "GlobalQueue.h"
-#include "JobTimer.h"
-#include "DBConnectionPool.h"
-#include "ConsoleLog.h"
+#include "IocpCore.h"
 
-// ── 선언 순서 = 초기화 순서 (역순으로 소멸) ──────────────────────────────
-//
-//  GMemory          먼저: ThreadManager 생성자가 CoreTLS::OnThreadStart()를 호출하고,
-//                         OnThreadStart() → new ThreadLocalMemory() → GMemory->GetPool() 참조
-//  GThreadManager   두 번째: 생성자에서 메인 스레드 CoreTLS::OnThreadStart() 호출
-//  이후는 순서 무관
-//
-unique_ptr<MemoryManager>     GMemory            = make_unique<MemoryManager>();
-unique_ptr<ThreadManager>     GThreadManager     = make_unique<ThreadManager>();
-unique_ptr<SendBufferManager> GSendBufferManager = make_unique<SendBufferManager>();
-unique_ptr<GlobalQueue>       GGlobalQueue       = make_unique<GlobalQueue>();
-unique_ptr<GlobalQueue>       GDBQueue           = make_unique<GlobalQueue>();
-unique_ptr<JobTimer>          GJobTimer          = make_unique<JobTimer>();
-unique_ptr<DeadLockProfiler>  GDeadLockProfiler  = make_unique<DeadLockProfiler>();
-unique_ptr<DBConnectionPool>  GDBConnectionPool  = make_unique<DBConnectionPool>();
-unique_ptr<ConsoleLog>        GConsoleLogger     = make_unique<ConsoleLog>();
+std::unique_ptr<ThreadManager>     CoreGlobal::_thread            = nullptr;
+std::unique_ptr<MemoryManager>     CoreGlobal::_memory            = nullptr;
+std::unique_ptr<SendBufferManager> CoreGlobal::_sendBufferManager = nullptr;
+std::unique_ptr<JobTimer>          CoreGlobal::_jobTimer          = nullptr;
+std::unique_ptr<GlobalQueue>       CoreGlobal::_globalQueue       = nullptr;
+std::unique_ptr<Logger>            CoreGlobal::_logger            = nullptr;
+std::unique_ptr<ServerStats>       CoreGlobal::_serverStats       = nullptr;
+std::unique_ptr<DbConnectionPool>  CoreGlobal::_dbConnectionPool  = nullptr;
 
-bool          GIsRunning     = true;
-Atomic<int32> GLogicJobCount = 0;
-Atomic<int32> GDBJobCount    = 0;
+ThreadManager*     GThread            = nullptr;
+MemoryManager*     GMemory            = nullptr;
+SendBufferManager* GSendBufferManager = nullptr;
+JobTimer*          GJobTimer          = nullptr;
+GlobalQueue*       GGlobalQueue       = nullptr;
+Logger*            GLogger            = nullptr;
+ServerStats*       GServerStats       = nullptr;
+DbConnectionPool*  GDbConnectionPool  = nullptr;
 
-// ── CoreGlobal::Clear() ──────────────────────────────────────────────────────
+void CoreGlobal::Init()
+{
+    // 1. Memory pool — must come first (ThreadLocalMemory references GMemory)
+    _memory = std::make_unique<MemoryManager>();
+    GMemory = _memory.get();
+
+    // 2. Socket initialization
+    SocketUtils::Init();
+
+    // 3. ThreadManager — must exist before Logger::Init() calls GThread->Launch()
+    _thread = std::make_unique<ThreadManager>();
+    GThread = _thread.get();
+
+    // 4. Infrastructure
+    _sendBufferManager = std::make_unique<SendBufferManager>();
+    GSendBufferManager = _sendBufferManager.get();
+
+    _globalQueue = std::make_unique<GlobalQueue>();
+    GGlobalQueue = _globalQueue.get();
+
+    _jobTimer = std::make_unique<JobTimer>();
+    GJobTimer = _jobTimer.get();
+
+    // 5. Logger — start log thread after GThread is ready
+    _logger = std::make_unique<Logger>();
+    GLogger = _logger.get();
+    GLogger->Init(L"server.log");
+
+    // 6. ServerStats — init after GLogger is ready
+    _serverStats = std::make_unique<ServerStats>();
+    GServerStats = _serverStats.get();
+    GServerStats->Init();
+
+    _dbConnectionPool = std::make_unique<DbConnectionPool>();
+    GDbConnectionPool = _dbConnectionPool.get();
+
+    LOG_INFO(L"=== [Server Engine Initialization Complete] ===");
+}
 
 void CoreGlobal::Clear()
 {
-    // 1. 서버 루프 종료 신호
-    GIsRunning = false;
+    LOG_INFO(L"=== [Server Engine Shutting Down] ===");
 
-    // 2. 모든 Worker 스레드 완료 대기
-    //    (각 스레드는 GIsRunning == false 를 보고 루프 탈출해야 함)
-    GThreadManager->Join();
+    // Destroy in reverse order: Stats → Logger → Infrastructure → Thread → Memory
+    GDbConnectionPool = nullptr;
+    _dbConnectionPool = nullptr;
 
-    // 3. 전역 자원 역순 해제 (초기화 역순: 의존성 안전)
-    GConsoleLogger.reset();
-    GDBConnectionPool.reset();
-    GDeadLockProfiler.reset();
-    GJobTimer.reset();
-    GDBQueue.reset();
-    GGlobalQueue.reset();
-    GSendBufferManager.reset();
+    GServerStats = nullptr;
+    _serverStats = nullptr;
 
-    // GThreadManager 소멸자가 메인 스레드 CoreTLS::OnThreadEnd() 호출
-    GThreadManager.reset();
+    GJobTimer = nullptr;
+    _jobTimer = nullptr;
 
-    // GMemory 는 반드시 마지막 (모든 블록 반환 완료 후)
-    GMemory.reset();
+    GGlobalQueue = nullptr;
+    _globalQueue = nullptr;
+
+    GSendBufferManager = nullptr;
+    _sendBufferManager = nullptr;
+
+    // Logger destructor shuts down the log thread (calls Shutdown())
+    GLogger = nullptr;
+    _logger = nullptr;
+
+    // Wait for all worker threads then release
+    if (GThread)
+        GThread->Join();
+    GThread = nullptr;
+    _thread = nullptr;
+
+    SocketUtils::Clear();
+
+    GMemory = nullptr;
+    _memory = nullptr;
 }

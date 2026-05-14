@@ -1,4 +1,3 @@
-using Protocol;
 using TMPro;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -7,28 +6,13 @@ public class UI_LoginScene : UI_Scene
 {
     public UI_CreateUserPopup CreateUserPopup { get; private set; }
 
-    enum Texts
-    {
-        StatusText
-    }
-
-    enum InputFields
-    {
-        IDInput,
-        PWInput
-    }
-
-    enum Buttons
-    {
-        LoginBtn,
-        CreateBtn,
-        ExitBtn
-    }
+    enum Texts       { StatusText }
+    enum InputFields { IDInput, PWInput }
+    enum Buttons     { LoginBtn, CreateBtn, ExitBtn }
 
     protected override void Init()
     {
         base.Init();
-
         Bind<TextMeshProUGUI>(typeof(Texts));
         Bind<TMP_InputField>(typeof(InputFields));
         Bind<Button>(typeof(Buttons));
@@ -37,27 +21,39 @@ public class UI_LoginScene : UI_Scene
         GetButton((int)Buttons.CreateBtn).gameObject.BindEvent(OnClickCreateButton);
     }
 
-    public void OnClickLoginButton(PointerEventData evt)
+    private void OnClickCreateButton(PointerEventData evt)
     {
-        string id = GetInputField((int)InputFields.IDInput).text;
-        string pw = GetInputField((int)InputFields.PWInput).text;
-
-        GetText((int)Texts.StatusText).text = "";
-
-        // SSL/TLS «¡∑Œ≈‰ƒ› º€Ω≈ « ø‰ («ÿ≈∑ ¿ß«Ë)
-        C_LoginAuth pkt = new C_LoginAuth() { ID = id, PW = pw };
-        Managers.Network.SendToLogin(pkt);
-    }
-
-    public void OnClickCreateButton(PointerEventData evt)
-    {
-        // æ∆¿Ãµ ∆–Ω∫øˆµÂ∏¶ ¿‘∑¬«œø© ∞°¿‘«œ¥¬ √¢¿Ã ∂∞æﬂ«—¥Ÿ.
         if (CreateUserPopup == null)
             CreateUserPopup = Managers.UI.ShowPopupUI<UI_CreateUserPopup>();
     }
 
-    public void SetMessage(string text)
+    private void OnClickLoginButton(PointerEventData evt)
     {
-        GetText((int)Texts.StatusText).text = text;
+        GetText((int)Texts.StatusText).text = "Î°úÍ∑∏Ïù∏ ÏãúÎèÑ Ï§ë...";
+
+        string id = GetInputField((int)InputFields.IDInput).text;
+        string pw = GetInputField((int)InputFields.PWInput).text;
+
+        LoginAccountReq packet = new LoginAccountReq() { AccountName = id, Password = pw };
+        Managers.Web.SendPostRequest<LoginAccountRes>("login", packet, (res) =>
+        {
+            if (res == null)
+            {
+                GetText((int)Texts.StatusText).text = "ÏÑúÎ≤Ñ Ïó∞Í≤∞ Ïã§Ìå®";
+                return;
+            }
+
+            GetText((int)Texts.StatusText).text = res.Success ? "Î°úÍ∑∏Ïù∏ ÏÑ±Í≥µ!" : "Î°úÍ∑∏Ïù∏ Ïã§Ìå®!";
+            GetInputField((int)InputFields.IDInput).text = "";
+            GetInputField((int)InputFields.PWInput).text = "";
+
+            if (res.Success)
+            {
+                Managers.Network.AccountId = res.AccountId;
+                Managers.Network.AuthToken = res.AuthToken;
+                UI_SelectServerPopup popup = Managers.UI.ShowPopupUI<UI_SelectServerPopup>();
+                popup.SetServers(res.ServerList);
+            }
+        });
     }
 }

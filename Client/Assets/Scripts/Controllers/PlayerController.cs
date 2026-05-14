@@ -11,24 +11,16 @@ public class PlayerController : CreatureController
 
         _mp = info.StatInfo.Mp;
         _maxMp = Managers.Data.GetMaxMp(_templateId, Level);
-
-        SetUI();
     }
 
     public float GetMpRatio() => _maxMp > 0 ? (float)_mp / _maxMp : 0f;
 
-    /*public void SetLevel(int level)
+    public virtual void OnLevelUp(int level, int maxHp, int hp)
     {
         Level = level;
-        PlayerData data = Managers.Data.PlayerDataDict[(TemplateId, Level)];
-        MaxHp = data.maxHp;
-        Hp = MaxHp;
-    }
-
-    public void SetRevive(PosInfo posInfo, int hp)
-    {
-        SetPosInfo(posInfo);
+        MaxHp = maxHp;
         Hp = hp;
-        _anim.SetBool("IsDead", false);
-    }*/
+        _maxMp = Managers.Data.GetMaxMp(_templateId, level);
+        _mp = _maxMp;
+    }
 }

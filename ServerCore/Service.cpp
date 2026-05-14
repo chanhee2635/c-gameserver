@@ -2,197 +2,75 @@
 #include "Service.h"
 #include "Session.h"
 #include "Listener.h"
-#include "ConfigManager.h"
+#include "IocpCore.h"
 
-/*-------------
-	Service
---------------*/
+Service::Service(NetAddress address, IocpCoreRef core, SessionFactory factory, int32 maxSessionCount)
+    : _address(address)
+    , _iocpCore(core)
+    , _sessionFactory(factory)
+    , _maxSessionCount(maxSessionCount)
+{}
 
-Service::Service(ServiceType type, NetAddress address, IocpCoreRef core, SessionFactory factory)
-	: _type(type), _netAddress(address), _iocpCore(core), _sessionFactory(factory)
+void Service::IocpDispatch(uint32 timeoutMs)
 {
-
-}
-
-Service::~Service()
-{
-}
-
-void Service::CloseService()
-{
-	// ������ ���� �ڿ� ����
-}
-
-void Service::Broadcast(SendBufferRef sendBuffer)
-{
-	WRITE_LOCK;
-	for (const auto& session : _sessions)
-	{
-		session->Send(sendBuffer);
-	}
+    _iocpCore->Dispatch(timeoutMs);
 }
 
 SessionRef Service::CreateSession()
 {
-	SessionRef session = _sessionFactory();  
-	session->SetService(shared_from_this());
-
-	if (_iocpCore->Register(session) == false)
-		return nullptr;
-
-	return session;
+    SessionRef session = _sessionFactory();
+    session->SetService(shared_from_this());
+    if (!_iocpCore->Register(session))
+    {
+        LOG_ERROR(L"Service: IOCP register failed");
+        return nullptr;
+    }
+    return session;
 }
 
 void Service::AddSession(SessionRef session)
 {
-	WRITE_LOCK;
-
-	if (_sessionCount >= _config.maxSessionCount)
-	{
-		session->Disconnect(L"MaxSessionCount Exceeded");
-		return;
-	}
-
-	_sessionCount.fetch_add(1);
-	_sessions.insert(session); 
+    LockGuard guard(_lock);
+    _sessionCount++;
+    _sessions.insert(session);
 }
 
-/* 
-* �����ܿ����� Session ����
-*/
 void Service::ReleaseSession(SessionRef session)
 {
-	WRITE_LOCK;
-	size_t erasedCount = _sessions.erase(session);
-	ASSERT_CRASH(erasedCount != 0);
-	_sessionCount.fetch_sub(1);
+    LockGuard guard(_lock);
+    _sessionCount--;
+    _sessions.erase(session);
 }
 
-void Service::ForEachSession(const function<void(SessionRef)>& callback)
-{
-	WRITE_LOCK;
-
-	for (auto& item : _sessions)
-	{
-		SessionRef session = item;
-
-		if (session != nullptr)
-			callback(session);
-	}
-}
-
-/*-----------------
-	ClientService
-------------------*/
-
-ClientService::ClientService(NetAddress targetAddress, IocpCoreRef core, SessionFactory factory)
-	: Service(ServiceType::Client, targetAddress, core, factory)
-{
-}
-
-bool ClientService::Start()
-{
-	if (CanStart() == false) return false;
-
-	_config.recvBufferSize = 65535;
-	_config.recvBufferCount = 10;
-	_config.maxSessionCount = 10000;
-
-	return true;
-}
-
-/*-----------------
-	ServerService
-------------------*/
-
-ServerService::ServerService(NetAddress address, IocpCoreRef core, SessionFactory factory)
-	: Service(ServiceType::Server, address, core, factory)
+/*--------------
+  ServerService
+--------------*/
+ServerService::ServerService(NetAddress address, IocpCoreRef core, SessionFactory factory, int32 maxSessionCount)
+    : Service(address, core, factory, maxSessionCount)
 {
 }
 
 bool ServerService::Start()
 {
-	if (CanStart() == false) return false;
-
-	_config = GConfigManager->GetGame();
-
-	_listener = MakeShared<Listener>();
-	if (_listener == nullptr) return false;
-
-	ServerServiceRef service = static_pointer_cast<ServerService>(shared_from_this());
-	if (_listener->StartAccept(service) == false) return false;
-
-	return true;
+    _listener = MakeShared<Listener>();
+    ASSERT_CRASH(_listener != nullptr);
+    return _listener->StartAccept(static_pointer_cast<ServerService>(shared_from_this()));
 }
 
-void ServerService::CloseService()
-{
-	// TODO
-	_listener->CloseSocket();
+ClientService::ClientService(NetAddress address, IocpCoreRef core, SessionFactory factory, int32 maxSessionCount) 
+    : Service(address, core, factory, maxSessionCount)
+{}
 
-	Service::CloseService();
+bool ClientService::Start()
+{
+    for (int32 i = 0; i < GetMaxSessionCount(); i++)
+        Connect();
+    return true;
 }
 
-/*----------------
-	LoginService
------------------*/
-
-LoginService::LoginService(NetAddress address, IocpCoreRef core, SessionFactory factory)
-	: Service(ServiceType::Login, address, core, factory)
+void ClientService::Connect()
 {
-}
-
-bool LoginService::Start()
-{
-	if (CanStart() == false) return false;
-
-	_config = GConfigManager->GetLogin();
-
-	// ���� ������ ����� ������ ��ü ����
-	_listener = MakeShared<Listener>();
-	if (_listener == nullptr) return false;
-
-	// �����ʿ��� ���� �����ϸ� �񵿱� Accept�� ��û
-	LoginServiceRef service = static_pointer_cast<LoginService>(shared_from_this());
-	if (_listener->StartAccept(service) == false) return false;
-
-	return true;
-}
-
-void LoginService::CloseService()
-{
-	_listener->CloseSocket();
-
-	Service::CloseService();
-}
-
-/*----------------
-	ChatService
------------------*/
-
-ChatService::ChatService(NetAddress address, IocpCoreRef core, SessionFactory factory)
-	: Service(ServiceType::Chat, address, core, factory)
-{
-}
-
-bool ChatService::Start()
-{
-	if (CanStart() == false) return false;
-
-	_config = GConfigManager->GetChat();
-
-	_listener = MakeShared<Listener>();
-	if (_listener == nullptr) return false;
-
-	ChatServiceRef service = static_pointer_cast<ChatService>(shared_from_this());
-	if (_listener->StartAccept(service) == false) return false;
-
-	return true;
-}
-
-void ChatService::CloseService()
-{
-	_listener->CloseSocket();
-
-	Service::CloseService();
+    SessionRef session = CreateSession();
+    ASSERT_CRASH(session != nullptr);
+    session->RegisterConnect(GetAddress());
 }

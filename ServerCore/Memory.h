@@ -2,73 +2,59 @@
 #include "Allocator.h"
 #include "MemoryPool.h"
 
-/*------------------
-	MemoryManager
-------------------*/
-
 class MemoryManager
 {
 public:
-	MemoryManager();
-	~MemoryManager();
+    MemoryManager();
+    ~MemoryManager();
 
-	void* Allocate(uint32 size);
-	void  Release(void* ptr);
+    void* Allocate(uint32 size);
+    void  Release(void* ptr);
 
-	MemoryPool* GetPool(uint32 allocSize) { return _poolTable[allocSize]; }
+    MemoryPool* GetPool(uint32 allocSize) { return _poolTable[allocSize]; }
 
 private:
-	static constexpr uint32 MAX_POOL_SIZE = Config::Memory::MAX_POOL_SIZE;
-	static constexpr uint32 POOL_COUNT    = Config::Memory::POOL_COUNT;
+    static constexpr uint32 MAX_POOL_SIZE = Config::Memory::MAX_POOL_SIZE;
+    static constexpr uint32 POOL_COUNT    = Config::Memory::POOL_COUNT;
 
-	int32       _poolCount = 0;
-	MemoryPool* _pools[POOL_COUNT];
-	MemoryPool* _poolTable[MAX_POOL_SIZE + 1];
+    int32       _poolCount = 0;
+    MemoryPool* _pools[POOL_COUNT];
+    MemoryPool* _poolTable[MAX_POOL_SIZE + 1];
 };
 
-/*-------------------
-	ThreadLocalMemory
--------------------*/
-
-// 스레드별 TLS 메모리 캐시
-// CoreTLS::OnThreadStart()에서 생성, OnThreadEnd()에서 해제
 class ThreadLocalMemory
 {
 public:
-	ThreadLocalMemory();
-	~ThreadLocalMemory();
+    ThreadLocalMemory();
+    ~ThreadLocalMemory();
 
-	MemoryHeader* Allocate(int32 allocSize);
-	void          Release(MemoryHeader* header);
+    MemoryHeader* Allocate(int32 allocSize);
+    void          Release(MemoryHeader* header);
 
 private:
-	static constexpr uint32 MAX_POOL_SIZE = Config::Memory::MAX_POOL_SIZE;
-	static constexpr uint32 POOL_COUNT    = Config::Memory::POOL_COUNT;
+    static constexpr uint32 MAX_POOL_SIZE = Config::Memory::MAX_POOL_SIZE;
+    static constexpr uint32 POOL_COUNT    = Config::Memory::POOL_COUNT;
 
-	TlsMemoryPool* _tlsPools[POOL_COUNT]              = {};
-	TlsMemoryPool* _tlsPoolTable[MAX_POOL_SIZE + 1]   = {};
+    TlsMemoryPool* _tlsPools[POOL_COUNT]            = {};
+    TlsMemoryPool* _tlsPoolTable[MAX_POOL_SIZE + 1] = {};
 };
-
-/*---------
-	Helpers
----------*/
 
 template<typename Type, typename... Args>
 Type* xnew(Args&&... args)
 {
-	void* memory = PoolAllocator::Alloc(sizeof(Type));
-	return new(memory) Type(std::forward<Args>(args)...);
+    void* memory = PoolAllocator::Allocate(sizeof(Type));
+    return new(memory) Type(std::forward<Args>(args)...);
 }
 
 template<typename Type>
 void xdelete(Type* obj)
 {
-	obj->~Type();
-	PoolAllocator::Release(obj);
+    obj->~Type();
+    PoolAllocator::Release(obj);
 }
 
 template<typename Type, typename... Args>
 std::shared_ptr<Type> MakeShared(Args&&... args)
 {
-	return std::shared_ptr<Type>{ xnew<Type>(std::forward<Args>(args)...), xdelete<Type> };
+    return std::shared_ptr<Type>{ xnew<Type>(std::forward<Args>(args)...), xdelete<Type> };
 }

@@ -25,8 +25,8 @@ public class PrefabDataLoader : ILoader<int, PrefabData>
     public Dictionary<int, PrefabData> MakeDict()
     {
         Dictionary<int, PrefabData> dict = new Dictionary<int, PrefabData>();
-        foreach (PrefabData d in data)
-            dict.Add(d.id, d);
+        foreach (PrefabData entry in data)
+            dict.Add(entry.id, entry);
         return dict;
     }
 }
@@ -57,8 +57,8 @@ public class PlayerDataLoader : ILoader<(int, int), PlayerData>
     public Dictionary<(int, int), PlayerData> MakeDict()
     {
         Dictionary<(int, int), PlayerData> dict = new Dictionary<(int, int), PlayerData>();
-        foreach (PlayerData d in data)
-            dict.Add((d.id, d.level), d);
+        foreach (PlayerData entry in data)
+            dict.Add((entry.id, entry.level), entry);
         return dict;
     }
 }
@@ -89,8 +89,8 @@ public class MonsterDataLoader : ILoader<int, MonsterData>
     public Dictionary<int, MonsterData> MakeDict()
     {
         Dictionary<int, MonsterData> dict = new Dictionary<int, MonsterData>();
-        foreach (MonsterData d in data)
-            dict.Add(d.id, d);
+        foreach (MonsterData entry in data)
+            dict.Add(entry.id, entry);
         return dict;
     }
 }

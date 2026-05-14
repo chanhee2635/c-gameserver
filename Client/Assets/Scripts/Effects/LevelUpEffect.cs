@@ -3,36 +3,36 @@ using UnityEngine;
 using TMPro;
 
 /// <summary>
-/// ·¹º§¾÷ ÀÌÆåÆ®
-/// - ¹Ù´Ú ÁÖº¯¿¡¼­ ºûÁÙ±â »ó½Â
-/// - ¸Ó¸® À§ "Level Up!" ÅØ½ºÆ®°¡ ³ë¶õ»öÀ¸·Î ¶°¿À¸§
+/// ë ˆë²¨ì—… ì´í™íŠ¸
+/// - ë°”ë‹¥ ì£¼ë³€ì—ì„œ ë¹›ë‚˜ê¸° íš¨ê³¼
+/// - ë¨¸ë¦¬ ìœ„ "Level Up!" í…ìŠ¤íŠ¸ë¥¼ ì• ë‹ˆë©”ì´ì…˜ìœ¼ë¡œ í‘œì‹œ
 /// </summary>
 public class LevelUpEffect : MonoBehaviour
 {
-    [Header("ÆÄÆ¼Å¬")]
-    [SerializeField] ParticleSystem _riseParticle;   // ¹Ù´Ú¿¡¼­ ¿Ã¶ó¿À´Â ºû±âµÕ
-    [SerializeField] ParticleSystem _glowParticle;   // Ä³¸¯ÅÍ ÁÖÀ§ ÀºÀºÇÑ ±¤Ã¤
+    [Header("íŒŒí‹°í´")]
+    [SerializeField] private ParticleSystem _riseParticle;   // ë°”ë‹¥ì—ì„œ ì˜¬ë¼ì˜¤ëŠ” íŒŒí‹°í´
+    [SerializeField] private ParticleSystem _glowParticle;   // ìºë¦­í„° ì£¼ë³€ ë°œê´‘ ì±„ìƒ‰
 
-    [Header("ÅØ½ºÆ®")]
-    [SerializeField] TextMeshPro _levelUpText;       // "Level Up!" ÅØ½ºÆ®
+    [Header("í…ìŠ¤íŠ¸")]
+    [SerializeField] private TextMeshPro _levelUpText;       // "Level Up!" í…ìŠ¤íŠ¸
 
-    [Header("Å¸ÀÌ¹Ö")]
-    [SerializeField] float _lifetime = 2.5f;
+    [Header("íƒ€ì´ë°")]
+    [SerializeField] private float _lifetime = 2.5f;
 
-    Poolable _poolable;
-    Coroutine _returnCoroutine;
+    private Poolable  _poolable;
+    private Coroutine _returnCoroutine;
 
-    void Awake()
+    private void Awake()
     {
         _poolable = GetComponent<Poolable>();
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
         Play(_riseParticle);
         Play(_glowParticle);
 
-        // ¡Ú ·±Å¸ÀÓ¿¡ ¾Æ¿ô¶óÀÎ ¼³Á¤ (¿¡µğÅÍ ¸ğµå ¸ÓÆ¼¸®¾ó ´©¼ö ¹æÁö)
+        // ìœ¤ê³½ì„  ì„¤ì • (ì²˜ìŒ í™œì„±í™” ì‹œ ì´ˆê¸°í™”)
         if (_levelUpText != null)
         {
             _levelUpText.outlineWidth = 0.2f;
@@ -44,16 +44,16 @@ public class LevelUpEffect : MonoBehaviour
         _returnCoroutine = StartCoroutine(RunEffect());
     }
 
-    void Play(ParticleSystem ps)
+    private void Play(ParticleSystem ps)
     {
         if (ps == null) return;
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         ps.Play();
     }
 
-    IEnumerator RunEffect()
+    private IEnumerator RunEffect()
     {
-        // ÅØ½ºÆ® ¾Ö´Ï¸ŞÀÌ¼Ç
+        // í…ìŠ¤íŠ¸ ì• ë‹ˆë©”ì´ì…˜ ì‹œì‘
         if (_levelUpText != null)
             StartCoroutine(AnimateLevelUpText());
 
@@ -65,20 +65,20 @@ public class LevelUpEffect : MonoBehaviour
             Destroy(gameObject);
     }
 
-    IEnumerator AnimateLevelUpText()
+    private IEnumerator AnimateLevelUpText()
     {
         if (_levelUpText == null) yield break;
 
         _levelUpText.gameObject.SetActive(true);
-        _levelUpText.text = "Level Up!";
-        _levelUpText.color = new Color(1f, 0.92f, 0.016f, 0f); // ³ë¶õ»ö, Åõ¸í
+        _levelUpText.text  = "Level Up!";
+        _levelUpText.color = new Color(1f, 0.92f, 0.016f, 0f); // ê¸ˆìƒ‰, íˆ¬ëª…
 
         Vector3 startLocalPos = _levelUpText.transform.localPosition;
-        Vector3 endLocalPos = startLocalPos + Vector3.up * 1.2f;
+        Vector3 endLocalPos   = startLocalPos + Vector3.up * 1.2f;
 
-        float duration = 1.8f;
-        float fadeInEnd = 0.2f;   // 0~0.2: ÆäÀÌµåÀÎ
-        float fadeOutStart = 0.7f; // 0.7~1.0: ÆäÀÌµå¾Æ¿ô
+        float duration     = 1.8f;
+        float fadeInEnd    = 0.2f;   // 0~0.2: í˜ì´ë“œì¸
+        float fadeOutStart = 0.7f;   // 0.7~1.0: í˜ì´ë“œì•„ì›ƒ
 
         float t = 0f;
         while (t < duration)
@@ -86,11 +86,11 @@ public class LevelUpEffect : MonoBehaviour
             t += Time.deltaTime;
             float ratio = t / duration;
 
-            // À§·Î ºÎµå·´°Ô ÀÌµ¿
+            // ë¶€ë“œëŸ½ê²Œ ìœ„ë¡œ ì´ë™
             _levelUpText.transform.localPosition = Vector3.Lerp(startLocalPos, endLocalPos,
                 Mathf.SmoothStep(0f, 1f, ratio));
 
-            // ¾ËÆÄ: ÆäÀÌµåÀÎ ¡æ À¯Áö ¡æ ÆäÀÌµå¾Æ¿ô
+            // ì•ŒíŒŒ: í˜ì´ë“œì¸ â†’ ìœ ì§€ â†’ í˜ì´ë“œì•„ì›ƒ
             float alpha;
             if (ratio < fadeInEnd)
                 alpha = Mathf.Lerp(0f, 1f, ratio / fadeInEnd);
@@ -99,10 +99,10 @@ public class LevelUpEffect : MonoBehaviour
             else
                 alpha = Mathf.Lerp(1f, 0f, (ratio - fadeOutStart) / (1f - fadeOutStart));
 
-            // ³ë¶õ»ö À¯Áö + ¾ËÆÄ Àû¿ë
+            // í…ìŠ¤íŠ¸ ìƒ‰ìƒ + ì•ŒíŒŒ ì ìš©
             _levelUpText.color = new Color(1f, 0.92f, 0.016f, alpha);
 
-            // ÅØ½ºÆ®°¡ Ç×»ó Ä«¸Ş¶ó¸¦ ¹Ù¶óº¸µµ·Ï
+            // í…ìŠ¤íŠ¸ê°€ í•­ìƒ ì¹´ë©”ë¼ë¥¼ ë°”ë¼ë³´ë„ë¡
             if (Camera.main != null)
                 _levelUpText.transform.rotation = Camera.main.transform.rotation;
 

@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class CoroutineHelper : MonoBehaviour
 {
-    static CoroutineHelper _instance;
+    private static CoroutineHelper _instance;
 
     public static void Start(IEnumerator coroutine)
     {

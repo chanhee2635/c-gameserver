@@ -1,19 +1,42 @@
 #include "pch.h"
 #include "Logger.h"
+#include "ThreadManager.h"
+#include <iostream>
 
-std::mutex Logger::_consoleLock;
-int        Logger::_statsPanelLines = 0;
+Mutex Logger::_consoleLock;
+int Logger::_statsPanelLines = 0;
 
-void Logger::Init(const std::string& filename)
+void Logger::Init(const wstring& filename)
 {
-    std::lock_guard<std::mutex> guard(_consoleLock);
-    if (_file.is_open()) return;
+    if (_running) return;
+
+    _file.imbue(std::locale("korean"));
     _file.open(filename, std::ios::app);
+
+    _running = true;
+
+    GThread->Launch(ThreadType::MONITOR, [this]() { LogThreadMain(); });
+}
+
+void Logger::Write(LogLevel level, const wstring& msg)
+{
+    {
+        LockGuard lock(_queueLock);
+        _logQueue.push({ level, msg, LThreadId });
+    }
+    _cv.notify_one();
+}
+
+void Logger::Shutdown()
+{
+    if (!_running) return;
+    _running = false;
+    _cv.notify_all();
 }
 
 void Logger::ReserveStatsPanel(int lines)
 {
-    // Windows VT 처리 활성화 (ANSI 커서 이동 지원)
+    // ANSI 이스케이프 시퀀스 활성화 (Windows 10 이상 필수)
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD mode = 0;
     GetConsoleMode(hOut, &mode);
@@ -21,44 +44,77 @@ void Logger::ReserveStatsPanel(int lines)
 
     _statsPanelLines = lines;
 
-    // 상단에 Stats 영역만큼 빈 줄 예약
-    std::lock_guard<std::mutex> guard(_consoleLock);
+    // 통계창이 들어갈 공간 확보
+    LockGuard guard(_consoleLock);
     for (int i = 0; i < lines; i++)
-        std::cout << "\n";
+        std::wcout << L"\n";
 }
 
-void Logger::Write(LogLevel level, const std::string& msg)
+void Logger::LogThreadMain()
 {
-    std::string line = Timestamp()
-        + " [" + LevelToString(level) + "]"
-        + " [T" + std::to_string(LThreadId) + "]"
-        + " " + msg + "\n";
+    std::wcout.imbue(std::locale("korean"));
 
-    std::lock_guard<std::mutex> guard(_consoleLock);
-    std::cout << line;
-    if (_file.is_open())
-        _file << line;
+    while (true)
+    {
+        LogEntry entry;
+        {
+            UniqueLock lock(_queueLock);
+            _cv.wait(lock, [this] { return !_logQueue.empty() || !_running; });
+
+            if (!_running && _logQueue.empty())
+                break;
+
+            entry = std::move(_logQueue.front());
+            _logQueue.pop();
+        }
+
+        wstring line = Timestamp()
+            + L" [" + LevelToString(entry.level) + L"]"
+            + L" [T" + std::to_wstring(entry.threadId) + L"]"
+            + L" " + entry.message + L"\n";
+
+        {
+            LockGuard consoleLock(_consoleLock);
+
+            HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            CONSOLE_SCREEN_BUFFER_INFO csbi;
+            GetConsoleScreenBufferInfo(hOut, &csbi);
+
+            // [수정 핵심] 현재 커서가 통계 영역(상단) 안에 있다면 강제로 경계선 아래로 이동
+            if (csbi.dwCursorPosition.Y < _statsPanelLines)
+            {
+                SetConsoleCursorPosition(hOut, { 0, (SHORT)_statsPanelLines });
+            }
+
+            std::wcout << line;
+
+            if (_file.is_open()) {
+                _file << line;
+                _file.flush();
+            }
+        }
+    }
 }
 
-std::string Logger::Timestamp()
+wstring Logger::Timestamp()
 {
-    auto now  = std::chrono::system_clock::now();
+    auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
     std::tm tm{};
     localtime_s(&tm, &time);
 
-    char buf[32];
-    std::strftime(buf, sizeof(buf), "%H:%M:%S", &tm);
+    wchar_t buf[32];
+    std::wcsftime(buf, sizeof(buf) / sizeof(wchar_t), L"%H:%M:%S", &tm);
     return buf;
 }
 
-std::string Logger::LevelToString(LogLevel level)
+wstring Logger::LevelToString(LogLevel level)
 {
     switch (level)
     {
-    case LogLevel::INFO: return "INFO";
-    case LogLevel::WARN: return "WARN";
-    case LogLevel::ERR:  return "ERROR";
+    case LogLevel::INFO: return L"INFO";
+    case LogLevel::WARN: return L"WARN";
+    case LogLevel::ERR:  return L"ERROR";
     }
-    return "UNKNOWN";
+    return L"UNKNOWN";
 }

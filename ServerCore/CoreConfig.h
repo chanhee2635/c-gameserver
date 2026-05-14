@@ -2,17 +2,20 @@
 
 namespace Config
 {
+	static constexpr uint32 KB = 1024;
+	static constexpr uint32 MB = 1024 * KB;
+
 	namespace Memory
 	{
-		constexpr unsigned int SLIST_ALIGNMENT       = 16;
 		constexpr unsigned int DEFAULT_ALIGNMENT     = 16;
-		constexpr unsigned int MAX_POOL_SIZE         = 4096;
-		// ~1024: 32 step (32ea), ~2048: 128 step (8ea), ~4096: 256 step (8ea)
-		constexpr unsigned int POOL_COUNT            = (1024 / 32) + (1024 / 128) + (2048 / 256);
+		constexpr unsigned int ALLOC_COUNT           = 32;
 		constexpr unsigned int MAGIC_NUMBER          = 0xDEADBEEF;
-		constexpr unsigned int ALLOC_COUNT           = 8;   // global pool 고갈 시 batch 할당 수
-		constexpr unsigned int TLS_MAX_COUNT         = 64;  // TLS 최대 보유 블록 수
-		constexpr unsigned int TLS_BATCH_COUNT       = 16;  // global <-> TLS 이동 단위
+
+		constexpr unsigned int MAX_POOL_SIZE         = 8192;
+		constexpr unsigned int POOL_COUNT            = (1024 / 32) + (1024 / 128) + (2048 / 256) + (4096 / 512);
+
+		constexpr unsigned int TLS_MAX_COUNT         = 32;  
+		constexpr unsigned int TLS_BATCH_COUNT       = 16;  
 
 		namespace Frame
 		{
@@ -20,38 +23,32 @@ namespace Config
 		}
 	}
 
+	namespace Packet
+	{
+		static constexpr uint32 HEADER_SIZE = sizeof(uint16) * 2;
+	}
+
 	namespace Buffer
 	{
-		// SendBufferChunk 크기 (64KB: 대부분의 패킷 여러 개를 한 청크에 담을 수 있는 크기)
-		constexpr unsigned int SEND_BUFFER_CHUNK_SIZE = 65536;
+		static constexpr uint32 SEND_BUFFER_CHUNK_SIZE = 4 * KB;
 	}
 
 	namespace Network
 	{
-		// AcceptEx 주소 버퍼 크기: sizeof(SOCKADDR_IN)=16 + Winsock 추가 16 = 32
-		// (CoreConfig.h 는 winsock2.h 보다 먼저 include되므로 sizeof 대신 상수 사용)
-		constexpr int ADDR_BUFFER_SIZE = 32;
+		static constexpr uint32 ADDR_BUFFER_SIZE = 64;
+		static constexpr uint32 ADDR_BUFFER_ALIGNMENT = 16;
 	}
 
 	namespace Session
 	{
-		// 세션당 순환 수신 버퍼 크기 (64KB: 패킷 최대 크기 * 충분한 여유)
-		constexpr int RECV_BUFFER_SIZE = 65536;
+		static constexpr uint32 DEFAULT_ACCEPT_COUNT = 100;
+		static constexpr uint32 RECV_BUFFER_SIZE = 4 * KB;
+		static constexpr uint32 RECV_BUFFER_COUNT = 10;
+		static constexpr uint32 MAX_PACKET_SIZE = 4 * KB;
 	}
-}
 
-// STL 컨테이너 할당 전략 선택자
-enum class AllocType : unsigned char
-{
-	Pool,   // 기본: MemoryPool 사용
-	Frame,  // 임시: FrameAllocator 사용 (틱 끝에 일괄 해제)
-	Stomp,  // 디버그: VirtualAlloc + Guard Page
-};
-
-namespace MemoryUtils
-{
-	inline unsigned int AlignUp(unsigned int size, unsigned int align)
+	namespace Job
 	{
-		return (size + align - 1) & ~(align - 1);
+		static constexpr uint32 MAX_WORK_TICK = 64;
 	}
 }
