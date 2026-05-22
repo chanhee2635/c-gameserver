@@ -107,9 +107,11 @@ void World::EnterCreature(CreatureRef creature)
     if (!creature) return;
 
     ZoneRef mainZone = GetZoneByPos(creature->GetPos());
-    if (!mainZone) return;
+    if (!mainZone)
+        return;
     GameSceneRef mainScene = mainZone->GetScene();
-    if (!mainScene) return;
+    if (!mainScene)
+        return;
 
     creature->SetZone(mainZone);
     creature->SetGameScene(mainScene);
@@ -177,6 +179,7 @@ void World::LeaveCreature(CreatureRef creature)
         else if (creature->GetObjectType() == Protocol::MONSTER)
             GServerStats->game.activeMonsters.fetch_sub(1, std::memory_order_relaxed);
     }
+   
 
     const Vector<ZoneRef>& adjacentZones = mainZone->GetAdjacentZones();
     uint64 objectId = creature->GetObjectId();
@@ -266,6 +269,17 @@ MoveResultRef World::GetMoveResult(ZoneRef oldZone, ZoneRef newZone) const
     }
 
     return CalculateMoveResult(oldZone, newZone);
+}
+
+void World::BroadcastToAll(SendBufferRef buffer)
+{
+    for (auto& scene : _scenes)
+    {
+        scene->DoAsync(MakeJob([scene, buffer]()
+        {
+            scene->BroadcastToAllPlayers(buffer);
+        }));
+    }
 }
 
 MoveResultRef World::CalculateMoveResult(ZoneRef oldZone, ZoneRef newZone) const

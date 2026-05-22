@@ -11,11 +11,15 @@ public class NetworkManager
     public int    AccountId { get; set; }
     public string AuthToken { get; set; }
 
-    private readonly ServerSession          _session           = new();
-    private readonly ConcurrentQueue<Action> _mainThreadActions = new();
+    private ServerSession           _session           = new();
+    private ConcurrentQueue<Action> _mainThreadActions = new();
 
     public void ConnectToGameServer(ServerInfo info)
     {
+        _session = new ServerSession();
+
+        while (_mainThreadActions.TryDequeue(out _)) { }
+
         var endPoint = new IPEndPoint(IPAddress.Parse(info.IpAddress), info.Port);
         new Connector().Connect(endPoint, () => _session, 1);
     }

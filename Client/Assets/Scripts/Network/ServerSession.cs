@@ -8,7 +8,6 @@ public class ServerSession : PacketSession
 {
     public override void OnConnected(EndPoint endPoint)
     {
-        Debug.Log($"OnConnected : {endPoint}");
         PacketManager.Instance.CustomHandler = pkt => PacketQueue.Instance.Push(pkt);
 
         Managers.Network.EnqueueMainThread(() =>
@@ -21,8 +20,6 @@ public class ServerSession : PacketSession
 
     public override void OnDisconnected(EndPoint endPoint)
     {
-        Debug.Log($"OnDisconnected : {endPoint}");
-        Managers.Network.Clear();
         Managers.Network.EnqueueMainThread(() => Managers.Scene.LoadScene(Define.Scene.Login));
     }
 

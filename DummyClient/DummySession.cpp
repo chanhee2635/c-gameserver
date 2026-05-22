@@ -1,12 +1,9 @@
 #include "pch.h"
 #include "DummySession.h"
 #include "ServerPacketHandler.h"
-#include "Game.pb.h"
 
 void DummySession::OnConnected()
 {
-    _state = ESessionState::AUTH;
-
     Protocol::CAuthToken pkt;
     pkt.set_auth_token(_authToken);
     auto sendBuffer = MakeSendBuffer<Protocol::C_AUTH_TOKEN>(pkt);

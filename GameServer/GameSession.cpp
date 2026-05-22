@@ -17,11 +17,10 @@ void GameSession::OnDisconnected()
     if (_dbId != 0)
         GSessionManager->Unregister(_dbId);
 
-    // C_LEAVE_GAME 없이 끊긴 경우 (강제 종료, 네트워크 단절 등) 저장 + 퇴장 처리
     PlayerRef player = GetPlayer();
     if (player)
     {
-        _player.reset();   // 중복 처리 방지
+        _player.reset();  
 
         uint64  dbId = player->GetPlayerDbId();
         int32   hp   = player->GetHp();
@@ -42,14 +41,13 @@ void GameSession::OnDisconnected()
     }
 
     GServerStats->game.connectedSessions.fetch_sub(1, std::memory_order_relaxed);
-    GServerStats->game.totalDisconnections.fetch_add(1, std::memory_order_relaxed);
 }
 
 void GameSession::OnRecvPacket(std::span<const BYTE> packet, uint16 type)
 {
     if (_dbId == 0 && type != Protocol::MsgId::C_AUTH_TOKEN)
     {
-        LOG_WARN(L"미인증 세션 패킷 수신 type=" + std::to_wstring(type));
+        LOG_WARN(L"Received unauthenticated session packet type=" + std::to_wstring(type));
         Disconnect();
         return;
     }

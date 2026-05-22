@@ -89,7 +89,6 @@ public class UI_GameScene : UI_Scene
         GetImage((int)Images.ExitPopup).gameObject.SetActive(false);
         Managers.Network.Send(new Protocol.CLeaveGame());
         Managers.Network.Clear();
-        Managers.Scene.LoadScene(Define.Scene.Login);
     }
 
     private void SendRevivePacket(bool isCurrentPos)
@@ -123,7 +122,12 @@ public class UI_GameScene : UI_Scene
         string msg = Get<TMP_InputField>((int)InputFields.ChatInput).text.Trim();
         if (string.IsNullOrEmpty(msg)) return;
 
-        Managers.Network.Send(new Protocol.CChat { Chat = msg });
+        int typeIndex = Get<TMP_Dropdown>((int)Dropdowns.ChatType).value;
+        Protocol.ChatType chatType = typeIndex == 1
+            ? Protocol.ChatType.ChatWorld
+            : Protocol.ChatType.ChatNear;
+
+        Managers.Network.Send(new Protocol.CChat { Chat = msg, ChatType = chatType });
         Get<TMP_InputField>((int)InputFields.ChatInput).text = null;
     }
 
@@ -135,11 +139,14 @@ public class UI_GameScene : UI_Scene
             Chats.RemoveAt(0);
         }
 
-        string msg = $"{packet.Name} : {packet.Chat}";
+        bool isWorld = packet.ChatType == Protocol.ChatType.ChatWorld;
+        string prefix = isWorld ? "[ÀüÃ¼] " : "";
+        string msg = $"{prefix}{packet.Name} : {packet.Chat}";
+        Color color = isWorld ? Color.blue : Color.black;
 
         UI_Chat_Item item = Managers.UI.MakeSubItem<UI_Chat_Item>(Get<VerticalLayoutGroup>((int)ChatItem.ChatItem).transform);
         item.transform.localScale = Vector3.one;
-        item.SetText(msg, UnityEngine.Color.black);
+        item.SetText(msg, color);
         Chats.Add(item);
     }
 

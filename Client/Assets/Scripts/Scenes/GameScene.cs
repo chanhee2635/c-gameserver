@@ -26,12 +26,18 @@ public class GameScene : BaseScene
         foreach (var pair in Managers.Data.PrefabDataDict)
         {
             PrefabData data = pair.Value;
-            if (string.IsNullOrEmpty(data.prefabPath)) continue;
 
-            var prefab = Managers.Resource.Load<GameObject>($"Prefabs/{data.prefabPath}");
-            if (prefab != null && prefab.GetComponent<Poolable>() != null)
-                Managers.Pool.CreatePool(prefab, data.poolSize);
+            CreatePoolIfValid(data.prefabPath, data.poolSize);
+            CreatePoolIfValid(data.dummyPrefabPath, data.poolSize);
         }
+    }
+
+    private void CreatePoolIfValid(string path, int poolSize)
+    {
+        if (string.IsNullOrEmpty(path)) return;
+        var prefab = Managers.Resource.Load<GameObject>($"Prefabs/{path}");
+        if (prefab != null && prefab.GetComponent<Poolable>() != null)
+            Managers.Pool.CreatePool(prefab, poolSize);
     }
 
     public override void Clear() => IsSceneReady = false;

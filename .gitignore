@@ -1,11 +1,11 @@
-# --- [ºôµå °á°ú¹°] ---
+# --- [ë¹Œë“œ ê²°ê³¼ë¬¼] ---
 *.exe
 *.dll
 *.lib
 *.pdb
 *.exp
 
-# --- [Áß°£ ºôµå ÆÄÀÏ] ---
+# --- [ì¶”ê°€ ë¹Œë“œ ì‚°ì¶œë¬¼] ---
 *.obj
 *.ilk
 *.pch
@@ -20,13 +20,13 @@
 *.cache
 *.FileListAbsolute.txt
 
-# --- [Visual Studio ¼³Á¤] ---
+# --- [Visual Studio ì„¤ì •] ---
 .vs/
 *.user
 *.suo
 *.vcxproj.user
 
-# --- [ºôµå Æú´õ] ---
+# --- [ë¹Œë“œ í´ë”] ---
 Debug/
 Release/
 x64/
@@ -35,11 +35,10 @@ bin/
 obj/
 Intermediate/
 Libraries/
-Common/
 Video/
 NavDataGenerator/
 
-# --- [Unity Á¦¿Ü] ---
+# --- [Unity ê´€ë ¨] ---
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
@@ -56,24 +55,23 @@ MemoryCaptures/
 *.fbx
 *.renderTexture
 
-# --- [Protobuf »ı¼º ÆÄÀÏ] ---
-*.pb.cc
-*.pb.h
-
-# --- [¼³Á¤/·Î±×] ---
+# --- [ë¡œê·¸/ê¸°íƒ€] ---
 *.log
 server.json
 config.json
 *.zip
 
-# --- [OS ÆÄÀÏ] ---
+# --- [OS ê´€ë ¨] ---
 .DS_Store
 Thumbs.db
 
-# --- [Claude Code °ü·Ã] ---
+# --- [Claude Code ê´€ë ¨] ---
 .claude/
 CLAUDE.md
 HANDOFF.md
 CODEFLOW.md
 CONVENTIONS.md
 SERVERCORE_GUIDE.md
+
+# ì°¸ê³ : Common/(Protocol .proto, DB) ë° protobuf ìƒì„±ë¬¼(*.pb.h/*.pb.cc)ì€
+#       í´ë¡  ì¦‰ì‹œ ë¹Œë“œê°€ ê°€ëŠ¥í•˜ë„ë¡ ì˜ë„ì ìœ¼ë¡œ ì¶”ì í•œë‹¤.

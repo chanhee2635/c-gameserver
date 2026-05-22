@@ -68,9 +68,7 @@ void* FrameAllocator::Allocate(uint32 size)
         if (GServerStats)
             GServerStats->memory.frameOverflowCount.fetch_add(1, std::memory_order_relaxed);
 
-        LOG_WARN(L"FrameAllocator overflow size=" + std::to_wstring(size)
-            + L" thread=" + std::to_wstring(LThreadId));
-
+        // LOG_WARN 금지: Logger가 FrameAllocator를 사용하므로 여기서 로그 호출 시 무한재귀 발생
         void* ptr = BaseAllocator::Allocate(alignedSize);
         _overflowAllocs.push_back(ptr);
         return ptr;

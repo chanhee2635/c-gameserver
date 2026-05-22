@@ -91,23 +91,21 @@ public static partial class PacketHandler
     public static void SUpdateSceneHandler(Protocol.SUpdateScene pkt)
     {
         foreach (var obj in pkt.Spawns)
-        {
             Managers.Object.AddPendingObject(obj);
-        }
 
         foreach (uint objectId in pkt.Despawns)
-        {
             Managers.Object.Despawn(objectId);
-        }
 
         foreach (var movePos in pkt.Moves)
         {
             if (Managers.Scene.CurrentScene is GameScene { IsSceneReady: true })
-            {
-                Managers.Object.OnMove(movePos);
-            }
+                Managers.Object.OnMove(movePos, pkt.DeltaTimeMs);
         }
     }
 
-    public static void SChatHandler(Protocol.SChat pkt) { }
+    public static void SChatHandler(Protocol.SChat pkt) 
+    {
+        var sceneUI = Managers.UI.SceneUI as UI_GameScene;
+        sceneUI?.RecvChatting(pkt);
+    }
 }

@@ -50,6 +50,9 @@ public class Managers : MonoBehaviour
 
     private void Init()
     {
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = 0;
+
         _data.Init();
         _sound.Init();
         _pool.Init();
@@ -57,8 +60,8 @@ public class Managers : MonoBehaviour
 
     private void Update()
     {
-        PacketQueue.Instance.Flush(MaxPacketsPerFrame);
         _network.Update();
+        PacketQueue.Instance.Flush(MaxPacketsPerFrame);
         _object.Update();
     }
 
@@ -70,7 +73,8 @@ public class Managers : MonoBehaviour
 
     public void ClearScene()
     {
-        _scene?.Clear(); 
+        _ui?.Clear();     // 팝업 스택·sortingOrder 초기화 (씬 전환 시 누락되면 누적됨)
+        _scene?.Clear();
         _object?.Clear();
         _sound?.Clear();
         _pool?.Clear();

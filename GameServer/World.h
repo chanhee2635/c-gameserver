@@ -26,6 +26,8 @@ public:
 
     MoveResultRef GetMoveResult(ZoneRef oldZone, ZoneRef newZone) const;
 
+    void BroadcastToAll(SendBufferRef buffer);
+
     static void SendSpawnPacketsToPlayer(PlayerRef player, const Vector<ZoneRef>& zones);
     static void SendDespawnPacketsToPlayer(PlayerRef player, const Vector<ZoneRef>& zones);
 

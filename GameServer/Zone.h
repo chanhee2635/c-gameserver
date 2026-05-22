@@ -51,6 +51,9 @@ public:
     template<typename Flush>
     void MakeDespawnPacket(uint64 selfId, Protocol::SUpdateScene& packet, Flush&& flush);
 
+
+    int32 GetPendingMoveCount() const { return static_cast<int32>(_pendingMoves.size()); }
+
 private:
     template<typename Container, typename AddFunc, typename Flush>
     static void FillList(const Container& container, int32 flushCount,

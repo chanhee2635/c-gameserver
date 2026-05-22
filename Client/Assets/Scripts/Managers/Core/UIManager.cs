@@ -66,7 +66,7 @@ public class UIManager
         GameObject go = Managers.Resource.Instantiate($"UI/{type}/{name}");
         T ui = Util.GetOrAddComponent<T>(go);
         if (parent != null)
-            go.transform.SetParent(parent, true);
+            go.transform.SetParent(parent, false);  // false: RectTransform 로컬 값 유지
 
         return ui;
     }

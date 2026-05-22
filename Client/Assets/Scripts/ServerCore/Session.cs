@@ -42,7 +42,7 @@ namespace ServerCore
         Socket _socket;
         int _disconnected = 0;
 
-        RecvBuffer _recvBuffer = new RecvBuffer(65535);
+        RecvBuffer _recvBuffer = new RecvBuffer(1024 * 1024);
 
         object _lock = new object();
         Queue<ArraySegment<byte>> _sendQueue = new Queue<ArraySegment<byte>>();
@@ -67,6 +67,7 @@ namespace ServerCore
         public void Start(Socket socket)
         {
             _socket = socket;
+            _socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
 
             _recvArgs.Completed += OnRecvCompleted;
             _sendArgs.Completed += OnSendCompleted;
@@ -104,9 +105,21 @@ namespace ServerCore
             if (Interlocked.Exchange(ref _disconnected, 1) == 1)
                 return;
 
-            OnDisconnected(_socket.RemoteEndPoint);
-            _socket.Shutdown(SocketShutdown.Both);
-            _socket.Close();
+            if (_socket != null)
+            {
+                try
+                {
+                    EndPoint ep = null;
+                    try { ep = _socket.RemoteEndPoint; } catch { }
+                    OnDisconnected(ep);
+                    _socket.Shutdown(SocketShutdown.Both);
+                    _socket.Close();
+                }
+                catch (Exception e)
+                {
+                    Debug.Log($"Disconnect Failed {e}");
+                }
+            }
             Clear();
         }
 

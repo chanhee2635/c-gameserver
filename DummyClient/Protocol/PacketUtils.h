@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Session.h"
 #include "Protocol.pb.h"
 
 template<auto PacketType, typename T>

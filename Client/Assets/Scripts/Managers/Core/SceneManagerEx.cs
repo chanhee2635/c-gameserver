@@ -18,14 +18,19 @@ public class SceneManagerEx
 
     private IEnumerator LoadSceneAsync(Define.Scene type, Action onLoaded)
     {
-        _pendingSceneOp = SceneManager.LoadSceneAsync(GetSceneName(type));
+        var op = SceneManager.LoadSceneAsync(GetSceneName(type));
+        if (op == null) yield break;
 
-        _pendingSceneOp.allowSceneActivation = false;
+        _pendingSceneOp = op;
 
-        while (_pendingSceneOp.progress < 0.9f)
-        {
+        bool autoActivate = (type == Define.Scene.Login);
+        op.allowSceneActivation = autoActivate;
+
+        while (op.progress < 0.9f)
             yield return null;
-        }
+
+        if (autoActivate)
+            yield return new WaitUntil(() => op.isDone);
 
         onLoaded?.Invoke();
     }

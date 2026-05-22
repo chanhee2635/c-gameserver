@@ -1,0 +1,26 @@
+# Client (Unity) — 코드 전시용: C# 스크립트(.cs)만 추적한다.
+# 에셋/씬/프리팹/메타/프로젝트 설정 등은 모두 제외 (클론 시 빌드 불가, 전시 목적).
+
+# 1) 기본적으로 전부 무시
+*
+# 2) 단, 디렉터리는 탐색할 수 있게 열어둠 (.cs를 찾아 내려가기 위함)
+!*/
+# 3) C# 스크립트만 다시 포함
+!*.cs
+# 4) 이 .gitignore 자신은 추적
+!.gitignore
+
+# 5) [중요] 위 !*/ 가 Unity 생성/패키지 디렉터리까지 다시 열어버리므로
+#    여기서 무겁고 불필요한 디렉터리를 명시적으로 다시 무시한다.
+#    (이게 없으면 Library/PackageCache 안의 패키지 .cs 수천 개가 추적됨)
+/Library/
+/Temp/
+/Obj/
+/obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+/Packages/
+/.vs/

@@ -20,6 +20,7 @@ public:
     static bool SetRecvBufferSize(SOCKET socket, int32 size);
     static bool SetSendBufferSize(SOCKET socket, int32 size);
     static bool SetUpdateAcceptSocket(SOCKET socket, SOCKET listenSocket);
+    static bool SetUpdateConnectSocket(SOCKET socket);
 
     static bool Bind(SOCKET socket, const NetAddress& netAddr);
     static bool BindAnyAddress(SOCKET socket, uint16 port);

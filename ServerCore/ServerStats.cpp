@@ -37,12 +37,18 @@ void SystemStats::Refresh()
 
 void ServerStats::Init()
 {
-    GLogger->ReserveStatsPanel(STATS_PANEL_LINES);
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD  mode = 0;
+    if (GetConsoleMode(hOut, &mode))
+        SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
     _running = true;
 }
 
 void ServerStats::RunUpdateLoop()
 {
+    GLogger->ReserveStatsPanel(STATS_PANEL_LINES);
+
     while (_running)
     {
         RenderReport();
@@ -66,16 +72,26 @@ void ServerStats::RenderReport()
     uint64 poolMiss = memory.poolMissCount.exchange(0); 
     int32  frameOverflow = memory.frameOverflowCount.exchange(0);
     uint64 suspicious = game.suspiciousPackets.exchange(0);
+    uint64 recvKB = network.recvBytes.exchange(0) / 1024;
+    uint64 sendKB = network.sendBytes.exchange(0) / 1024;
+    uint64 recvPkt = network.recvPackets.exchange(0);
+    uint64 sendPkt = network.sendPackets.exchange(0);
+    uint64 lagTotal = game.tickLagTotalMs.exchange(0);
+    uint64 lagCount = game.tickLagCount.exchange(0);
+    uint64 lagMax = game.tickLagMaxMs.exchange(0);
+    uint64 avgLagMs = (lagCount > 0) ? (lagTotal / lagCount) : 0;
 
     std::wstringstream ss;
-    ss.imbue(std::locale("korean"));
 
     ss << L"==================== [ SERVER STATUS ] ====================\033[K\n";
     ss << L" [UPTIME]   " << game.GetUptime() << L"s  [CPU] " << std::fixed << std::setprecision(1) << system.cpuUsage << L"%  [MEM] " << system.memUsageMB << L"MB\033[K\n";
     ss << L" [SESSIONS] Active: " << game.connectedSessions.load() << L" (Total: " << game.totalConnections.load() << L")\033[K\n";
-    ss << L" [NETWORK]  In: " << network.recvBytes.load() / 1024 << L"KB  Out: " << network.sendBytes.load() / 1024 << L"KB\033[K\n";
+    ss << L" [NETWORK]  In: " << recvKB << L"KB/s (" << recvPkt << L"pkt/s)  Out: " << sendKB << L"KB/s (" << sendPkt << L"pkt/s)\033[K\n";
     ss << L" [ENGINE]   IOCP: " << iocpCount << L"/s (" << avgIocpUs << L"us)  Job: " << jobs << L"/s\033[K\n";
-    ss << L" [TICKS]    Scene: " << ticks << L"/s\033[K\n";
+    ss << L" [TICKS]    Scene: " << ticks << L"/s  AvgLag: " << avgLagMs << L"ms  MaxLag: " << lagMax << L"ms";
+    if (avgLagMs >= 30)
+        ss << L"  \033[31m[WARN: tick delay]\033[0m";
+    ss << L"\033[K\n";
     ss << L" [MEMORY]   Hit: " << poolHit << L"  Miss: " << poolMiss << L"  Live: " << memory.liveAllocCount.load();
 
     if (frameOverflow > 0)

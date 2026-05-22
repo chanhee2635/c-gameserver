@@ -127,6 +127,9 @@
     <ClInclude Include="DbConnectionPool.h">
       <Filter>소스 파일\DB</Filter>
     </ClInclude>
+    <ClInclude Include="GameMath.h">
+      <Filter>소스 파일\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CoreGlobal.cpp">

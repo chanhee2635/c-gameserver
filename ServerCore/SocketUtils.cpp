@@ -63,6 +63,11 @@ bool SocketUtils::SetUpdateAcceptSocket(SOCKET socket, SOCKET listenSocket)
     return SetSockOpt(socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, listenSocket);
 }
 
+bool SocketUtils::SetUpdateConnectSocket(SOCKET socket)
+{
+    return SOCKET_ERROR != ::setsockopt(socket, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, nullptr, 0);
+}
+
 bool SocketUtils::Bind(SOCKET socket, const NetAddress& netAddr)
 {
     return ::bind(socket, reinterpret_cast<const SOCKADDR*>(&netAddr.GetSockAddr()), sizeof(sockaddr_in)) != SOCKET_ERROR;

@@ -13,14 +13,14 @@ bool ClientPacketHandler::OnHandle_C_AUTH_TOKEN(GameSessionRef session, const Pr
 {
     if (session->GetDbId() != 0)
     {
-        LOG_WARN(L"중복 인증 시도 accountDbId=" + std::to_wstring(session->GetDbId()));
+        LOG_WARN(L"Duplicate auth try accountDbId=" + std::to_wstring(session->GetDbId()));
         return false;
     }
 
     auto accountId = GRedisManager->GetAccountId(pkt.auth_token());
     if (!accountId.has_value())
     {
-        LOG_WARN(L"토큰 검증 실패");
+        LOG_WARN(L"Token verification failed");
         session->Disconnect();
         return false;
     }
@@ -28,7 +28,6 @@ bool ClientPacketHandler::OnHandle_C_AUTH_TOKEN(GameSessionRef session, const Pr
     session->SetDbId(accountId.value());
     GRedisManager->DeleteToken(pkt.auth_token());
     GSessionManager->Register(accountId.value(), session);
-    LOG_INFO(L"인증 성공 accountDbId=" + std::to_wstring(accountId.value()));
 
     if (!GDBManager)
     {
@@ -152,7 +151,7 @@ bool ClientPacketHandler::OnHandle_C_LEAVE_GAME(GameSessionRef session, const Pr
     PlayerRef player = session->GetPlayer();
     if (!player) return true;
 
-    session->SetPlayer(nullptr);   // OnDisconnected에서 중복 저장 방지
+    session->SetPlayer(nullptr);   
 
     uint64  dbId = player->GetPlayerDbId();
     int32   hp   = player->GetHp();
@@ -238,5 +237,45 @@ bool ClientPacketHandler::OnHandle_C_REVIVE(GameSessionRef session, const Protoc
 bool ClientPacketHandler::OnHandle_C_CHAT(GameSessionRef session, const Protocol::CChat& pkt)
 {
     if (!IsAuthenticated(session)) return false;
+
+    PlayerRef player = session->GetPlayer();
+    if (!player) return false;
+
+    const string& msg = pkt.chat();
+    if (msg.empty() || msg.size() > 200)
+        return true;  
+
+    Protocol::SChat res;
+    res.set_object_id(player->GetObjectId());
+    res.set_name(player->GetNameUtf8());
+    res.set_chat(msg);
+    res.set_chat_type(pkt.chat_type());
+
+    SendBufferRef sendBuffer = MakeSendBuffer<Protocol::MsgId::S_CHAT>(res);
+
+    switch (pkt.chat_type())
+    {
+    case Protocol::CHAT_WORLD:
+        GWorld->DoAsync([sendBuffer]()
+        {
+            GWorld->BroadcastToAll(sendBuffer);
+        });
+        break;
+
+    case Protocol::CHAT_NEAR:
+    default:
+    {
+        GameSceneRef scene = player->GetGameScene();
+        ZoneRef      zone = player->GetZone();
+        if (!scene || !zone) return true;
+
+        scene->DoAsync(MakeJob([scene, zone, sendBuffer]()
+            {
+                scene->BroadcastToAdjacentZones(zone, sendBuffer);
+            }));
+        break;
+    }
+    }
+
     return true;
 }

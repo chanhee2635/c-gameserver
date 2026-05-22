@@ -1,0 +1,178 @@
+syntax = "proto3";
+package Protocol;
+
+enum MsgId {
+    NONE = 0;
+
+    C_AUTH_TOKEN     = 1;
+    S_PLAYER_LIST    = 2;
+    C_CREATE_PLAYER  = 3;
+    S_CREATE_PLAYER  = 4;
+    C_LOAD_COMPLETED = 5;
+    C_ENTER_GAME     = 6;
+    S_ENTER_GAME     = 7;
+    S_READY_TO_ENTER = 8;
+    C_LEAVE_GAME     = 9;
+    S_LEAVE_GAME     = 10;
+
+    S_UPDATE_SCENE   = 11;
+    C_MOVE           = 12;
+    C_ATTACK         = 13;
+    S_ATTACK         = 14;
+    S_DIE            = 15;
+    C_REVIVE         = 16;
+    S_REVIVE         = 17;
+
+    S_CHANGE_HP      = 18;
+    S_CHANGE_EXP     = 19;
+    S_CHANGE_LEVEL   = 20;
+
+    C_CHAT           = 21;
+    S_CHAT           = 22;
+}
+
+enum CreatureState {
+    IDLE      = 0;
+    MOVING    = 1;
+    SPRINTING = 2;
+    ATTACK    = 3;
+    DEAD      = 4;
+}
+
+enum GameObjectType {
+    UNKNOWN = 0;
+    PLAYER  = 1;
+    MONSTER = 2;
+}
+
+enum ChatType {
+    CHAT_NEAR  = 0;   
+    CHAT_WORLD = 1;   
+}
+
+message Vector3 { 
+    float x = 1; 
+    float y = 2; 
+    float z = 3; 
+}
+
+message PlayerSummary { 
+    uint64 db_id = 1; 
+    string name = 2; 
+    int32 level = 3; 
+    int32 template_id = 4;
+}
+message ObjectSummary { 
+    uint64 object_id = 1; 
+    string name = 2; 
+    int32 level = 3; 
+    int32 template_id = 4; 
+    GameObjectType object_type = 5; 
+}
+message PosInfo { 
+    uint64 object_id = 1; 
+    CreatureState state = 2; 
+    Vector3 pos = 3; 
+    float yaw = 4; 
+}
+message StatInfo { 
+    int32 hp = 1; 
+    int32 mp = 2; 
+    int64 exp = 3; 
+}
+message ObjectInfo { 
+    ObjectSummary summary = 1; 
+    PosInfo pos_info = 2; 
+    StatInfo stat_info = 3; 
+}
+
+
+message CAuthToken { 
+    string auth_token = 1; 
+}
+message SPlayerList {
+    bool success = 1;
+    string reason = 2;
+    repeated PlayerSummary players = 3; 
+}
+message CCreatePlayer { 
+    string name = 1; 
+    int32 template_id = 2; 
+
+}
+message SCreatePlayer { 
+    bool success = 1; 
+    string reason = 2; 
+    PlayerSummary player = 3; 
+}
+message CLoadCompleted {}
+message CEnterGame { 
+    string name = 1; 
+}
+message SEnterGame { 
+    bool success = 1; 
+    ObjectInfo my_player = 2; 
+}
+message SReadyToEnter {}
+message CLeaveGame {}
+message SLeaveGame {}
+
+message SUpdateScene { 
+    uint32 deltaTimeMs = 1;
+    repeated ObjectInfo spawns = 2; 
+    repeated uint64 despawns = 3; 
+    repeated PosInfo moves = 4; 
+}
+message CMove { 
+    PosInfo pos_info = 1; 
+}
+message CAttack { 
+    float yaw = 1; 
+    int32 combo_index = 2;
+    Vector3 pos = 3; 
+}
+message SAttack {
+    uint64 object_id = 1; 
+    float yaw = 2; 
+    int32 combo_index = 3;
+    Vector3 pos = 4; 
+}
+message SDie { 
+    uint64 object_id = 1; 
+}
+message CRevive { 
+    bool is_current_pos = 1; 
+}
+message SRevive { 
+    Vector3 pos = 1; 
+    int32 max_hp = 2; 
+    int32 hp = 3; }
+
+
+message SChangeHp { 
+    uint64 object_id = 1; 
+    int32 hp = 2; 
+    int32 damage = 3; 
+}
+message SChangeExp { 
+    uint64 object_id = 1; 
+    int64 exp = 2; 
+}
+message SChangeLevel { 
+    uint64 object_id = 1; 
+    int32 level = 2; 
+    int32 max_hp = 3; 
+    int32 hp = 4; 
+    int64 exp = 5;
+}
+
+message CChat { 
+    string chat = 1; 
+    ChatType chat_type = 2;
+}
+message SChat { 
+    uint64 object_id = 1; 
+    string name = 2; 
+    string chat = 3; 
+    ChatType chat_type = 4;
+}

@@ -5,44 +5,45 @@
 #include <chrono>
 
 struct NetworkStats {
-    Atomic<uint64> recvBytes = 0;
-    Atomic<uint64> sendBytes = 0;
+    Atomic<uint64> recvBytes   = 0;
+    Atomic<uint64> sendBytes   = 0;
     Atomic<uint64> recvPackets = 0;
     Atomic<uint64> sendPackets = 0;
 };
 
 struct JobStats {
     Atomic<uint64> jobsExecuted = 0;
-    Atomic<uint64> timerFired = 0;
 };
 
 struct IocpStats {
-    Atomic<uint64> iocpCallCount = 0;
+    Atomic<uint64> iocpCallCount      = 0;
     Atomic<uint64> totalProcessTimeUs = 0;
 };
 
 struct MemoryStats {
-    Atomic<uint64> poolHitCount   = 0;
-    Atomic<uint64> poolMissCount  = 0;
-    Atomic<int64>  liveAllocCount = 0;
+    Atomic<uint64> poolHitCount       = 0;
+    Atomic<uint64> poolMissCount      = 0;
+    Atomic<int64>  liveAllocCount     = 0;
     Atomic<int32>  frameOverflowCount = 0;
 };
 
 struct DbStats {
-    Atomic<uint64> queryCount   = 0;   // queries executed per second
-    Atomic<uint64> queryFailed  = 0;   // cumulative failure count
-    Atomic<uint64> queryTotalUs = 0;   // total execution time (us) — reset each second
+    Atomic<uint64> queryCount   = 0;  
+    Atomic<uint64> queryFailed  = 0;   
+    Atomic<uint64> queryTotalUs = 0;   
 };
 
 struct GameMetrics {
     Atomic<int32>  connectedSessions  = 0;
     Atomic<uint64> totalConnections   = 0;
-    Atomic<uint64> totalDisconnections = 0;
     Atomic<int32>  activePlayers      = 0;
-    Atomic<int32>  peakPlayers        = 0;   // peak CCU since server start
+    Atomic<int32>  peakPlayers        = 0;  
     Atomic<int32>  activeMonsters     = 0;
-    Atomic<uint64> tickCount          = 0;   // scene update ticks per second
-    Atomic<uint64> suspiciousPackets = 0;
+    Atomic<uint64> tickCount          = 0;   
+    Atomic<uint64> suspiciousPackets  = 0;
+    Atomic<uint64> tickLagTotalMs     = 0;  
+    Atomic<uint64> tickLagCount       = 0;   
+    Atomic<uint64> tickLagMaxMs       = 0;   
 
     std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
     uint64 GetUptime() const {

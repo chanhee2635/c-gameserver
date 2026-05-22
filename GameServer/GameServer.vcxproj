@@ -91,7 +91,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_HAS_STD_BYTE=0; _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -101,7 +101,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\Libs\Debug\;$(SolutionDir)Libraries\$(Configuration)\;C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\Libs\Debug\;C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Detour-d.lib;Recast-d.lib;ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
@@ -118,7 +118,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_HAS_STD_BYTE=0; _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -131,7 +131,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\$(Configuration)\;C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;$(SolutionDir)Libraries\Libs\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;$(SolutionDir)Libraries\Libs\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Detour.lib;Recast.lib;ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
@@ -146,7 +146,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_HAS_STD_BYTE=0; _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -156,7 +156,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\Libs\Debug\;$(SolutionDir)Libraries\$(Configuration)\;C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\Libs\Debug\;C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Detour-d.lib;Recast-d.lib;ServerCore.lib;libmysql.lib;hiredisd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
@@ -165,7 +165,7 @@ copy /Y "C:\Projects\vcpkg\installed\x64-windows\debug\bin\redis++.dll" "$(OutDi
 copy /Y "C:\Projects\vcpkg\installed\x64-windows\debug\bin\libprotobufd.dll" "$(OutDir)"
 copy /Y "C:\Projects\vcpkg\installed\x64-windows\debug\bin\libprotobuf-lited.dll" "$(OutDir)"
 copy /Y "C:\Projects\vcpkg\installed\x64-windows\debug\bin\abseil_dll.dll" "$(OutDir)"
-</Command>
+xcopy /Y "$(ProjectDir)server.json" "$(OutDir)"</Command>
     </PreBuildEvent>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -181,7 +181,7 @@ copy /Y "C:\Projects\vcpkg\installed\x64-windows\debug\bin\abseil_dll.dll" "$(Ou
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_HAS_STD_BYTE=0; _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -194,7 +194,7 @@ copy /Y "C:\Projects\vcpkg\installed\x64-windows\debug\bin\abseil_dll.dll" "$(Ou
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\$(Configuration)\;C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;$(SolutionDir)Libraries\Libs\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;$(SolutionDir)Libraries\Libs\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Detour.lib;Recast.lib;ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
@@ -203,6 +203,7 @@ copy /Y "C:\Projects\vcpkg\installed\x64-windows\bin\redis++.dll" "$(OutDir)"
 copy /Y "C:\Projects\vcpkg\installed\x64-windows\bin\libprotobuf.dll" "$(OutDir)"
 copy /Y "C:\Projects\vcpkg\installed\x64-windows\bin\libprotobuf-lite.dll" "$(OutDir)"
 copy /Y "C:\Projects\vcpkg\installed\x64-windows\bin\abseil_dll.dll" "$(OutDir)"
+xcopy /Y "$(ProjectDir)server.json" "$(OutDir)"
 </Command>
     </PreBuildEvent>
     <ProjectReference>
@@ -231,6 +232,8 @@ copy /Y "C:\Projects\vcpkg\installed\x64-windows\bin\abseil_dll.dll" "$(OutDir)"
     <ClCompile Include="Protocol\Protocol.pb.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="RedisManager.cpp" />
     <ClCompile Include="SessionManager.cpp" />
@@ -248,7 +251,6 @@ copy /Y "C:\Projects\vcpkg\installed\x64-windows\bin\abseil_dll.dll" "$(OutDir)"
     <ClInclude Include="Enums.h" />
     <ClInclude Include="GameConfig.h" />
     <ClInclude Include="GameGlobal.h" />
-    <ClInclude Include="GameMath.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="GameSession.h" />

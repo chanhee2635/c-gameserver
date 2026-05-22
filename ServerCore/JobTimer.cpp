@@ -48,7 +48,6 @@ void JobTimer::Distribute(uint64 nowTick)
     {
         if (JobQueueRef owner = item.owner.lock())
         {
-            if (GServerStats) GServerStats->job.timerFired.fetch_add(1, std::memory_order_relaxed);
             owner->Push(std::move(item.job));
         }
     }

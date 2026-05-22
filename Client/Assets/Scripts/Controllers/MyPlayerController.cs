@@ -118,7 +118,7 @@ public class MyPlayerController : PlayerController
     private void HandleSprinting()
     {
         _isSprinting = Input.GetKey(KeyCode.LeftShift) && _isMoving;
-        _agent.speed = _isSprinting ? _baseSpeed * 1.5f : _baseSpeed;
+        _agent.speed = _isSprinting ? _baseSpeed * 2.0f : _baseSpeed;
     }
 
     private void HandleMovementInput()

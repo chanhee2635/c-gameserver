@@ -14,6 +14,7 @@ public:
     int32                    GetTemplateId() const { return _templateId; }
     int32                    GetLevel()      const { return _level; }
     const WString&           GetName()       const { return _name; }
+    const string&            GetNameUtf8()   const { return _nameUtf8; }
 
     // 위치
     Vector3 GetPos() const { return _pos; }
@@ -43,12 +44,14 @@ protected:
     Protocol::GameObjectType _objectType = Protocol::UNKNOWN;
     int32                    _templateId = 0;
     int32                    _level      = 0;
-    WString                  _name;
-    string                   _nameUtf8;  // protobuf set_name용 캐싱
 
     Vector3 _pos;
     float   _yaw = 0.f;
 
     GameSceneWeakRef _gameScene;
     GameScene*       _gameSceneRaw = nullptr;
+
+private:
+    WString _name;
+    string  _nameUtf8;  // protobuf set_name용 캐싱 (SetName() 통해서만 갱신)
 };

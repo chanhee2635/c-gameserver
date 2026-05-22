@@ -3,9 +3,12 @@
 #include "GameSession.h"
 #include "ThreadManager.h"
 
+#include <timeapi.h>
+#pragma comment(lib, "winmm.lib")
+
 enum
 {
-    WORKER_TICK = 64
+    WORKER_TICK = 16
 };
 
 void DoWorkerJob(ServerServiceRef& service)
@@ -26,6 +29,8 @@ void DoWorkerJob(ServerServiceRef& service)
 
 int main()
 {
+    SetCurrentDirectoryW(L"..\\..\\GameServer");
+
     GameGlobal::Init();
 
     auto service = MakeShared<ServerService>(
@@ -37,7 +42,8 @@ int main()
 
     ASSERT_CRASH(service->Start());
 
-    for (int32 i = 0; i < 5; i++)
+    uint32_t workerThreadCount = std::thread::hardware_concurrency() - 4;
+    for (int32 i = 0; i < workerThreadCount; i++)
     {
         GThread->Launch(ThreadType::WORKER, [&service]()
         {
@@ -47,8 +53,10 @@ int main()
 
     GThread->InitMainThread(ThreadType::MONITOR);
     if (GServerStats)
-        GServerStats->RunUpdateLoop();  // 메인 스레드가 모니터 루프 담당
+        GServerStats->RunUpdateLoop(); 
 
-    GameGlobal::Clear();  // Join + SocketUtils::Clear + 역순 해제 포함
+    GameGlobal::Clear();  
+
+    timeEndPeriod(1);
     return 0;
 }

@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <numeric>
 #include <utility>
+#include <chrono>
 
 #include "Types.h"
 #include "CoreConfig.h"

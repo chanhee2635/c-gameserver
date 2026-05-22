@@ -46,13 +46,12 @@ void Monster::Reset()
     _lastTargetDistSq = 0.f;
 }
 
-void Monster::Update(float deltaTime)
+void Monster::Update(uint32 deltaTimeMs)
 {
-    _deltaTime = deltaTime;
+    _deltaTimeMs = deltaTimeMs;
     _nowTick = static_cast<int64>(::GetTickCount64());
 
-    if (_state == Protocol::IDLE ||
-        (_state == Protocol::MOVING && !_target.lock()))
+    if (_state == Protocol::IDLE)
     {
         if (_nowTick < _nextUpdateTick) return;
         _nextUpdateTick = _nowTick + 500;
@@ -104,7 +103,26 @@ void Monster::UpdateIdle()
     auto    self = std::static_pointer_cast<Monster>(shared_from_this());
     Vector3 monsterPos = _pos;
 
-    myScene->FindNearestPlayer(myZone->GetAdjacentZones(), self, monsterPos);
+    HashMap<GameScene*, Vector<ZoneRef>> sceneGroups;
+    for (const ZoneRef& zone : myZone->GetAdjacentZones())
+    {
+        GameSceneRef scene = zone->GetScene();
+        if (scene)
+            sceneGroups[scene.get()].push_back(zone);
+    }
+
+    for (auto& [scenePtr, zones] : sceneGroups)
+    {
+        if (scenePtr == myScene)
+            myScene->FindNearestPlayer(zones, self, monsterPos);
+        else
+        {
+            GameSceneRef targetScene = zones[0]->GetScene();
+            if (!targetScene) continue;
+            targetScene->DoAsync(&GameScene::FindNearestPlayer,
+                Vector<ZoneRef>(zones.begin(), zones.end()), self, monsterPos);
+        }
+    }
 }
 
 void Monster::UpdateMoving()
@@ -142,7 +160,7 @@ void Monster::UpdateMoving()
 
 void Monster::UpdateReturn()
 {
-    if (_pos.DistanceSq(_spawnPos) < 0.1f)
+    if (_pos.DistanceSq(_spawnPos) < 1.0f)
     {
         _pos = _spawnPos;
         _path.clear();
@@ -185,7 +203,7 @@ void Monster::UpdateDead() {}
 
 void Monster::TickMoveTo(Vector3 targetPos)
 {
-    bool needsRepath = _path.empty() || _lastTargetPos.DistanceSq(targetPos) > 2.0f;
+    bool needsRepath = _path.empty() || (_lastTargetPos.DistanceSq(targetPos) > 1.0f && _nowTick >= _nextFindPathTick);
 
     if (needsRepath)
     {
@@ -197,14 +215,17 @@ void Monster::TickMoveTo(Vector3 targetPos)
 
         if (!found)
         {
-            // navgrid.bin 미존재 또는 경로 없음 → 직선 이동 폴백
             _path = { _pos, targetPos };
             found = true;
+            _nextFindPathTick = _nowTick + GameGlobal::GetConfig().gameplay.findPathFailCooldownMs;
+        }
+        else
+        {
+            _nextFindPathTick = _nowTick + 300;
         }
 
         _pathIndex        = 1;
         _lastTargetPos    = targetPos;
-        _nextFindPathTick = 0;
     }
 
     if (_pathIndex >= static_cast<int32>(_path.size()))
@@ -214,8 +235,8 @@ void Monster::TickMoveTo(Vector3 targetPos)
         return;
     }
 
-    // 직선 이동 중에는 마지막 웨이포인트를 실시간 타겟 위치로 갱신
-    _path.back() = targetPos;
+    if (_path.back().DistanceSq(targetPos) > 0.1f)
+        _path.back() = targetPos;
 
     Vector3 nextWaypoint = _path[_pathIndex];
 
@@ -228,7 +249,7 @@ void Monster::TickMoveTo(Vector3 targetPos)
 
     Vector3 dir = (nextWaypoint - _pos).Normalized();
 
-    _pos = _pos + dir * (_speed * _deltaTime);
+    _pos = _pos + dir * (_speed * _deltaTimeMs);
     _yaw = ::atan2f(dir.x, dir.z) * RAD2DEG;
     if (_yaw < 0.f) _yaw += 360.f;
     _isDirty = true;

@@ -42,7 +42,7 @@ MemoryManager::~MemoryManager()
 void* MemoryManager::Allocate(uint32 size)
 {
 #ifdef _STOMP
-    return StompAllocator::Alloc(size);
+    return StompAllocator::Allocate(size);
 #else
     MemoryHeader* header    = nullptr;
     const int32   allocSize = size + sizeof(MemoryHeader);

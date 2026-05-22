@@ -10,7 +10,7 @@ public:
 
     void Init(const SpawnData& data);
     void Reset();
-    virtual void Update(float deltaTime = 0.05f);
+    virtual void Update(uint32 deltaTimeMs);
     void HandleGatherResult(PlayerRef player, float distSq);
 
     int64  GetRewardExp()        const { return _config ? _config->rewardExp : 0; }
@@ -46,7 +46,7 @@ private:
     Vector3 _spawnPos;
     Vector3 _lastTargetPos;
     float   _lastTargetDistSq = 0.f;
-    float   _deltaTime = 0.05f;  
+    uint32  _deltaTimeMs = 0;
     int64   _nowTick = 0;
 
     Vector<Vector3> _path;

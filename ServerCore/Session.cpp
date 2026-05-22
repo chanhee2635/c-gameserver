@@ -35,7 +35,8 @@ void Session::Send(SendBufferRef sendBuffer)
 
 void Session::ProcessConnect()
 {
-    ::setsockopt(_socket, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, nullptr, 0);
+    SocketUtils::SetUpdateConnectSocket(_socket);     
+    SocketUtils::SetTcpNoDelay(_socket, true);
 
     _connected = true;
 

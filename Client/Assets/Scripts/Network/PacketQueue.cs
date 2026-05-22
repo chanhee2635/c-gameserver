@@ -12,6 +12,8 @@ public sealed class PacketQueue
     public static readonly PacketQueue Instance = new();
     private readonly ConcurrentQueue<IPacket> _queue = new();
 
+    public int TotalDispatched { get; private set; }
+
     public void Push(IPacket packet) => _queue.Enqueue(packet);
 
     // 메인 스레드에서 호출. Dispatch()가 핸들러까지 직접 실행.
@@ -19,7 +21,10 @@ public sealed class PacketQueue
     {
         int count = 0;
         while (count++ < maxCount && _queue.TryDequeue(out IPacket pkt))
+        {
             pkt.Dispatch();
+            TotalDispatched++;
+        }
     }
 
     public int Count => _queue.Count;

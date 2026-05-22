@@ -46,38 +46,41 @@ namespace Protocol {
             "TG9hZENvbXBsZXRlZCIaCgpDRW50ZXJHYW1lEgwKBG5hbWUYASABKAkiRgoK",
             "U0VudGVyR2FtZRIPCgdzdWNjZXNzGAEgASgIEicKCW15X3BsYXllchgCIAEo",
             "CzIULlByb3RvY29sLk9iamVjdEluZm8iDwoNU1JlYWR5VG9FbnRlciIMCgpD",
-            "TGVhdmVHYW1lIgwKClNMZWF2ZUdhbWUiaAoMU1VwZGF0ZVNjZW5lEiQKBnNw",
-            "YXducxgBIAMoCzIULlByb3RvY29sLk9iamVjdEluZm8SEAoIZGVzcGF3bnMY",
-            "AiADKAQSIAoFbW92ZXMYAyADKAsyES5Qcm90b2NvbC5Qb3NJbmZvIiwKBUNN",
-            "b3ZlEiMKCHBvc19pbmZvGAEgASgLMhEuUHJvdG9jb2wuUG9zSW5mbyJLCgdD",
-            "QXR0YWNrEgsKA3lhdxgBIAEoAhITCgtjb21ib19pbmRleBgCIAEoBRIeCgNw",
-            "b3MYAyABKAsyES5Qcm90b2NvbC5WZWN0b3IzIl4KB1NBdHRhY2sSEQoJb2Jq",
-            "ZWN0X2lkGAEgASgEEgsKA3lhdxgCIAEoAhITCgtjb21ib19pbmRleBgDIAEo",
-            "BRIeCgNwb3MYBCABKAsyES5Qcm90b2NvbC5WZWN0b3IzIhkKBFNEaWUSEQoJ",
-            "b2JqZWN0X2lkGAEgASgEIiEKB0NSZXZpdmUSFgoOaXNfY3VycmVudF9wb3MY",
-            "ASABKAgiRQoHU1Jldml2ZRIeCgNwb3MYASABKAsyES5Qcm90b2NvbC5WZWN0",
-            "b3IzEg4KBm1heF9ocBgCIAEoBRIKCgJocBgDIAEoBSI6CglTQ2hhbmdlSHAS",
-            "EQoJb2JqZWN0X2lkGAEgASgEEgoKAmhwGAIgASgFEg4KBmRhbWFnZRgDIAEo",
-            "BSIsCgpTQ2hhbmdlRXhwEhEKCW9iamVjdF9pZBgBIAEoBBILCgNleHAYAiAB",
-            "KAMiWQoMU0NoYW5nZUxldmVsEhEKCW9iamVjdF9pZBgBIAEoBBINCgVsZXZl",
-            "bBgCIAEoBRIOCgZtYXhfaHAYAyABKAUSCgoCaHAYBCABKAUSCwoDZXhwGAUg",
-            "ASgDIhUKBUNDaGF0EgwKBGNoYXQYASABKAkiNgoFU0NoYXQSEQoJb2JqZWN0",
-            "X2lkGAEgASgEEgwKBG5hbWUYAiABKAkSDAoEY2hhdBgDIAEoCSqGAwoFTXNn",
-            "SWQSCAoETk9ORRAAEhAKDENfQVVUSF9UT0tFThABEhEKDVNfUExBWUVSX0xJ",
-            "U1QQAhITCg9DX0NSRUFURV9QTEFZRVIQAxITCg9TX0NSRUFURV9QTEFZRVIQ",
-            "BBIUChBDX0xPQURfQ09NUExFVEVEEAUSEAoMQ19FTlRFUl9HQU1FEAYSEAoM",
-            "U19FTlRFUl9HQU1FEAcSFAoQU19SRUFEWV9UT19FTlRFUhAIEhAKDENfTEVB",
-            "VkVfR0FNRRAJEhAKDFNfTEVBVkVfR0FNRRAKEhIKDlNfVVBEQVRFX1NDRU5F",
-            "EAsSCgoGQ19NT1ZFEAwSDAoIQ19BVFRBQ0sQDRIMCghTX0FUVEFDSxAOEgkK",
-            "BVNfRElFEA8SDAoIQ19SRVZJVkUQEBIMCghTX1JFVklWRRAREg8KC1NfQ0hB",
-            "TkdFX0hQEBISEAoMU19DSEFOR0VfRVhQEBMSEgoOU19DSEFOR0VfTEVWRUwQ",
-            "FBIKCgZDX0NIQVQQFRIKCgZTX0NIQVQQFipKCg1DcmVhdHVyZVN0YXRlEggK",
-            "BElETEUQABIKCgZNT1ZJTkcQARINCglTUFJJTlRJTkcQAhIKCgZBVFRBQ0sQ",
-            "AxIICgRERUFEEAQqNgoOR2FtZU9iamVjdFR5cGUSCwoHVU5LTk9XThAAEgoK",
-            "BlBMQVlFUhABEgsKB01PTlNURVIQAmIGcHJvdG8z"));
+            "TGVhdmVHYW1lIgwKClNMZWF2ZUdhbWUifQoMU1VwZGF0ZVNjZW5lEhMKC2Rl",
+            "bHRhVGltZU1zGAEgASgNEiQKBnNwYXducxgCIAMoCzIULlByb3RvY29sLk9i",
+            "amVjdEluZm8SEAoIZGVzcGF3bnMYAyADKAQSIAoFbW92ZXMYBCADKAsyES5Q",
+            "cm90b2NvbC5Qb3NJbmZvIiwKBUNNb3ZlEiMKCHBvc19pbmZvGAEgASgLMhEu",
+            "UHJvdG9jb2wuUG9zSW5mbyJLCgdDQXR0YWNrEgsKA3lhdxgBIAEoAhITCgtj",
+            "b21ib19pbmRleBgCIAEoBRIeCgNwb3MYAyABKAsyES5Qcm90b2NvbC5WZWN0",
+            "b3IzIl4KB1NBdHRhY2sSEQoJb2JqZWN0X2lkGAEgASgEEgsKA3lhdxgCIAEo",
+            "AhITCgtjb21ib19pbmRleBgDIAEoBRIeCgNwb3MYBCABKAsyES5Qcm90b2Nv",
+            "bC5WZWN0b3IzIhkKBFNEaWUSEQoJb2JqZWN0X2lkGAEgASgEIiEKB0NSZXZp",
+            "dmUSFgoOaXNfY3VycmVudF9wb3MYASABKAgiRQoHU1Jldml2ZRIeCgNwb3MY",
+            "ASABKAsyES5Qcm90b2NvbC5WZWN0b3IzEg4KBm1heF9ocBgCIAEoBRIKCgJo",
+            "cBgDIAEoBSI6CglTQ2hhbmdlSHASEQoJb2JqZWN0X2lkGAEgASgEEgoKAmhw",
+            "GAIgASgFEg4KBmRhbWFnZRgDIAEoBSIsCgpTQ2hhbmdlRXhwEhEKCW9iamVj",
+            "dF9pZBgBIAEoBBILCgNleHAYAiABKAMiWQoMU0NoYW5nZUxldmVsEhEKCW9i",
+            "amVjdF9pZBgBIAEoBBINCgVsZXZlbBgCIAEoBRIOCgZtYXhfaHAYAyABKAUS",
+            "CgoCaHAYBCABKAUSCwoDZXhwGAUgASgDIjwKBUNDaGF0EgwKBGNoYXQYASAB",
+            "KAkSJQoJY2hhdF90eXBlGAIgASgOMhIuUHJvdG9jb2wuQ2hhdFR5cGUiXQoF",
+            "U0NoYXQSEQoJb2JqZWN0X2lkGAEgASgEEgwKBG5hbWUYAiABKAkSDAoEY2hh",
+            "dBgDIAEoCRIlCgljaGF0X3R5cGUYBCABKA4yEi5Qcm90b2NvbC5DaGF0VHlw",
+            "ZSqGAwoFTXNnSWQSCAoETk9ORRAAEhAKDENfQVVUSF9UT0tFThABEhEKDVNf",
+            "UExBWUVSX0xJU1QQAhITCg9DX0NSRUFURV9QTEFZRVIQAxITCg9TX0NSRUFU",
+            "RV9QTEFZRVIQBBIUChBDX0xPQURfQ09NUExFVEVEEAUSEAoMQ19FTlRFUl9H",
+            "QU1FEAYSEAoMU19FTlRFUl9HQU1FEAcSFAoQU19SRUFEWV9UT19FTlRFUhAI",
+            "EhAKDENfTEVBVkVfR0FNRRAJEhAKDFNfTEVBVkVfR0FNRRAKEhIKDlNfVVBE",
+            "QVRFX1NDRU5FEAsSCgoGQ19NT1ZFEAwSDAoIQ19BVFRBQ0sQDRIMCghTX0FU",
+            "VEFDSxAOEgkKBVNfRElFEA8SDAoIQ19SRVZJVkUQEBIMCghTX1JFVklWRRAR",
+            "Eg8KC1NfQ0hBTkdFX0hQEBISEAoMU19DSEFOR0VfRVhQEBMSEgoOU19DSEFO",
+            "R0VfTEVWRUwQFBIKCgZDX0NIQVQQFRIKCgZTX0NIQVQQFipKCg1DcmVhdHVy",
+            "ZVN0YXRlEggKBElETEUQABIKCgZNT1ZJTkcQARINCglTUFJJTlRJTkcQAhIK",
+            "CgZBVFRBQ0sQAxIICgRERUFEEAQqNgoOR2FtZU9iamVjdFR5cGUSCwoHVU5L",
+            "Tk9XThAAEgoKBlBMQVlFUhABEgsKB01PTlNURVIQAiopCghDaGF0VHlwZRIN",
+            "CglDSEFUX05FQVIQABIOCgpDSEFUX1dPUkxEEAFiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
-          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Protocol.MsgId), typeof(global::Protocol.CreatureState), typeof(global::Protocol.GameObjectType), }, null, new pbr::GeneratedClrTypeInfo[] {
+          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Protocol.MsgId), typeof(global::Protocol.CreatureState), typeof(global::Protocol.GameObjectType), typeof(global::Protocol.ChatType), }, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.Vector3), global::Protocol.Vector3.Parser, new[]{ "X", "Y", "Z" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.PlayerSummary), global::Protocol.PlayerSummary.Parser, new[]{ "DbId", "Name", "Level", "TemplateId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.ObjectSummary), global::Protocol.ObjectSummary.Parser, new[]{ "ObjectId", "Name", "Level", "TemplateId", "ObjectType" }, null, null, null, null),
@@ -94,7 +97,7 @@ namespace Protocol {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SReadyToEnter), global::Protocol.SReadyToEnter.Parser, null, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CLeaveGame), global::Protocol.CLeaveGame.Parser, null, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SLeaveGame), global::Protocol.SLeaveGame.Parser, null, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SUpdateScene), global::Protocol.SUpdateScene.Parser, new[]{ "Spawns", "Despawns", "Moves" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SUpdateScene), global::Protocol.SUpdateScene.Parser, new[]{ "DeltaTimeMs", "Spawns", "Despawns", "Moves" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CMove), global::Protocol.CMove.Parser, new[]{ "PosInfo" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CAttack), global::Protocol.CAttack.Parser, new[]{ "Yaw", "ComboIndex", "Pos" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SAttack), global::Protocol.SAttack.Parser, new[]{ "ObjectId", "Yaw", "ComboIndex", "Pos" }, null, null, null, null),
@@ -104,8 +107,8 @@ namespace Protocol {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SChangeHp), global::Protocol.SChangeHp.Parser, new[]{ "ObjectId", "Hp", "Damage" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SChangeExp), global::Protocol.SChangeExp.Parser, new[]{ "ObjectId", "Exp" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SChangeLevel), global::Protocol.SChangeLevel.Parser, new[]{ "ObjectId", "Level", "MaxHp", "Hp", "Exp" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CChat), global::Protocol.CChat.Parser, new[]{ "Chat" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SChat), global::Protocol.SChat.Parser, new[]{ "ObjectId", "Name", "Chat" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CChat), global::Protocol.CChat.Parser, new[]{ "Chat", "ChatType" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SChat), global::Protocol.SChat.Parser, new[]{ "ObjectId", "Name", "Chat", "ChatType" }, null, null, null, null)
           }));
     }
     #endregion
@@ -150,6 +153,11 @@ namespace Protocol {
     [pbr::OriginalName("UNKNOWN")] Unknown = 0,
     [pbr::OriginalName("PLAYER")] Player = 1,
     [pbr::OriginalName("MONSTER")] Monster = 2,
+  }
+
+  public enum ChatType {
+    [pbr::OriginalName("CHAT_NEAR")] ChatNear = 0,
+    [pbr::OriginalName("CHAT_WORLD")] ChatWorld = 1,
   }
 
   #endregion
@@ -4067,6 +4075,7 @@ namespace Protocol {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public SUpdateScene(SUpdateScene other) : this() {
+      deltaTimeMs_ = other.deltaTimeMs_;
       spawns_ = other.spawns_.Clone();
       despawns_ = other.despawns_.Clone();
       moves_ = other.moves_.Clone();
@@ -4079,10 +4088,22 @@ namespace Protocol {
       return new SUpdateScene(this);
     }
 
+    /// <summary>Field number for the "deltaTimeMs" field.</summary>
+    public const int DeltaTimeMsFieldNumber = 1;
+    private uint deltaTimeMs_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint DeltaTimeMs {
+      get { return deltaTimeMs_; }
+      set {
+        deltaTimeMs_ = value;
+      }
+    }
+
     /// <summary>Field number for the "spawns" field.</summary>
-    public const int SpawnsFieldNumber = 1;
+    public const int SpawnsFieldNumber = 2;
     private static readonly pb::FieldCodec<global::Protocol.ObjectInfo> _repeated_spawns_codec
-        = pb::FieldCodec.ForMessage(10, global::Protocol.ObjectInfo.Parser);
+        = pb::FieldCodec.ForMessage(18, global::Protocol.ObjectInfo.Parser);
     private readonly pbc::RepeatedField<global::Protocol.ObjectInfo> spawns_ = new pbc::RepeatedField<global::Protocol.ObjectInfo>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -4091,9 +4112,9 @@ namespace Protocol {
     }
 
     /// <summary>Field number for the "despawns" field.</summary>
-    public const int DespawnsFieldNumber = 2;
+    public const int DespawnsFieldNumber = 3;
     private static readonly pb::FieldCodec<ulong> _repeated_despawns_codec
-        = pb::FieldCodec.ForUInt64(18);
+        = pb::FieldCodec.ForUInt64(26);
     private readonly pbc::RepeatedField<ulong> despawns_ = new pbc::RepeatedField<ulong>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -4102,9 +4123,9 @@ namespace Protocol {
     }
 
     /// <summary>Field number for the "moves" field.</summary>
-    public const int MovesFieldNumber = 3;
+    public const int MovesFieldNumber = 4;
     private static readonly pb::FieldCodec<global::Protocol.PosInfo> _repeated_moves_codec
-        = pb::FieldCodec.ForMessage(26, global::Protocol.PosInfo.Parser);
+        = pb::FieldCodec.ForMessage(34, global::Protocol.PosInfo.Parser);
     private readonly pbc::RepeatedField<global::Protocol.PosInfo> moves_ = new pbc::RepeatedField<global::Protocol.PosInfo>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -4127,6 +4148,7 @@ namespace Protocol {
       if (ReferenceEquals(other, this)) {
         return true;
       }
+      if (DeltaTimeMs != other.DeltaTimeMs) return false;
       if(!spawns_.Equals(other.spawns_)) return false;
       if(!despawns_.Equals(other.despawns_)) return false;
       if(!moves_.Equals(other.moves_)) return false;
@@ -4137,6 +4159,7 @@ namespace Protocol {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
+      if (DeltaTimeMs != 0) hash ^= DeltaTimeMs.GetHashCode();
       hash ^= spawns_.GetHashCode();
       hash ^= despawns_.GetHashCode();
       hash ^= moves_.GetHashCode();
@@ -4158,6 +4181,10 @@ namespace Protocol {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
+      if (DeltaTimeMs != 0) {
+        output.WriteRawTag(8);
+        output.WriteUInt32(DeltaTimeMs);
+      }
       spawns_.WriteTo(output, _repeated_spawns_codec);
       despawns_.WriteTo(output, _repeated_despawns_codec);
       moves_.WriteTo(output, _repeated_moves_codec);
@@ -4171,6 +4198,10 @@ namespace Protocol {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (DeltaTimeMs != 0) {
+        output.WriteRawTag(8);
+        output.WriteUInt32(DeltaTimeMs);
+      }
       spawns_.WriteTo(ref output, _repeated_spawns_codec);
       despawns_.WriteTo(ref output, _repeated_despawns_codec);
       moves_.WriteTo(ref output, _repeated_moves_codec);
@@ -4184,6 +4215,9 @@ namespace Protocol {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
+      if (DeltaTimeMs != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(DeltaTimeMs);
+      }
       size += spawns_.CalculateSize(_repeated_spawns_codec);
       size += despawns_.CalculateSize(_repeated_despawns_codec);
       size += moves_.CalculateSize(_repeated_moves_codec);
@@ -4198,6 +4232,9 @@ namespace Protocol {
     public void MergeFrom(SUpdateScene other) {
       if (other == null) {
         return;
+      }
+      if (other.DeltaTimeMs != 0) {
+        DeltaTimeMs = other.DeltaTimeMs;
       }
       spawns_.Add(other.spawns_);
       despawns_.Add(other.despawns_);
@@ -4221,16 +4258,20 @@ namespace Protocol {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
-          case 10: {
+          case 8: {
+            DeltaTimeMs = input.ReadUInt32();
+            break;
+          }
+          case 18: {
             spawns_.AddEntriesFrom(input, _repeated_spawns_codec);
             break;
           }
-          case 18:
-          case 16: {
+          case 26:
+          case 24: {
             despawns_.AddEntriesFrom(input, _repeated_despawns_codec);
             break;
           }
-          case 26: {
+          case 34: {
             moves_.AddEntriesFrom(input, _repeated_moves_codec);
             break;
           }
@@ -4253,16 +4294,20 @@ namespace Protocol {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
-          case 10: {
+          case 8: {
+            DeltaTimeMs = input.ReadUInt32();
+            break;
+          }
+          case 18: {
             spawns_.AddEntriesFrom(ref input, _repeated_spawns_codec);
             break;
           }
-          case 18:
-          case 16: {
+          case 26:
+          case 24: {
             despawns_.AddEntriesFrom(ref input, _repeated_despawns_codec);
             break;
           }
-          case 26: {
+          case 34: {
             moves_.AddEntriesFrom(ref input, _repeated_moves_codec);
             break;
           }
@@ -6645,6 +6690,7 @@ namespace Protocol {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public CChat(CChat other) : this() {
       chat_ = other.chat_;
+      chatType_ = other.chatType_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -6666,6 +6712,18 @@ namespace Protocol {
       }
     }
 
+    /// <summary>Field number for the "chat_type" field.</summary>
+    public const int ChatTypeFieldNumber = 2;
+    private global::Protocol.ChatType chatType_ = global::Protocol.ChatType.ChatNear;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Protocol.ChatType ChatType {
+      get { return chatType_; }
+      set {
+        chatType_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -6682,6 +6740,7 @@ namespace Protocol {
         return true;
       }
       if (Chat != other.Chat) return false;
+      if (ChatType != other.ChatType) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -6690,6 +6749,7 @@ namespace Protocol {
     public override int GetHashCode() {
       int hash = 1;
       if (Chat.Length != 0) hash ^= Chat.GetHashCode();
+      if (ChatType != global::Protocol.ChatType.ChatNear) hash ^= ChatType.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -6712,6 +6772,10 @@ namespace Protocol {
         output.WriteRawTag(10);
         output.WriteString(Chat);
       }
+      if (ChatType != global::Protocol.ChatType.ChatNear) {
+        output.WriteRawTag(16);
+        output.WriteEnum((int) ChatType);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -6726,6 +6790,10 @@ namespace Protocol {
         output.WriteRawTag(10);
         output.WriteString(Chat);
       }
+      if (ChatType != global::Protocol.ChatType.ChatNear) {
+        output.WriteRawTag(16);
+        output.WriteEnum((int) ChatType);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -6738,6 +6806,9 @@ namespace Protocol {
       int size = 0;
       if (Chat.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(Chat);
+      }
+      if (ChatType != global::Protocol.ChatType.ChatNear) {
+        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) ChatType);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -6753,6 +6824,9 @@ namespace Protocol {
       }
       if (other.Chat.Length != 0) {
         Chat = other.Chat;
+      }
+      if (other.ChatType != global::Protocol.ChatType.ChatNear) {
+        ChatType = other.ChatType;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -6777,6 +6851,10 @@ namespace Protocol {
             Chat = input.ReadString();
             break;
           }
+          case 16: {
+            ChatType = (global::Protocol.ChatType) input.ReadEnum();
+            break;
+          }
         }
       }
     #endif
@@ -6798,6 +6876,10 @@ namespace Protocol {
             break;
           case 10: {
             Chat = input.ReadString();
+            break;
+          }
+          case 16: {
+            ChatType = (global::Protocol.ChatType) input.ReadEnum();
             break;
           }
         }
@@ -6845,6 +6927,7 @@ namespace Protocol {
       objectId_ = other.objectId_;
       name_ = other.name_;
       chat_ = other.chat_;
+      chatType_ = other.chatType_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -6890,6 +6973,18 @@ namespace Protocol {
       }
     }
 
+    /// <summary>Field number for the "chat_type" field.</summary>
+    public const int ChatTypeFieldNumber = 4;
+    private global::Protocol.ChatType chatType_ = global::Protocol.ChatType.ChatNear;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Protocol.ChatType ChatType {
+      get { return chatType_; }
+      set {
+        chatType_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -6908,6 +7003,7 @@ namespace Protocol {
       if (ObjectId != other.ObjectId) return false;
       if (Name != other.Name) return false;
       if (Chat != other.Chat) return false;
+      if (ChatType != other.ChatType) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -6918,6 +7014,7 @@ namespace Protocol {
       if (ObjectId != 0UL) hash ^= ObjectId.GetHashCode();
       if (Name.Length != 0) hash ^= Name.GetHashCode();
       if (Chat.Length != 0) hash ^= Chat.GetHashCode();
+      if (ChatType != global::Protocol.ChatType.ChatNear) hash ^= ChatType.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -6948,6 +7045,10 @@ namespace Protocol {
         output.WriteRawTag(26);
         output.WriteString(Chat);
       }
+      if (ChatType != global::Protocol.ChatType.ChatNear) {
+        output.WriteRawTag(32);
+        output.WriteEnum((int) ChatType);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -6970,6 +7071,10 @@ namespace Protocol {
         output.WriteRawTag(26);
         output.WriteString(Chat);
       }
+      if (ChatType != global::Protocol.ChatType.ChatNear) {
+        output.WriteRawTag(32);
+        output.WriteEnum((int) ChatType);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -6988,6 +7093,9 @@ namespace Protocol {
       }
       if (Chat.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(Chat);
+      }
+      if (ChatType != global::Protocol.ChatType.ChatNear) {
+        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) ChatType);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -7009,6 +7117,9 @@ namespace Protocol {
       }
       if (other.Chat.Length != 0) {
         Chat = other.Chat;
+      }
+      if (other.ChatType != global::Protocol.ChatType.ChatNear) {
+        ChatType = other.ChatType;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -7041,6 +7152,10 @@ namespace Protocol {
             Chat = input.ReadString();
             break;
           }
+          case 32: {
+            ChatType = (global::Protocol.ChatType) input.ReadEnum();
+            break;
+          }
         }
       }
     #endif
@@ -7070,6 +7185,10 @@ namespace Protocol {
           }
           case 26: {
             Chat = input.ReadString();
+            break;
+          }
+          case 32: {
+            ChatType = (global::Protocol.ChatType) input.ReadEnum();
             break;
           }
         }

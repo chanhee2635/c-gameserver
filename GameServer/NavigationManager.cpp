@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "NavigationManager.h"
 
-
 // 스레드마다 독립된 쿼리 객체 (dtNavMeshQuery는 스레드-세이프하지 않음)
 thread_local dtNavMeshQuery* LNavQuery = nullptr;
 

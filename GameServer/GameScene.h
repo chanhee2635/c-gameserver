@@ -27,8 +27,9 @@ public:
 
     void BroadcastToZone(ZoneRef zone, SendBufferRef buffer, uint64 exceptId = 0);
     void BroadcastToAdjacentZones(ZoneRef zone, SendBufferRef buffer, uint64 exceptId = 0);
+    void BroadcastToAllPlayers(SendBufferRef buffer);
 
-    void FindNearestPlayer(const Vector<ZoneRef>& zones, MonsterRef monster, Vector3 monsterPos);
+    void FindNearestPlayer(Vector<ZoneRef> zones, MonsterRef monster, Vector3 monsterPos);
     void HandleAttackHitDetection(PlayerRef attacker, Vector3 attackPos, float yaw);
     void HandleRevive(PlayerRef player, bool isCurrentPos);
     void HandleMonsterDead(MonsterRef monster);
@@ -36,7 +37,7 @@ public:
     void Update();
 
 private:
-    void UpdateObjects(float deltaTime,
+    void UpdateObjects(uint32 deltaTimeMs,
         FrameVector<MoveJob>& jobsCache,
         FrameVector<CreatureRef>& movingCreatures);
 
@@ -52,13 +53,13 @@ private:
 
     void DispatchNotices(FrameHashMap<GameScene*, Vector<MoveNotice>>& sceneNotices);
     void ProcessNotices(const Vector<MoveNotice>& notices);
-    void BroadcastScene();
+    void BroadcastScene(uint32 deltaTimeMs);
 
     void ApplyHitToMonster(PlayerRef attacker, MonsterRef monster,
         Vector3 attackPos, ZoneRef myZone);
 
 private:
-    int64 _lastUpdateTick = 0;
+    uint64 _lastUpdateTick = 0;
 
     Vector<ZoneRef>            _zones;
     HashMap<uint64, PlayerRef>  _players;
@@ -66,13 +67,6 @@ private:
 
     Mutex           _moveLock;
     Vector<MoveJob> _pendingMoveJobs;
-    /*Vector<MoveJob> _jobsCache;
-
-    Vector<CreatureRef>                  _movingCreatures;
-    Vector<CreatureRef>                  _movingCreaturesSnapshot;
-    HashMap<GameScene*, Vector<MoveNotice>>  _sceneNotices;
-
-    HashMap<GameScene*, Vector<ZoneRef>> _adjacentSceneGroups;*/
 
     Protocol::SUpdateScene _broadcastPacket;
 };

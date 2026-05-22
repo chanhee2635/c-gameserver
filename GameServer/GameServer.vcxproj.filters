@@ -162,9 +162,6 @@
     <ClInclude Include="Protocol\Protocol.pb.h">
       <Filter>소스 파일\Protocol</Filter>
     </ClInclude>
-    <ClInclude Include="GameMath.h">
-      <Filter>소스 파일\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="IdGenerator.h">
       <Filter>소스 파일\Utils</Filter>
     </ClInclude>

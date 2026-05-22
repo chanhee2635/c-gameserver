@@ -6,6 +6,7 @@
 #include "GameConfig.h"
 #include "GameTypes.h"
 #include "GameGlobal.h"
+#include "GameMath.h"
 
 #include <hiredis/hiredis.h>
 #include <sql.h>

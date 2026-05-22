@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -141,7 +142,11 @@ public class ObjectManager
         Vector3    pos  = GetSpawnPosition(info.PosInfo);
         Quaternion rot  = Quaternion.Euler(0, info.PosInfo.Yaw, 0);
 
-        GameObject go = Managers.Resource.Instantiate(data.prefabPath, pos, rot);
+        string spawnPath = (info.Summary.ObjectType == Protocol.GameObjectType.Player
+                    && !string.IsNullOrEmpty(data.dummyPrefabPath))
+                   ? data.dummyPrefabPath
+                   : data.prefabPath;
+        GameObject go = Managers.Resource.Instantiate(spawnPath, pos, rot);
         _objects[objectId] = go;
 
         CreatureController cc = info.Summary.ObjectType switch
@@ -172,12 +177,12 @@ public class ObjectManager
         _pendingSpawns.Clear();
     }
 
-    public void OnMove(Protocol.PosInfo movePos)
+    public void OnMove(Protocol.PosInfo movePos, uint deltaTimeMs)
     {
         if (IsMyPlayer(movePos.ObjectId)) return;
 
         if (_controllers.TryGetValue(movePos.ObjectId, out CreatureController cc))
-            cc.OnMoveUpdate(movePos);
+            cc.OnMoveUpdate(movePos, deltaTimeMs);
     }
 
     public GameObject          FindById(ulong id)           => _objects.GetValueOrDefault(id);
@@ -188,10 +193,7 @@ public class ObjectManager
     private bool    IsGameSceneReady()                    => Managers.Scene.CurrentScene is GameScene { IsSceneReady: true };
     private Vector3 GetSpawnPosition(Protocol.PosInfo posInfo)
     {
-        Vector3 pos = new Vector3(posInfo.Pos.X, posInfo.Pos.Y, posInfo.Pos.Z);
-        if (Physics.Raycast(pos + Vector3.up * 20f, Vector3.down, out RaycastHit hit, 40f, LayerMask.GetMask("Ground")))
-            pos.y = hit.point.y;
-        return pos;
+        return new Vector3(posInfo.Pos.X, 0f, posInfo.Pos.Z);
     }
 
     public void Clear()

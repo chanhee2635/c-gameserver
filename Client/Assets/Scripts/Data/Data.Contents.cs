@@ -9,6 +9,7 @@ public class PrefabData
     public int id;
     public string name;
     public string prefabPath;
+    public string dummyPrefabPath;
     public string myPrefabPath;
     public int maxCombo;
     public float[] comboDurations;
