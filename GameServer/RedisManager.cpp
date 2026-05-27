@@ -7,9 +7,9 @@ bool RedisManager::Init(const RedisConfig& redis, const ServerConfig& server)
     if (!Connect(redis.host, redis.port))
         return false;
 
-    RegisterServer(server.id, server.name, server.ip, server.port, server.maxSessions);
-    ScheduleHeartbeat(server.id);
-
+    _serverId = server.id;
+    RegisterServer(server.name, server.ip, server.port, server.maxSessions);
+    ScheduleHeartbeat();
     LOG_INFO(L"Redis ready");
     return true;
 }
@@ -37,12 +37,12 @@ bool RedisManager::Connect(const string& host, int32 port)
     }
 }
 
-void RedisManager::ScheduleHeartbeat(int32 serverId)
+void RedisManager::ScheduleHeartbeat()
 {
-    DoTimer(5000, [this, serverId = serverId]()
+    DoTimer(5000, [this]()
     {
-        Heartbeat(serverId);
-        ScheduleHeartbeat(serverId);  
+        Heartbeat();
+        ScheduleHeartbeat();
     });
 }
 
@@ -73,19 +73,19 @@ void RedisManager::DeleteToken(const std::string& token)
     }
 }
 
-void RedisManager::RegisterServer(int32 id, const string& name, const string& ip, int32 port, int32 maxCount)
+void RedisManager::RegisterServer(const string& name, const string& ip, int32 port, int32 maxCount)
 {
     try
     {
-        string key = "servers:" + std::to_string(id);
+        string key = "servers:" + std::to_string(_serverId);
         _redis->hset(key, "name", name);
         _redis->hset(key, "ip", ip);
         _redis->hset(key, "port", std::to_string(port));
         _redis->hset(key, "current", "0");
         _redis->hset(key, "max", std::to_string(maxCount));
         _redis->expire(key, std::chrono::seconds(15));
-        _redis->sadd("server_ids", std::to_string(id));
-        LOG_INFO(L"Server registered to Redis id=" + std::to_wstring(id));
+        _redis->sadd("server_ids", std::to_string(_serverId));
+        LOG_INFO(L"Server registered to Redis id=" + std::to_wstring(_serverId));
     }
     catch (const Error& e)
     {
@@ -93,13 +93,13 @@ void RedisManager::RegisterServer(int32 id, const string& name, const string& ip
     }
 }
 
-void RedisManager::UnregisterServer(int32 id)
+void RedisManager::UnregisterServer()
 {
     try
     {
-        _redis->del("servers:" + std::to_string(id));
-        _redis->srem("server_ids", std::to_string(id));
-        LOG_INFO(L"Server unregistered from Redis id=" + std::to_wstring(id));
+        _redis->del("servers:" + std::to_string(_serverId));
+        _redis->srem("server_ids", std::to_string(_serverId));
+        LOG_INFO(L"Server unregistered from Redis id=" + std::to_wstring(_serverId));
     }
     catch (const Error& e)
     {
@@ -107,11 +107,11 @@ void RedisManager::UnregisterServer(int32 id)
     }
 }
 
-void RedisManager::Heartbeat(int32 id)
+void RedisManager::Heartbeat()
 {
     try
     {
-        _redis->expire("servers:" + std::to_string(id), std::chrono::seconds(15));
+        _redis->expire("servers:" + std::to_string(_serverId), std::chrono::seconds(15));
     }
     catch (const Error& e)
     {
@@ -119,11 +119,11 @@ void RedisManager::Heartbeat(int32 id)
     }
 }
 
-void RedisManager::UpdateSessionCount(int32 id, int32 delta)
+void RedisManager::UpdateSessionCount(int32 delta)
 {
     try
     {
-        _redis->hincrby("servers:" + std::to_string(id), "current", delta);
+        _redis->hincrby("servers:" + std::to_string(_serverId), "current", delta);
     }
     catch (const Error& e)
     {

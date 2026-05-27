@@ -72,8 +72,8 @@ void GameGlobal::Clear()
     _world = nullptr;
 
     if (GRedisManager)
-        GRedisManager->UnregisterServer(_config.server.id);
-
+        GRedisManager->UnregisterServer();
+    
     GRedisManager = nullptr;
     _redisManager = nullptr;
 

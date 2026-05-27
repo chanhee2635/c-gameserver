@@ -28,6 +28,7 @@ bool ClientPacketHandler::OnHandle_C_AUTH_TOKEN(GameSessionRef session, const Pr
     session->SetDbId(accountId.value());
     GRedisManager->DeleteToken(pkt.auth_token());
     GSessionManager->Register(accountId.value(), session);
+    GRedisManager->UpdateSessionCount(+1);
 
     if (!GDBManager)
     {

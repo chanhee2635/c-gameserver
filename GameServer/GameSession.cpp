@@ -5,6 +5,7 @@
 #include "Player.h"
 #include "DBManager.h"
 #include "World.h"
+#include "RedisManager.h"
 
 void GameSession::OnConnected()
 {
@@ -15,7 +16,10 @@ void GameSession::OnConnected()
 void GameSession::OnDisconnected()
 {
     if (_dbId != 0)
+    {
         GSessionManager->Unregister(_dbId, this);
+        GRedisManager->UpdateSessionCount(-1);
+    }
 
     LeavePlayer();
 
