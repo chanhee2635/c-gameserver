@@ -79,10 +79,10 @@ private:
     HashMap<uint64, PlayerRef>   _players;
     HashMap<uint64, MonsterRef>  _monsters;
 
-    Vector<ZoneRef>              _adjacentZones;
-    Vector<uint64>               _pendingDespawns;
-    HashMap<uint64, CreatureRef> _pendingSpawns;
-    HashMap<uint64, CreatureRef> _pendingMoves;
+    Vector<ZoneRef>     _adjacentZones;
+    Vector<uint64>      _pendingDespawns;
+    Vector<CreatureRef> _pendingSpawns;
+    Vector<CreatureRef> _pendingMoves;
 };
 
 template<typename Flush>
@@ -92,10 +92,10 @@ void Zone::FillUpdatePacket(Protocol::SUpdateScene& packet, Flush&& flush)
         [&](uint64 id) { packet.add_despawns(id); return true; }, flush);
 
     FillList(_pendingSpawns, GameConfig::Zone::SPAWN_FLUSH_COUNT,
-        [&](const auto& kv) { kv.second->MakeObjectInfo(*packet.add_spawns()); return true; }, flush);
+        [&](const auto& c) { c->MakeObjectInfo(*packet.add_spawns()); return true; }, flush);
 
     FillList(_pendingMoves, GameConfig::Zone::MOVE_FLUSH_COUNT,
-        [&](const auto& kv) { kv.second->MakePosInfo(*packet.add_moves()); return true; }, flush);
+        [&](const auto& c) { c->MakePosInfo(*packet.add_moves()); return true; }, flush);
 }
 
 template<typename Flush>

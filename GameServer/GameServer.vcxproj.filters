@@ -40,7 +40,7 @@
     <ClCompile Include="GameSession.cpp">
       <Filter>소스 파일\Main</Filter>
     </ClCompile>
-    <ClCompile Include="Server.cpp">
+    <ClCompile Include="GameServer.cpp">
       <Filter>소스 파일\Main</Filter>
     </ClCompile>
     <ClCompile Include="GameSession_game.cpp">
@@ -76,7 +76,7 @@
     <ClCompile Include="World.cpp">
       <Filter>소스 파일\Contents\Room</Filter>
     </ClCompile>
-    <ClCompile Include="NavigationManager.cpp">
+    <ClCompile Include="GridMap.cpp">
       <Filter>소스 파일\Navigation</Filter>
     </ClCompile>
     <ClCompile Include="GameGlobal.cpp">
@@ -141,7 +141,7 @@
     <ClInclude Include="Enums.h">
       <Filter>소스 파일\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="NavigationManager.h">
+    <ClInclude Include="GridMap.h">
       <Filter>소스 파일\Navigation</Filter>
     </ClInclude>
     <ClInclude Include="GameUtil.h">

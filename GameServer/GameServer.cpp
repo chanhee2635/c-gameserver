@@ -29,6 +29,7 @@ void DoWorkerJob(ServerServiceRef& service)
 
 int main()
 {
+    timeBeginPeriod(1);
     SetCurrentDirectoryW(L"..\\..\\GameServer");
 
     GameGlobal::Init();

@@ -30,61 +30,62 @@ namespace Protocol {
             "dGVtcGxhdGVfaWQYBCABKAUigwEKDU9iamVjdFN1bW1hcnkSEQoJb2JqZWN0",
             "X2lkGAEgASgEEgwKBG5hbWUYAiABKAkSDQoFbGV2ZWwYAyABKAUSEwoLdGVt",
             "cGxhdGVfaWQYBCABKAUSLQoLb2JqZWN0X3R5cGUYBSABKA4yGC5Qcm90b2Nv",
-            "bC5HYW1lT2JqZWN0VHlwZSJxCgdQb3NJbmZvEhEKCW9iamVjdF9pZBgBIAEo",
-            "BBImCgVzdGF0ZRgCIAEoDjIXLlByb3RvY29sLkNyZWF0dXJlU3RhdGUSHgoD",
-            "cG9zGAMgASgLMhEuUHJvdG9jb2wuVmVjdG9yMxILCgN5YXcYBCABKAIiLwoI",
-            "U3RhdEluZm8SCgoCaHAYASABKAUSCgoCbXAYAiABKAUSCwoDZXhwGAMgASgD",
-            "IoIBCgpPYmplY3RJbmZvEigKB3N1bW1hcnkYASABKAsyFy5Qcm90b2NvbC5P",
-            "YmplY3RTdW1tYXJ5EiMKCHBvc19pbmZvGAIgASgLMhEuUHJvdG9jb2wuUG9z",
-            "SW5mbxIlCglzdGF0X2luZm8YAyABKAsyEi5Qcm90b2NvbC5TdGF0SW5mbyIg",
-            "CgpDQXV0aFRva2VuEhIKCmF1dGhfdG9rZW4YASABKAkiWAoLU1BsYXllckxp",
-            "c3QSDwoHc3VjY2VzcxgBIAEoCBIOCgZyZWFzb24YAiABKAkSKAoHcGxheWVy",
-            "cxgDIAMoCzIXLlByb3RvY29sLlBsYXllclN1bW1hcnkiMgoNQ0NyZWF0ZVBs",
-            "YXllchIMCgRuYW1lGAEgASgJEhMKC3RlbXBsYXRlX2lkGAIgASgFIlkKDVND",
-            "cmVhdGVQbGF5ZXISDwoHc3VjY2VzcxgBIAEoCBIOCgZyZWFzb24YAiABKAkS",
-            "JwoGcGxheWVyGAMgASgLMhcuUHJvdG9jb2wuUGxheWVyU3VtbWFyeSIQCg5D",
-            "TG9hZENvbXBsZXRlZCIaCgpDRW50ZXJHYW1lEgwKBG5hbWUYASABKAkiRgoK",
-            "U0VudGVyR2FtZRIPCgdzdWNjZXNzGAEgASgIEicKCW15X3BsYXllchgCIAEo",
-            "CzIULlByb3RvY29sLk9iamVjdEluZm8iDwoNU1JlYWR5VG9FbnRlciIMCgpD",
-            "TGVhdmVHYW1lIgwKClNMZWF2ZUdhbWUifQoMU1VwZGF0ZVNjZW5lEhMKC2Rl",
-            "bHRhVGltZU1zGAEgASgNEiQKBnNwYXducxgCIAMoCzIULlByb3RvY29sLk9i",
-            "amVjdEluZm8SEAoIZGVzcGF3bnMYAyADKAQSIAoFbW92ZXMYBCADKAsyES5Q",
-            "cm90b2NvbC5Qb3NJbmZvIiwKBUNNb3ZlEiMKCHBvc19pbmZvGAEgASgLMhEu",
-            "UHJvdG9jb2wuUG9zSW5mbyJLCgdDQXR0YWNrEgsKA3lhdxgBIAEoAhITCgtj",
-            "b21ib19pbmRleBgCIAEoBRIeCgNwb3MYAyABKAsyES5Qcm90b2NvbC5WZWN0",
-            "b3IzIl4KB1NBdHRhY2sSEQoJb2JqZWN0X2lkGAEgASgEEgsKA3lhdxgCIAEo",
-            "AhITCgtjb21ib19pbmRleBgDIAEoBRIeCgNwb3MYBCABKAsyES5Qcm90b2Nv",
-            "bC5WZWN0b3IzIhkKBFNEaWUSEQoJb2JqZWN0X2lkGAEgASgEIiEKB0NSZXZp",
-            "dmUSFgoOaXNfY3VycmVudF9wb3MYASABKAgiRQoHU1Jldml2ZRIeCgNwb3MY",
-            "ASABKAsyES5Qcm90b2NvbC5WZWN0b3IzEg4KBm1heF9ocBgCIAEoBRIKCgJo",
-            "cBgDIAEoBSI6CglTQ2hhbmdlSHASEQoJb2JqZWN0X2lkGAEgASgEEgoKAmhw",
-            "GAIgASgFEg4KBmRhbWFnZRgDIAEoBSIsCgpTQ2hhbmdlRXhwEhEKCW9iamVj",
-            "dF9pZBgBIAEoBBILCgNleHAYAiABKAMiWQoMU0NoYW5nZUxldmVsEhEKCW9i",
-            "amVjdF9pZBgBIAEoBBINCgVsZXZlbBgCIAEoBRIOCgZtYXhfaHAYAyABKAUS",
-            "CgoCaHAYBCABKAUSCwoDZXhwGAUgASgDIjwKBUNDaGF0EgwKBGNoYXQYASAB",
-            "KAkSJQoJY2hhdF90eXBlGAIgASgOMhIuUHJvdG9jb2wuQ2hhdFR5cGUiXQoF",
-            "U0NoYXQSEQoJb2JqZWN0X2lkGAEgASgEEgwKBG5hbWUYAiABKAkSDAoEY2hh",
-            "dBgDIAEoCRIlCgljaGF0X3R5cGUYBCABKA4yEi5Qcm90b2NvbC5DaGF0VHlw",
-            "ZSqGAwoFTXNnSWQSCAoETk9ORRAAEhAKDENfQVVUSF9UT0tFThABEhEKDVNf",
-            "UExBWUVSX0xJU1QQAhITCg9DX0NSRUFURV9QTEFZRVIQAxITCg9TX0NSRUFU",
-            "RV9QTEFZRVIQBBIUChBDX0xPQURfQ09NUExFVEVEEAUSEAoMQ19FTlRFUl9H",
-            "QU1FEAYSEAoMU19FTlRFUl9HQU1FEAcSFAoQU19SRUFEWV9UT19FTlRFUhAI",
-            "EhAKDENfTEVBVkVfR0FNRRAJEhAKDFNfTEVBVkVfR0FNRRAKEhIKDlNfVVBE",
-            "QVRFX1NDRU5FEAsSCgoGQ19NT1ZFEAwSDAoIQ19BVFRBQ0sQDRIMCghTX0FU",
-            "VEFDSxAOEgkKBVNfRElFEA8SDAoIQ19SRVZJVkUQEBIMCghTX1JFVklWRRAR",
-            "Eg8KC1NfQ0hBTkdFX0hQEBISEAoMU19DSEFOR0VfRVhQEBMSEgoOU19DSEFO",
-            "R0VfTEVWRUwQFBIKCgZDX0NIQVQQFRIKCgZTX0NIQVQQFipKCg1DcmVhdHVy",
-            "ZVN0YXRlEggKBElETEUQABIKCgZNT1ZJTkcQARINCglTUFJJTlRJTkcQAhIK",
-            "CgZBVFRBQ0sQAxIICgRERUFEEAQqNgoOR2FtZU9iamVjdFR5cGUSCwoHVU5L",
-            "Tk9XThAAEgoKBlBMQVlFUhABEgsKB01PTlNURVIQAiopCghDaGF0VHlwZRIN",
-            "CglDSEFUX05FQVIQABIOCgpDSEFUX1dPUkxEEAFiBnByb3RvMw=="));
+            "bC5HYW1lT2JqZWN0VHlwZSKWAQoHUG9zSW5mbxIRCglvYmplY3RfaWQYASAB",
+            "KAQSJgoFc3RhdGUYAiABKA4yFy5Qcm90b2NvbC5DcmVhdHVyZVN0YXRlEh4K",
+            "A3BvcxgDIAEoCzIRLlByb3RvY29sLlZlY3RvcjMSCwoDeWF3GAQgASgCEiMK",
+            "CHZlbG9jaXR5GAUgASgLMhEuUHJvdG9jb2wuVmVjdG9yMyIvCghTdGF0SW5m",
+            "bxIKCgJocBgBIAEoBRIKCgJtcBgCIAEoBRILCgNleHAYAyABKAMiggEKCk9i",
+            "amVjdEluZm8SKAoHc3VtbWFyeRgBIAEoCzIXLlByb3RvY29sLk9iamVjdFN1",
+            "bW1hcnkSIwoIcG9zX2luZm8YAiABKAsyES5Qcm90b2NvbC5Qb3NJbmZvEiUK",
+            "CXN0YXRfaW5mbxgDIAEoCzISLlByb3RvY29sLlN0YXRJbmZvIiAKCkNBdXRo",
+            "VG9rZW4SEgoKYXV0aF90b2tlbhgBIAEoCSJYCgtTUGxheWVyTGlzdBIPCgdz",
+            "dWNjZXNzGAEgASgIEg4KBnJlYXNvbhgCIAEoCRIoCgdwbGF5ZXJzGAMgAygL",
+            "MhcuUHJvdG9jb2wuUGxheWVyU3VtbWFyeSIyCg1DQ3JlYXRlUGxheWVyEgwK",
+            "BG5hbWUYASABKAkSEwoLdGVtcGxhdGVfaWQYAiABKAUiWQoNU0NyZWF0ZVBs",
+            "YXllchIPCgdzdWNjZXNzGAEgASgIEg4KBnJlYXNvbhgCIAEoCRInCgZwbGF5",
+            "ZXIYAyABKAsyFy5Qcm90b2NvbC5QbGF5ZXJTdW1tYXJ5IhAKDkNMb2FkQ29t",
+            "cGxldGVkIhoKCkNFbnRlckdhbWUSDAoEbmFtZRgBIAEoCSJGCgpTRW50ZXJH",
+            "YW1lEg8KB3N1Y2Nlc3MYASABKAgSJwoJbXlfcGxheWVyGAIgASgLMhQuUHJv",
+            "dG9jb2wuT2JqZWN0SW5mbyIPCg1TUmVhZHlUb0VudGVyIgwKCkNMZWF2ZUdh",
+            "bWUiDAoKU0xlYXZlR2FtZSJoCgxTVXBkYXRlU2NlbmUSJAoGc3Bhd25zGAEg",
+            "AygLMhQuUHJvdG9jb2wuT2JqZWN0SW5mbxIQCghkZXNwYXducxgCIAMoBBIg",
+            "CgVtb3ZlcxgDIAMoCzIRLlByb3RvY29sLlBvc0luZm8iLAoFQ01vdmUSIwoI",
+            "cG9zX2luZm8YASABKAsyES5Qcm90b2NvbC5Qb3NJbmZvIksKB0NBdHRhY2sS",
+            "CwoDeWF3GAEgASgCEhMKC2NvbWJvX2luZGV4GAIgASgFEh4KA3BvcxgDIAEo",
+            "CzIRLlByb3RvY29sLlZlY3RvcjMiXgoHU0F0dGFjaxIRCglvYmplY3RfaWQY",
+            "ASABKAQSCwoDeWF3GAIgASgCEhMKC2NvbWJvX2luZGV4GAMgASgFEh4KA3Bv",
+            "cxgEIAEoCzIRLlByb3RvY29sLlZlY3RvcjMiGQoEU0RpZRIRCglvYmplY3Rf",
+            "aWQYASABKAQiIQoHQ1Jldml2ZRIWCg5pc19jdXJyZW50X3BvcxgBIAEoCCJF",
+            "CgdTUmV2aXZlEh4KA3BvcxgBIAEoCzIRLlByb3RvY29sLlZlY3RvcjMSDgoG",
+            "bWF4X2hwGAIgASgFEgoKAmhwGAMgASgFIjoKCVNDaGFuZ2VIcBIRCglvYmpl",
+            "Y3RfaWQYASABKAQSCgoCaHAYAiABKAUSDgoGZGFtYWdlGAMgASgFIiwKClND",
+            "aGFuZ2VFeHASEQoJb2JqZWN0X2lkGAEgASgEEgsKA2V4cBgCIAEoAyJZCgxT",
+            "Q2hhbmdlTGV2ZWwSEQoJb2JqZWN0X2lkGAEgASgEEg0KBWxldmVsGAIgASgF",
+            "Eg4KBm1heF9ocBgDIAEoBRIKCgJocBgEIAEoBRILCgNleHAYBSABKAMiPAoF",
+            "Q0NoYXQSDAoEY2hhdBgBIAEoCRIlCgljaGF0X3R5cGUYAiABKA4yEi5Qcm90",
+            "b2NvbC5DaGF0VHlwZSJdCgVTQ2hhdBIRCglvYmplY3RfaWQYASABKAQSDAoE",
+            "bmFtZRgCIAEoCRIMCgRjaGF0GAMgASgJEiUKCWNoYXRfdHlwZRgEIAEoDjIS",
+            "LlByb3RvY29sLkNoYXRUeXBlKoYDCgVNc2dJZBIICgROT05FEAASEAoMQ19B",
+            "VVRIX1RPS0VOEAESEQoNU19QTEFZRVJfTElTVBACEhMKD0NfQ1JFQVRFX1BM",
+            "QVlFUhADEhMKD1NfQ1JFQVRFX1BMQVlFUhAEEhQKEENfTE9BRF9DT01QTEVU",
+            "RUQQBRIQCgxDX0VOVEVSX0dBTUUQBhIQCgxTX0VOVEVSX0dBTUUQBxIUChBT",
+            "X1JFQURZX1RPX0VOVEVSEAgSEAoMQ19MRUFWRV9HQU1FEAkSEAoMU19MRUFW",
+            "RV9HQU1FEAoSEgoOU19VUERBVEVfU0NFTkUQCxIKCgZDX01PVkUQDBIMCghD",
+            "X0FUVEFDSxANEgwKCFNfQVRUQUNLEA4SCQoFU19ESUUQDxIMCghDX1JFVklW",
+            "RRAQEgwKCFNfUkVWSVZFEBESDwoLU19DSEFOR0VfSFAQEhIQCgxTX0NIQU5H",
+            "RV9FWFAQExISCg5TX0NIQU5HRV9MRVZFTBAUEgoKBkNfQ0hBVBAVEgoKBlNf",
+            "Q0hBVBAWKkoKDUNyZWF0dXJlU3RhdGUSCAoESURMRRAAEgoKBk1PVklORxAB",
+            "Eg0KCVNQUklOVElORxACEgoKBkFUVEFDSxADEggKBERFQUQQBCo2Cg5HYW1l",
+            "T2JqZWN0VHlwZRILCgdVTktOT1dOEAASCgoGUExBWUVSEAESCwoHTU9OU1RF",
+            "UhACKikKCENoYXRUeXBlEg0KCUNIQVRfTkVBUhAAEg4KCkNIQVRfV09STEQQ",
+            "AWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Protocol.MsgId), typeof(global::Protocol.CreatureState), typeof(global::Protocol.GameObjectType), typeof(global::Protocol.ChatType), }, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.Vector3), global::Protocol.Vector3.Parser, new[]{ "X", "Y", "Z" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.PlayerSummary), global::Protocol.PlayerSummary.Parser, new[]{ "DbId", "Name", "Level", "TemplateId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.ObjectSummary), global::Protocol.ObjectSummary.Parser, new[]{ "ObjectId", "Name", "Level", "TemplateId", "ObjectType" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.PosInfo), global::Protocol.PosInfo.Parser, new[]{ "ObjectId", "State", "Pos", "Yaw" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.PosInfo), global::Protocol.PosInfo.Parser, new[]{ "ObjectId", "State", "Pos", "Yaw", "Velocity" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.StatInfo), global::Protocol.StatInfo.Parser, new[]{ "Hp", "Mp", "Exp" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.ObjectInfo), global::Protocol.ObjectInfo.Parser, new[]{ "Summary", "PosInfo", "StatInfo" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CAuthToken), global::Protocol.CAuthToken.Parser, new[]{ "AuthToken" }, null, null, null, null),
@@ -97,7 +98,7 @@ namespace Protocol {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SReadyToEnter), global::Protocol.SReadyToEnter.Parser, null, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CLeaveGame), global::Protocol.CLeaveGame.Parser, null, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SLeaveGame), global::Protocol.SLeaveGame.Parser, null, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SUpdateScene), global::Protocol.SUpdateScene.Parser, new[]{ "DeltaTimeMs", "Spawns", "Despawns", "Moves" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SUpdateScene), global::Protocol.SUpdateScene.Parser, new[]{ "Spawns", "Despawns", "Moves" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CMove), global::Protocol.CMove.Parser, new[]{ "PosInfo" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.CAttack), global::Protocol.CAttack.Parser, new[]{ "Yaw", "ComboIndex", "Pos" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protocol.SAttack), global::Protocol.SAttack.Parser, new[]{ "ObjectId", "Yaw", "ComboIndex", "Pos" }, null, null, null, null),
@@ -1129,6 +1130,7 @@ namespace Protocol {
       state_ = other.state_;
       pos_ = other.pos_ != null ? other.pos_.Clone() : null;
       yaw_ = other.yaw_;
+      velocity_ = other.velocity_ != null ? other.velocity_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1186,6 +1188,18 @@ namespace Protocol {
       }
     }
 
+    /// <summary>Field number for the "velocity" field.</summary>
+    public const int VelocityFieldNumber = 5;
+    private global::Protocol.Vector3 velocity_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Protocol.Vector3 Velocity {
+      get { return velocity_; }
+      set {
+        velocity_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -1205,6 +1219,7 @@ namespace Protocol {
       if (State != other.State) return false;
       if (!object.Equals(Pos, other.Pos)) return false;
       if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(Yaw, other.Yaw)) return false;
+      if (!object.Equals(Velocity, other.Velocity)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1216,6 +1231,7 @@ namespace Protocol {
       if (State != global::Protocol.CreatureState.Idle) hash ^= State.GetHashCode();
       if (pos_ != null) hash ^= Pos.GetHashCode();
       if (Yaw != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(Yaw);
+      if (velocity_ != null) hash ^= Velocity.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1250,6 +1266,10 @@ namespace Protocol {
         output.WriteRawTag(37);
         output.WriteFloat(Yaw);
       }
+      if (velocity_ != null) {
+        output.WriteRawTag(42);
+        output.WriteMessage(Velocity);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1276,6 +1296,10 @@ namespace Protocol {
         output.WriteRawTag(37);
         output.WriteFloat(Yaw);
       }
+      if (velocity_ != null) {
+        output.WriteRawTag(42);
+        output.WriteMessage(Velocity);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -1297,6 +1321,9 @@ namespace Protocol {
       }
       if (Yaw != 0F) {
         size += 1 + 4;
+      }
+      if (velocity_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Velocity);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1324,6 +1351,12 @@ namespace Protocol {
       }
       if (other.Yaw != 0F) {
         Yaw = other.Yaw;
+      }
+      if (other.velocity_ != null) {
+        if (velocity_ == null) {
+          Velocity = new global::Protocol.Vector3();
+        }
+        Velocity.MergeFrom(other.Velocity);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1363,6 +1396,13 @@ namespace Protocol {
             Yaw = input.ReadFloat();
             break;
           }
+          case 42: {
+            if (velocity_ == null) {
+              Velocity = new global::Protocol.Vector3();
+            }
+            input.ReadMessage(Velocity);
+            break;
+          }
         }
       }
     #endif
@@ -1399,6 +1439,13 @@ namespace Protocol {
           }
           case 37: {
             Yaw = input.ReadFloat();
+            break;
+          }
+          case 42: {
+            if (velocity_ == null) {
+              Velocity = new global::Protocol.Vector3();
+            }
+            input.ReadMessage(Velocity);
             break;
           }
         }
@@ -4075,7 +4122,6 @@ namespace Protocol {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public SUpdateScene(SUpdateScene other) : this() {
-      deltaTimeMs_ = other.deltaTimeMs_;
       spawns_ = other.spawns_.Clone();
       despawns_ = other.despawns_.Clone();
       moves_ = other.moves_.Clone();
@@ -4088,22 +4134,10 @@ namespace Protocol {
       return new SUpdateScene(this);
     }
 
-    /// <summary>Field number for the "deltaTimeMs" field.</summary>
-    public const int DeltaTimeMsFieldNumber = 1;
-    private uint deltaTimeMs_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public uint DeltaTimeMs {
-      get { return deltaTimeMs_; }
-      set {
-        deltaTimeMs_ = value;
-      }
-    }
-
     /// <summary>Field number for the "spawns" field.</summary>
-    public const int SpawnsFieldNumber = 2;
+    public const int SpawnsFieldNumber = 1;
     private static readonly pb::FieldCodec<global::Protocol.ObjectInfo> _repeated_spawns_codec
-        = pb::FieldCodec.ForMessage(18, global::Protocol.ObjectInfo.Parser);
+        = pb::FieldCodec.ForMessage(10, global::Protocol.ObjectInfo.Parser);
     private readonly pbc::RepeatedField<global::Protocol.ObjectInfo> spawns_ = new pbc::RepeatedField<global::Protocol.ObjectInfo>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -4112,9 +4146,9 @@ namespace Protocol {
     }
 
     /// <summary>Field number for the "despawns" field.</summary>
-    public const int DespawnsFieldNumber = 3;
+    public const int DespawnsFieldNumber = 2;
     private static readonly pb::FieldCodec<ulong> _repeated_despawns_codec
-        = pb::FieldCodec.ForUInt64(26);
+        = pb::FieldCodec.ForUInt64(18);
     private readonly pbc::RepeatedField<ulong> despawns_ = new pbc::RepeatedField<ulong>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -4123,9 +4157,9 @@ namespace Protocol {
     }
 
     /// <summary>Field number for the "moves" field.</summary>
-    public const int MovesFieldNumber = 4;
+    public const int MovesFieldNumber = 3;
     private static readonly pb::FieldCodec<global::Protocol.PosInfo> _repeated_moves_codec
-        = pb::FieldCodec.ForMessage(34, global::Protocol.PosInfo.Parser);
+        = pb::FieldCodec.ForMessage(26, global::Protocol.PosInfo.Parser);
     private readonly pbc::RepeatedField<global::Protocol.PosInfo> moves_ = new pbc::RepeatedField<global::Protocol.PosInfo>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -4148,7 +4182,6 @@ namespace Protocol {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (DeltaTimeMs != other.DeltaTimeMs) return false;
       if(!spawns_.Equals(other.spawns_)) return false;
       if(!despawns_.Equals(other.despawns_)) return false;
       if(!moves_.Equals(other.moves_)) return false;
@@ -4159,7 +4192,6 @@ namespace Protocol {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (DeltaTimeMs != 0) hash ^= DeltaTimeMs.GetHashCode();
       hash ^= spawns_.GetHashCode();
       hash ^= despawns_.GetHashCode();
       hash ^= moves_.GetHashCode();
@@ -4181,10 +4213,6 @@ namespace Protocol {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (DeltaTimeMs != 0) {
-        output.WriteRawTag(8);
-        output.WriteUInt32(DeltaTimeMs);
-      }
       spawns_.WriteTo(output, _repeated_spawns_codec);
       despawns_.WriteTo(output, _repeated_despawns_codec);
       moves_.WriteTo(output, _repeated_moves_codec);
@@ -4198,10 +4226,6 @@ namespace Protocol {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (DeltaTimeMs != 0) {
-        output.WriteRawTag(8);
-        output.WriteUInt32(DeltaTimeMs);
-      }
       spawns_.WriteTo(ref output, _repeated_spawns_codec);
       despawns_.WriteTo(ref output, _repeated_despawns_codec);
       moves_.WriteTo(ref output, _repeated_moves_codec);
@@ -4215,9 +4239,6 @@ namespace Protocol {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (DeltaTimeMs != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(DeltaTimeMs);
-      }
       size += spawns_.CalculateSize(_repeated_spawns_codec);
       size += despawns_.CalculateSize(_repeated_despawns_codec);
       size += moves_.CalculateSize(_repeated_moves_codec);
@@ -4232,9 +4253,6 @@ namespace Protocol {
     public void MergeFrom(SUpdateScene other) {
       if (other == null) {
         return;
-      }
-      if (other.DeltaTimeMs != 0) {
-        DeltaTimeMs = other.DeltaTimeMs;
       }
       spawns_.Add(other.spawns_);
       despawns_.Add(other.despawns_);
@@ -4258,20 +4276,16 @@ namespace Protocol {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
-          case 8: {
-            DeltaTimeMs = input.ReadUInt32();
-            break;
-          }
-          case 18: {
+          case 10: {
             spawns_.AddEntriesFrom(input, _repeated_spawns_codec);
             break;
           }
-          case 26:
-          case 24: {
+          case 18:
+          case 16: {
             despawns_.AddEntriesFrom(input, _repeated_despawns_codec);
             break;
           }
-          case 34: {
+          case 26: {
             moves_.AddEntriesFrom(input, _repeated_moves_codec);
             break;
           }
@@ -4294,20 +4308,16 @@ namespace Protocol {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
-          case 8: {
-            DeltaTimeMs = input.ReadUInt32();
-            break;
-          }
-          case 18: {
+          case 10: {
             spawns_.AddEntriesFrom(ref input, _repeated_spawns_codec);
             break;
           }
-          case 26:
-          case 24: {
+          case 18:
+          case 16: {
             despawns_.AddEntriesFrom(ref input, _repeated_despawns_codec);
             break;
           }
-          case 34: {
+          case 26: {
             moves_.AddEntriesFrom(ref input, _repeated_moves_codec);
             break;
           }

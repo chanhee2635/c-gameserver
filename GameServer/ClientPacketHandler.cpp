@@ -98,7 +98,7 @@ bool ClientPacketHandler::OnHandle_C_CREATE_PLAYER(GameSessionRef session, const
         }
         else
         {
-            res.set_reason("이름이 이미 사용 중이거나 오류가 발생했습니다.");
+            res.set_reason("Name already in use or creation failed");
         }
         session->Send(MakeSendBuffer<Protocol::MsgId::S_CREATE_PLAYER>(res));
     });
@@ -148,27 +148,7 @@ bool ClientPacketHandler::OnHandle_C_LEAVE_GAME(GameSessionRef session, const Pr
 {
     if (!IsAuthenticated(session)) return false;
 
-    PlayerRef player = session->GetPlayer();
-    if (!player) return true;
-
-    session->SetPlayer(nullptr);   
-
-    uint64  dbId = player->GetPlayerDbId();
-    int32   hp   = player->GetHp();
-    int32   mp   = player->GetMp();
-    int64   exp  = player->GetExp();
-    Vector3 pos  = player->GetPos();
-    float   yaw  = player->GetYaw();
-
-    GDBManager->DoAsync([dbId, hp, mp, exp, pos, yaw]()
-    {
-        GDBManager->SavePlayerInfo(dbId, hp, mp, exp, pos, yaw);
-    });
-
-    GWorld->DoAsync([player]()
-    {
-        GWorld->LeaveCreature(player);
-    });
+    session->LeavePlayer();
 
     return true;
 }
@@ -180,16 +160,14 @@ bool ClientPacketHandler::OnHandle_C_MOVE(GameSessionRef session, const Protocol
     PlayerRef player = session->GetPlayer();
     if (!player) return false;
 
-    GameSceneRef scene = player->GetGameScene();
-    if (!scene) return false;
-
     MoveJob job;
     job.objectId = player->GetObjectId();
-    job.pos = GameUtil::ToServer(pkt.pos_info().pos());
-    job.yaw = pkt.pos_info().yaw();
-    job.state = static_cast<Protocol::CreatureState>(pkt.pos_info().state());
+    job.pos      = GameUtil::ToServer(pkt.pos_info().pos());
+    job.velocity = GameUtil::ToServer(pkt.pos_info().velocity());
+    job.yaw      = pkt.pos_info().yaw();
+    job.state    = static_cast<Protocol::CreatureState>(pkt.pos_info().state());
 
-    scene->PushMoveJob(job);
+    player->SetPendingMove(job);
     return true;
 }
 

@@ -41,18 +41,26 @@ void Player::Send(SendBufferRef sendBuffer)
 
 void Player::HandleMoveJob(const MoveJob& job)
 {
-    Vector3                  oldPos   = _pos;
-    Protocol::CreatureState  oldState = _state;
-
     _pos = job.pos;
+    _velocity = job.velocity;
     _state = job.state;
     _yaw = job.yaw;
+}
 
-    bool posChanged = oldPos.DistanceSq(_pos) > 0.0001f;
-    bool stateChanged = oldState != _state;
+void Player::SetPendingMove(const MoveJob& job)
+{
+    LockGuard lock(_moveLock);
+    _pendingMove = job;
+    _hasPendingMove = true;
+}
 
-    if (posChanged || stateChanged)
-        _isDirty = true;
+bool Player::TakePendingMove(MoveJob& out)
+{
+    LockGuard lock(_moveLock);
+    if (!_hasPendingMove) return false;
+    out = _pendingMove;
+    _hasPendingMove = false;
+    return true;
 }
 
 void Player::HandleAttack(float yaw, int32 comboIndex, Vector3 clientPos)
@@ -77,7 +85,7 @@ void Player::HandleAttack(float yaw, int32 comboIndex, Vector3 clientPos)
     _yaw = yaw;
     _pos = attackPos;
     _state = Protocol::ATTACK;
-    _isDirty = true;
+    _velocity = Vector3::Zero();
 
     GameScene* scene = GetGameSceneRaw();
     ZoneRef      zone = GetZone();
@@ -121,7 +129,7 @@ void Player::Revive(Vector3 pos)
     _state = Protocol::IDLE;
     _pos = pos;
     _yaw = 0.f;
-    _isDirty = true;
+    _velocity = Vector3::Zero();
 }
 
 void Player::MakeStatInfo(Protocol::StatInfo& info) const
@@ -153,7 +161,6 @@ void Player::TryLevelUp()
         _maxHp = _config->maxHp;
         _hp = _config->maxHp;
         _mp = _config->maxMp;
-        _isDirty = true;
 
         GameScene* scene = GetGameSceneRaw();
         ZoneRef      zone = GetZone();

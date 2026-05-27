@@ -16,7 +16,8 @@ public class UI_GameScene : UI_Scene
     enum Dropdowns   { ChatType }
     enum InputFields { ChatInput }
     enum Buttons     { AttackBtn, SendBtn, CurrentReviveBtn, NearbyReviveBtn, ExitYesBtn, ExitNoBtn }
-    enum Images      { AttackCool, RevivePopup, ExitPopup, UI_Minimap }
+    enum Images      { AttackCool, RevivePopup, ExitPopup }
+    enum GameObjects { UI_Minimap }
 
     public UI_Minimap Minimap { get; private set; }
 
@@ -31,6 +32,7 @@ public class UI_GameScene : UI_Scene
         Bind<TMP_Dropdown>(typeof(Dropdowns));
         Bind<TMP_InputField>(typeof(InputFields));
         Bind<VerticalLayoutGroup>(typeof(ChatItem));
+        Bind<GameObject>(typeof(GameObjects));
 
         GetButton((int)Buttons.SendBtn).gameObject.BindEvent(OnClickSendButton);
         GetButton((int)Buttons.CurrentReviveBtn).gameObject.BindEvent(_ => SendRevivePacket(isCurrentPos: true));
@@ -39,9 +41,7 @@ public class UI_GameScene : UI_Scene
         GetButton((int)Buttons.ExitNoBtn).gameObject.BindEvent(OnClickExitNoButton);
         GetButton((int)Buttons.AttackBtn).gameObject.BindEvent(OnClickAttackButton);
 
-        GameObject minimapGo = GetImage((int)Images.UI_Minimap).gameObject;
-        if (minimapGo != null)
-            Minimap = minimapGo.GetComponent<UI_Minimap>();
+        Minimap = GetImage((int)GameObjects.UI_Minimap).GetComponent<UI_Minimap>();
 
         foreach (Transform child in Get<VerticalLayoutGroup>((int)ChatItem.ChatItem).transform.Cast<Transform>().ToList())
             Managers.Resource.Destroy(child.gameObject);

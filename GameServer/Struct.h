@@ -75,6 +75,7 @@ struct MoveJob
 {
     uint64                  objectId = 0;
     Vector3                 pos;
+    Vector3                 velocity;
     float                   yaw = 0.f;
     Protocol::CreatureState state = Protocol::IDLE;
 }; 

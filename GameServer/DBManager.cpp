@@ -231,7 +231,6 @@ bool DBManager::SavePlayerLevelUp(uint64 playerDbId, int32 level,
     int32 hp, int32 mp, int64 exp,
     const Vector3& pos, float yaw)
 {
-    // 1) UPDATE Players.level
     {
         DbConnGuard g;
         if (!g.Valid()) return false;
@@ -247,6 +246,5 @@ bool DBManager::SavePlayerLevelUp(uint64 playerDbId, int32 level,
         if (!TimedQuery([&] { return bind.Execute(); })) return false;
     }
 
-    // 2) UPDATE PlayerDetails
     return SavePlayerInfo(playerDbId, hp, mp, exp, pos, yaw);
 }

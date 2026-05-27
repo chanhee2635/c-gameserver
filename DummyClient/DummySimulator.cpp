@@ -34,34 +34,51 @@ void DummySimulator::RemoveN(int32 n)
     }
 }
 
+Vector3 DummySimulator::RandomMapPoint()
+{
+    std::uniform_real_distribution<float> dist(MAP_MIN, MAP_MAX);
+    return { dist(_rng), 0.f, dist(_rng) };
+}
+
+uint32 DummySimulator::RandomChatDelayMs()
+{
+    std::uniform_int_distribution<uint32> dist(CHAT_MIN_MS, CHAT_MAX_MS);
+    return dist(_rng);
+}
+
+bool DummySimulator::RollWorldChat()
+{
+    std::uniform_real_distribution<float> dist(0.f, 1.f);
+    return dist(_rng) < WORLD_CHAT_CHANCE;
+}
+
 void DummySimulator::AddSession(DummySessionRef session, Vector3 spawnPos)
 {
-    static constexpr float GOLDEN_ANGLE = 137.508f;
     using clock = std::chrono::steady_clock;
 
     LockGuard guard(_lock);
 
-    float startAngle = fmodf(GOLDEN_ANGLE * static_cast<float>(_agents.size()), 360.f);
-    float startRad   = startAngle * DEG2RAD;
+    uint32 offsetMs  = static_cast<uint32>(_agents.size()) % TICK_MS;
+    auto   now       = clock::now();
+    auto   nextMove  = s_baseTime + std::chrono::milliseconds(offsetMs);
+    while (nextMove <= now)
+        nextMove += std::chrono::milliseconds(TICK_MS);
 
-    Vector3 center = {
-        spawnPos.x - MOVE_RADIUS * sinf(startRad),
-        0.f,
-        spawnPos.z - MOVE_RADIUS * cosf(startRad)
-    };
+    AgentState agent;
+    agent.session      = session;
+    agent.pos          = { spawnPos.x, 0.f, spawnPos.z };
+    agent.target       = RandomMapPoint();
+    agent.speed        = MOVE_SPEED;
+    agent.nextMoveTime = nextMove;
+    agent.nextChatTime = now + std::chrono::milliseconds(RandomChatDelayMs());
 
-    uint32 offsetMs = static_cast<uint32>(_agents.size()) % TICK_MS;
-    auto nextSend = s_baseTime + std::chrono::milliseconds(offsetMs);
-    auto now = clock::now();
-    while (nextSend <= now)
-        nextSend += std::chrono::milliseconds(TICK_MS);
-
-    _agents.push_back({ session, center, startAngle, 2.0f, nextSend });
+    _agents.push_back(std::move(agent));
 }
 
 void DummySimulator::Run()
 {
     using clock = std::chrono::steady_clock;
+    const float tickSec = TICK_MS / 1000.f;
 
     while (_running)
     {
@@ -79,53 +96,68 @@ void DummySimulator::Run()
 
             for (AgentState& agent : _agents)
             {
-                if (now < agent.nextSendTime) continue;
-
                 DummySessionRef session = agent.session.lock();
-                if (!session)
+                if (!session) continue;
+
+                // ---- 이동: 목표를 향해 직선 전진, 도달하면 새 목표 선택 ----
+                if (now >= agent.nextMoveTime)
                 {
-                    agent.nextSendTime = now + std::chrono::milliseconds(TICK_MS);
-                    continue;
+                    Vector3 toTarget = agent.target - agent.pos;
+                    float   distSq   = toTarget.LengthSq();
+
+                    if (distSq <= ARRIVE_DIST_SQ)
+                    {
+                        agent.pos    = agent.target;
+                        agent.target = RandomMapPoint();
+                        toTarget     = agent.target - agent.pos;
+                        distSq       = toTarget.LengthSq();
+                    }
+
+                    Vector3 dir  = toTarget.Normalized();
+                    float   step = agent.speed * tickSec;
+                    float   dist = sqrtf(distSq);
+
+                    if (dist <= step)              
+                        agent.pos = agent.target;
+                    else
+                        agent.pos = agent.pos + dir * step;
+
+                    float yaw = atan2f(dir.x, dir.z) * RAD2DEG;
+                    if (yaw < 0.f) yaw += 360.f;
+
+                    Vector3 vel = dir * agent.speed;
+
+                    Protocol::CMove pkt;
+                    auto* info = pkt.mutable_pos_info();
+                    info->mutable_pos()->set_x(agent.pos.x);
+                    info->mutable_pos()->set_y(agent.pos.y);
+                    info->mutable_pos()->set_z(agent.pos.z);
+                    info->set_yaw(yaw);
+                    info->set_state(Protocol::MOVING);
+                    info->mutable_velocity()->set_x(vel.x);
+                    info->mutable_velocity()->set_y(vel.y);
+                    info->mutable_velocity()->set_z(vel.z);
+
+                    toSend.emplace_back(session, MakeSendBuffer<Protocol::C_MOVE>(pkt));
+
+                    agent.nextMoveTime += std::chrono::milliseconds(TICK_MS);
                 }
 
-                float prevRad = agent.angle * DEG2RAD;
-                Vector3 prevPos = {
-                    agent.center.x + MOVE_RADIUS * sinf(prevRad),
-                    agent.center.y,
-                    agent.center.z + MOVE_RADIUS * cosf(prevRad)
-                };
+                // ---- 채팅: 일정 간격으로 근거리(가끔 전역) 전송 ----
+                if (now >= agent.nextChatTime)
+                {
+                    bool world = RollWorldChat();
 
-                const float tickSec = TICK_MS / 1000.f;
-                const float arcLen = agent.speed * tickSec;
-                const float angleStep = (arcLen / (2.f * PI * MOVE_RADIUS)) * 360.f;
+                    Protocol::CChat chatPkt;
+                    chatPkt.set_chat_type(world ? Protocol::CHAT_WORLD : Protocol::CHAT_NEAR);
+                    chatPkt.set_chat(session->GetPlayerName() + " #" + std::to_string(agent.chatSeq++));
 
-                agent.angle += angleStep;
-                if (agent.angle >= 360.f) agent.angle -= 360.f;
+                    toSend.emplace_back(session, MakeSendBuffer<Protocol::C_CHAT>(chatPkt));
 
-                float rad = agent.angle * DEG2RAD;
-                Vector3 pos = {
-                    agent.center.x + MOVE_RADIUS * sinf(rad),
-                    agent.center.y,
-                    agent.center.z + MOVE_RADIUS * cosf(rad)
-                };
-
-                Vector3 dir = { pos.x - prevPos.x, 0.f, pos.z - prevPos.z };
-                float yaw = atan2f(dir.x, dir.z) * RAD2DEG;
-                if (yaw < 0.f) yaw += 360.f;
-
-                Protocol::CMove pkt;
-                auto* info = pkt.mutable_pos_info();
-                info->mutable_pos()->set_x(pos.x);
-                info->mutable_pos()->set_y(pos.y);
-                info->mutable_pos()->set_z(pos.z);
-                info->set_yaw(yaw);
-                info->set_state(Protocol::MOVING);
-
-                toSend.emplace_back(session, MakeSendBuffer<Protocol::C_MOVE>(pkt));
-
-                agent.nextSendTime += std::chrono::milliseconds(TICK_MS);
+                    agent.nextChatTime = now + std::chrono::milliseconds(RandomChatDelayMs());
+                }
             }
-        }  
+        }
 
         for (auto& [session, buffer] : toSend)
             session->Send(buffer);

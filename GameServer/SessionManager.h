@@ -5,7 +5,7 @@ class SessionManager
 {
 public:
     void Register(uint64 accountId, GameSessionRef session);
-    void Unregister(uint64 accountId);
+    void Unregister(uint64 accountId, GameSession* self);
     GameSessionRef Find(uint64 accountId);
 
 private:

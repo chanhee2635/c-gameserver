@@ -5,7 +5,7 @@
 #include "RedisManager.h"
 #include "SessionManager.h"
 #include "DataManager.h"
-#include "NavigationManager.h"
+#include "GridMap.h"
 #include "World.h"
 
 AppConfig                          GameGlobal::_config         = {};
@@ -13,14 +13,14 @@ std::shared_ptr<DBManager>         GameGlobal::_dbManager      = nullptr;
 std::shared_ptr<RedisManager>      GameGlobal::_redisManager   = nullptr;
 std::unique_ptr<SessionManager>    GameGlobal::_sessionManager = nullptr;
 std::unique_ptr<DataManager>       GameGlobal::_dataManager    = nullptr;
-std::unique_ptr<NavigationManager> GameGlobal::_navManager     = nullptr;
+std::unique_ptr<GridMap>           GameGlobal::_gridMap        = nullptr;
 std::shared_ptr<World>             GameGlobal::_world          = nullptr;
 
 DBManager*        GDBManager        = nullptr;
 RedisManager*     GRedisManager     = nullptr;
 SessionManager*   GSessionManager   = nullptr;
 DataManager*      GDataManager      = nullptr;
-NavigationManager* GNavigationManager = nullptr;
+GridMap*          GGridMap          = nullptr;
 World*            GWorld            = nullptr;
 
 void GameGlobal::Init()
@@ -35,10 +35,10 @@ void GameGlobal::Init()
     if (!GDataManager->LoadData())
         LOG_ERROR(L"DataManager::LoadData() failed");
 
-    _navManager      = std::make_unique<NavigationManager>();
-    GNavigationManager = _navManager.get();
-    if (!GNavigationManager->LoadNavMesh("SceneNavMesh.nav"))
-        LOG_WARN(L"NavigationManager: SceneNavMesh.nav not found");
+    _gridMap = std::make_unique<GridMap>();
+    GGridMap = _gridMap.get();
+    if (!GGridMap->Load("../Common/Map/walkmap.bin"))
+        LOG_WARN(L"GridMap: ../Common/Map/walkmap.bin 로드 실패 (충돌/길찾기 비활성화됨)");
 
     _world = MakeShared<World>();
     GWorld = _world.get();
@@ -80,8 +80,8 @@ void GameGlobal::Clear()
     GDBManager = nullptr;
     _dbManager = nullptr;
 
-    GNavigationManager = nullptr;
-    _navManager        = nullptr;
+    GGridMap = nullptr;
+    _gridMap = nullptr;
 
     GDataManager = nullptr;
     _dataManager = nullptr;

@@ -80,5 +80,5 @@ private:
     void RenderReport();
 
     Atomic<bool> _running = false;
-    static constexpr int32 STATS_PANEL_LINES = 12;
+    static constexpr int32 STATS_PANEL_LINES = 10;
 };

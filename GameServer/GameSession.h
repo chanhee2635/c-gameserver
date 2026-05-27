@@ -12,16 +12,16 @@ public:
     virtual void OnDisconnected() override;
     virtual void OnRecvPacket(std::span<const BYTE> packet, uint16 type) override;
 
-    // ── Account (set on C_AUTH_TOKEN) ──────────────────────────────────────
     void    SetDbId(uint64 dbId)      { _dbId = dbId; }
     uint64  GetDbId()          const  { return _dbId; }
 
-    // ── Active player (set on C_ENTER_GAME) ────────────────────────────────
     void      SetPlayerDbId(uint64 id)  { _playerDbId = id; }
     uint64    GetPlayerDbId()    const  { return _playerDbId; }
 
     void      SetPlayer(PlayerRef player) { _player = player; }
     PlayerRef GetPlayer()          const  { return _player.lock(); }
+
+    void LeavePlayer();
 
 private:
     uint64        _dbId       = 0;   // account DB id

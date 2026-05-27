@@ -95,14 +95,14 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Projects\vcpkg\installed\x64-windows\include;C:\Program Files\MySQL\MySQL Server 8.0\include;$(SolutionDir)Libraries\Include\;$(SolutionDir)ServerCore\;$(ProjectDir);$(ProjectDir)Protocol\;$(SolutionDir)Libraries\Include\RecastNDetour\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\vcpkg\installed\x64-windows\include;C:\Program Files\MySQL\MySQL Server 8.0\include;$(SolutionDir)Libraries\Include\;$(SolutionDir)ServerCore\;$(ProjectDir);$(ProjectDir)Protocol\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Libraries\Libs\Debug\;C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Detour-d.lib;Recast-d.lib;ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>
@@ -122,7 +122,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Projects\vcpkg\installed\x64-windows\include;C:\Program Files\MySQL\MySQL Server 8.0\include;$(SolutionDir)Libraries\Include\;$(SolutionDir)ServerCore\;$(ProjectDir);$(ProjectDir)Protocol\;$(SolutionDir)Libraries\Include\RecastNDetour\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\vcpkg\installed\x64-windows\include;C:\Program Files\MySQL\MySQL Server 8.0\include;$(SolutionDir)Libraries\Include\;$(SolutionDir)ServerCore\;$(ProjectDir);$(ProjectDir)Protocol\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -132,7 +132,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;$(SolutionDir)Libraries\Libs\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Detour.lib;Recast.lib;ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>
@@ -150,14 +150,14 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Projects\vcpkg\installed\x64-windows\include;C:\Program Files\MySQL\MySQL Server 8.0\include;$(SolutionDir)Libraries\Include\;$(SolutionDir)ServerCore\;$(ProjectDir);$(ProjectDir)Protocol\;$(SolutionDir)Libraries\Include\RecastNDetour\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\vcpkg\installed\x64-windows\include;C:\Program Files\MySQL\MySQL Server 8.0\include;$(SolutionDir)Libraries\Include\;$(SolutionDir)ServerCore\;$(ProjectDir);$(ProjectDir)Protocol\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Libraries\Libs\Debug\;C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Detour-d.lib;Recast-d.lib;ServerCore.lib;libmysql.lib;hiredisd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ServerCore.lib;libmysql.lib;hiredisd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>copy /Y "C:\Projects\vcpkg\installed\x64-windows\debug\bin\hiredisd.dll" "$(OutDir)"
@@ -185,7 +185,7 @@ xcopy /Y "$(ProjectDir)server.json" "$(OutDir)"</Command>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Projects\vcpkg\installed\x64-windows\include;C:\Program Files\MySQL\MySQL Server 8.0\include;$(SolutionDir)Libraries\Include\;$(SolutionDir)ServerCore\;$(ProjectDir);$(ProjectDir)Protocol\;$(SolutionDir)Libraries\Include\RecastNDetour\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\vcpkg\installed\x64-windows\include;C:\Program Files\MySQL\MySQL Server 8.0\include;$(SolutionDir)Libraries\Include\;$(SolutionDir)ServerCore\;$(ProjectDir);$(ProjectDir)Protocol\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -195,7 +195,7 @@ xcopy /Y "$(ProjectDir)server.json" "$(OutDir)"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Projects\vcpkg\installed\x64-windows\lib;C:\Program Files\MySQL\MySQL Server 8.0\lib;$(SolutionDir)Libraries\Libs\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Detour.lib;Recast.lib;ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ServerCore.lib;libmysql.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>copy /Y "C:\Projects\vcpkg\installed\x64-windows\bin\hiredis.dll" "$(OutDir)"
@@ -221,7 +221,7 @@ xcopy /Y "$(ProjectDir)server.json" "$(OutDir)"
     <ClCompile Include="GameSession.cpp" />
     <ClCompile Include="GameSession_game.cpp" />
     <ClCompile Include="Monster.cpp" />
-    <ClCompile Include="NavigationManager.cpp" />
+    <ClCompile Include="GridMap.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -238,7 +238,7 @@ xcopy /Y "$(ProjectDir)server.json" "$(OutDir)"
     <ClCompile Include="RedisManager.cpp" />
     <ClCompile Include="SessionManager.cpp" />
     <ClCompile Include="World.cpp" />
-    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="GameServer.cpp" />
     <ClCompile Include="ClientPacketHandler.cpp" />
     <ClCompile Include="Zone.cpp" />
     <ClCompile Include="Protocol\ClientPacketHandler_Generated.cpp" />
@@ -258,7 +258,7 @@ xcopy /Y "$(ProjectDir)server.json" "$(OutDir)"
     <ClInclude Include="GameUtil.h" />
     <ClInclude Include="IdGenerator.h" />
     <ClInclude Include="Monster.h" />
-    <ClInclude Include="NavigationManager.h" />
+    <ClInclude Include="GridMap.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Protocol\PacketUtils.h" />

@@ -5,8 +5,8 @@ using UnityEngine;
 public class ObjectManager
 {
     private const float CHECK_INTERVAL = 0.2f;
-    private const float SHOW_DIST_SQ   = 600.0f;
-    private const float HIDE_DIST_SQ   = 660.0f;
+    private const float SHOW_DIST_SQ   = 380.0f;
+    private const float HIDE_DIST_SQ   = 400.0f;
 
     private float _lastCheckTime;
 
@@ -41,22 +41,16 @@ public class ObjectManager
 
     private void UpdateObjectVisibility(CreatureController cc, Vector3 myPos)
     {
-        GameObject go    = cc.gameObject;
-        float distSq     = (myPos - go.transform.position).sqrMagnitude;
-        bool  isActive   = go.activeSelf;
+        GameObject go  = cc.gameObject;
+        float distSq   = (myPos - cc.DestPos).sqrMagnitude;
+        bool  isActive = go.activeSelf;
 
-        var sceneUI = Managers.UI.SceneUI as UI_GameScene;
         if (isActive)
         {
             if (distSq > HIDE_DIST_SQ)
-            {
                 go.SetActive(false);
-                sceneUI?.Minimap?.ShowIcon(cc.ObjectId, false);
-            }
             else
-            {
                 cc.UpdateUIByDistance(distSq);
-            }
         }
         else
         {
@@ -64,7 +58,6 @@ public class ObjectManager
             {
                 go.SetActive(true);
                 cc.UpdateUIByDistance(distSq);
-                sceneUI?.Minimap?.ShowIcon(cc.ObjectId, true);
             }
         }
     }
@@ -142,10 +135,10 @@ public class ObjectManager
         Vector3    pos  = GetSpawnPosition(info.PosInfo);
         Quaternion rot  = Quaternion.Euler(0, info.PosInfo.Yaw, 0);
 
-        string spawnPath = (info.Summary.ObjectType == Protocol.GameObjectType.Player
-                    && !string.IsNullOrEmpty(data.dummyPrefabPath))
-                   ? data.dummyPrefabPath
-                   : data.prefabPath;
+        bool isDummyPlayer = info.Summary.ObjectType == Protocol.GameObjectType.Player
+                          && info.Summary.Name.StartsWith("Dummy_")
+                          && !string.IsNullOrEmpty(data.dummyPrefabPath);
+        string spawnPath = isDummyPlayer ? data.dummyPrefabPath : data.prefabPath;
         GameObject go = Managers.Resource.Instantiate(spawnPath, pos, rot);
         _objects[objectId] = go;
 
@@ -177,12 +170,12 @@ public class ObjectManager
         _pendingSpawns.Clear();
     }
 
-    public void OnMove(Protocol.PosInfo movePos, uint deltaTimeMs)
+    public void OnMove(Protocol.PosInfo movePos)
     {
         if (IsMyPlayer(movePos.ObjectId)) return;
 
         if (_controllers.TryGetValue(movePos.ObjectId, out CreatureController cc))
-            cc.OnMoveUpdate(movePos, deltaTimeMs);
+            cc.OnMoveUpdate(movePos);
     }
 
     public GameObject          FindById(ulong id)           => _objects.GetValueOrDefault(id);

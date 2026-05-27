@@ -14,4 +14,12 @@ namespace GameConfig
         static constexpr uint32 MOVE_FLUSH_COUNT = PACKET_USABLE / MAX_MOVE_BYTES;
         static constexpr uint32 SPAWN_FLUSH_COUNT = PACKET_USABLE / MAX_SPAWN_BYTES;
     }
+
+    namespace Move {
+        constexpr float  POS_EPS = 0.3f;
+        constexpr float  POS_EPS_SQ = POS_EPS * POS_EPS;
+        constexpr float  VEL_EPS = 0.5f;            
+        constexpr float  VEL_EPS_SQ = VEL_EPS * VEL_EPS;
+        constexpr uint64 HEARTBEAT_MS = 400;
+    }
 }

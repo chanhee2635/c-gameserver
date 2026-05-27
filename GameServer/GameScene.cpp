@@ -6,6 +6,7 @@
 #include "World.h"
 #include "DataManager.h"
 #include "GameUtil.h"
+#include "GridMap.h"
 #include "Protocol/PacketUtils.h"
 #include "DBManager.h"
 
@@ -34,12 +35,6 @@ void GameScene::RemoveMonster(uint64 objectId)
     _monsters.erase(objectId);
 }
 
-void GameScene::PushMoveJob(MoveJob job)
-{
-    LockGuard guard(_moveLock);
-    _pendingMoveJobs.push_back(job);
-}
-
 void GameScene::Update()
 {
     uint64 now = ::GetTickCount64();
@@ -64,38 +59,50 @@ void GameScene::Update()
     uint32 deltaTimeMs = (_lastUpdateTick > 0) ? now - _lastUpdateTick : updateTickMs;
     _lastUpdateTick = now;
 
-    FrameVector<MoveJob>    jobsCache;
-    FrameVector<CreatureRef> movingCreatures;
-    FrameVector<CreatureRef> movingCreaturesSnapshot;
-    FrameHashMap<GameScene*, Vector<MoveNotice>> sceneNotices;
-
-    UpdateObjects(deltaTimeMs, jobsCache, movingCreatures);
-    CollectMoveNotices(movingCreatures, movingCreaturesSnapshot, sceneNotices);
-    DispatchNotices(sceneNotices);
-    BroadcastScene(deltaTimeMs);
-
     DoTimer(GameGlobal::GetConfig().gameplay.updateTickMs, &GameScene::Update);
+
+    FrameVector<CreatureRef> movingCreatures;
+    FrameHashMap<GameScene*, Vector<MoveNotice>> crossNotices;
+
+    UpdateObjects(now, deltaTimeMs, movingCreatures);
+    CollectMoveNotices(movingCreatures, crossNotices);
+    DispatchNotices(crossNotices);
+    BroadcastScene();
 }
 
-void GameScene::UpdateObjects(uint32 deltaTimeMs, FrameVector<MoveJob>& jobsCache, FrameVector<CreatureRef>& movingCreatures)
+void GameScene::UpdateObjects(uint64 nowMs, uint32 deltaTimeMs, FrameVector<CreatureRef>& movingCreatures)
 {
+    for (auto& [id, player] : _players)
     {
-        LockGuard guard(_moveLock);
-        jobsCache.reserve(_pendingMoveJobs.size());
-        for (auto& job : _pendingMoveJobs)
-            jobsCache.push_back(std::move(job));
-        _pendingMoveJobs.clear();
-    }
+        MoveJob job;
+        if (player->TakePendingMove(job))
+        {
+            bool blocked = (GGridMap && GGridMap->IsLoaded() && !GGridMap->IsWalkable(job.pos));
+            if (!blocked)
+                player->HandleMoveJob(job);
+            // 이동할 수 없는 위치로 이동했다면 빽 시키는 코드
+        }
 
-    for (MoveJob& job : jobsCache)
-    {
-        auto it = _players.find(job.objectId);
-        if (it == _players.end()) continue;
+        if (player->ShouldBroadcastMove(nowMs))
+            CollectMovingCreature(player, nowMs, movingCreatures);
 
-        PlayerRef& player = it->second;
-        player->HandleMoveJob(job);
-        if (player->IsDirty())
-            CollectMovingCreature(player, movingCreatures);
+        if (player->IsSaveDirty())
+        {
+            player->ClearSaveDirty();
+
+            uint64  dbId = player->GetPlayerDbId();
+            int32   level = player->GetLevel();
+            int32   hp = player->GetHp();
+            int32   mp = player->GetMp();
+            int64   exp = player->GetExp();
+            Vector3 pos = player->GetPos();
+            float   yaw = player->GetYaw();
+
+            GDBManager->DoAsync([dbId, level, hp, mp, exp, pos, yaw]()
+            {
+                GDBManager->SavePlayerLevelUp(dbId, level, hp, mp, exp, pos, yaw);
+            });
+        }
     }
 
     for (auto& [id, monster] : _monsters)
@@ -103,41 +110,20 @@ void GameScene::UpdateObjects(uint32 deltaTimeMs, FrameVector<MoveJob>& jobsCach
         if (monster->IsDead()) continue;
         monster->Update(deltaTimeMs);
 
-        if (monster->IsDirty())
-            CollectMovingCreature(monster, movingCreatures);
-    }
-
-    for (auto& [id, player] : _players)
-    {
-        if (!player->IsSaveDirty()) continue;
-        player->ClearSaveDirty();
-
-        uint64  dbId = player->GetPlayerDbId();
-        int32   level = player->GetLevel();
-        int32   hp = player->GetHp();
-        int32   mp = player->GetMp();
-        int64   exp = player->GetExp();
-        Vector3 pos = player->GetPos();
-        float   yaw = player->GetYaw();
-
-        GDBManager->DoAsync([dbId, level, hp, mp, exp, pos, yaw]()
-            {
-                GDBManager->SavePlayerLevelUp(dbId, level, hp, mp, exp, pos, yaw);
-            });
+        if (monster->ShouldBroadcastMove(nowMs))
+            CollectMovingCreature(monster, nowMs, movingCreatures);
     }
 }
 
-void GameScene::CollectMovingCreature(const CreatureRef& creature, FrameVector<CreatureRef>& movingCreatures)
+void GameScene::CollectMovingCreature(const CreatureRef& creature, uint64 nowMs, FrameVector<CreatureRef>& movingCreatures)
 {
     movingCreatures.push_back(creature);
-    creature->SetDirty(false);
+    creature->CommitMoveAnchor(nowMs);
 }
 
-void GameScene::CollectMoveNotices(FrameVector<CreatureRef>& movingCreatures, FrameVector<CreatureRef>& snapshot, FrameHashMap<GameScene*, Vector<MoveNotice>>& sceneNotices)
+void GameScene::CollectMoveNotices(FrameVector<CreatureRef>& movingCreatures, FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices)
 {
-    snapshot.swap(movingCreatures);
-
-    for (CreatureRef& creature : snapshot)
+    for (CreatureRef& creature : movingCreatures)
     {
         ZoneRef oldZone = creature->GetZone();
         if (!oldZone) continue;   
@@ -149,21 +135,19 @@ void GameScene::CollectMoveNotices(FrameVector<CreatureRef>& movingCreatures, Fr
         {
             for (const ZoneRef& zone : oldZone->GetAdjacentZones())
             {
-                if (!zone->IsActive()) continue;       
-                GameScene* scenePtr = zone->GetSceneRaw();
-                if (scenePtr)
-                    sceneNotices[scenePtr].push_back({ creature, zone, VisionType::Move });
+                if (!zone->IsActive()) continue;
+                EmitVision(creature, zone, VisionType::Move, crossNotices);
             }
         }
         else
         {
-            HandleZoneChange(creature, oldZone, newZone, sceneNotices);
+            HandleZoneChange(creature, oldZone, newZone, crossNotices);
         }
     }
 }
 
 void GameScene::HandleZoneChange(CreatureRef creature, ZoneRef oldZone, ZoneRef newZone,
-    FrameHashMap<GameScene*, Vector<MoveNotice>>& sceneNotices)
+    FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices)
 {
     GameSceneRef oldScene = oldZone->GetScene();
     GameSceneRef newScene = newZone->GetScene();
@@ -199,101 +183,86 @@ void GameScene::HandleZoneChange(CreatureRef creature, ZoneRef oldZone, ZoneRef 
     if (!moveResult) return;
 
     for (const ZoneRef& zone : moveResult->enterZones)
-    {
-        GameScene* scenePtr = zone->GetScene().get();
-        if (scenePtr) sceneNotices[scenePtr].push_back({ creature, zone, VisionType::Spawn });
-    }
+        EmitVision(creature, zone, VisionType::Spawn, crossNotices);
     for (const ZoneRef& zone : moveResult->leaveZones)
-    {
-        GameScene* scenePtr = zone->GetScene().get();
-        if (scenePtr) sceneNotices[scenePtr].push_back({ creature, zone, VisionType::Despawn });
-    }
+        EmitVision(creature, zone, VisionType::Despawn, crossNotices);
     for (const ZoneRef& zone : moveResult->keepZones)
+        EmitVision(creature, zone, VisionType::Move, crossNotices);
+}
+
+void GameScene::EmitVision(const CreatureRef& creature, const ZoneRef& zone, VisionType type,
+    FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices)
+{
+    GameScene* scenePtr = zone->GetSceneRaw();
+    if (scenePtr == this)
+        ApplyVision(creature, zone, type);                    
+    else if (scenePtr)
+        crossNotices[scenePtr].push_back({ creature, zone, type }); 
+}
+
+void GameScene::ApplyVision(const CreatureRef& creature, const ZoneRef& zone, VisionType type)
+{
+    switch (type)
     {
-        GameScene* scenePtr = zone->GetScene().get();
-        if (scenePtr) sceneNotices[scenePtr].push_back({ creature, zone, VisionType::Move });
+    case VisionType::Spawn:
+        zone->AddPendingSpawn(creature);
+        if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
+            World::SendSpawnPacketsToPlayer(std::static_pointer_cast<Player>(creature), { zone });
+        break;
+    case VisionType::Despawn:
+        zone->AddPendingDespawn(creature->GetObjectId());
+        if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
+            World::SendDespawnPacketsToPlayer(std::static_pointer_cast<Player>(creature), { zone });
+        break;
+    case VisionType::Move:
+        zone->AddPendingMove(creature);
+        break;
     }
 }
 
-void GameScene::DispatchNotices(FrameHashMap<GameScene*, Vector<MoveNotice>>& sceneNotices)
+void GameScene::DispatchNotices(FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices)
 {
-    for (auto& [scenePtr, notices] : sceneNotices)
+    for (auto& [scenePtr, notices] : crossNotices)
     {
         if (!scenePtr || notices.empty()) continue;
 
-        if (scenePtr == this)
+        GameSceneRef targetScene = notices[0].targetZone->GetScene();
+        RunOnScene(targetScene, [targetScene, n = std::move(notices)]() mutable
         {
-            ProcessNotices(notices);
-        }
-        else
-        {
-            GameSceneRef targetScene = notices[0].targetZone->GetScene();
-            if (!targetScene) continue;
-
-            targetScene->DoAsync(MakeJob([targetScene, n = std::move(notices)]() mutable {
-                targetScene->ProcessNotices(n);
-            }));
-        }
+            targetScene->ProcessNotices(n);
+        });
     }
 }
 
 void GameScene::ProcessNotices(const Vector<MoveNotice>& notices)
 {
     for (const MoveNotice& notice : notices)
-    {
-        ZoneRef zone         = notice.targetZone;
-        CreatureRef creature = notice.mover;
-
-        switch (notice.type)
-        {
-        case VisionType::Spawn:
-            zone->AddPendingSpawn(creature);
-            if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
-            {
-                PlayerRef player = std::static_pointer_cast<Player>(creature);
-                World::SendSpawnPacketsToPlayer(player, { zone });
-            }
-            break;
-
-        case VisionType::Despawn:
-            zone->AddPendingDespawn(creature->GetObjectId());
-            if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
-            {
-                PlayerRef player = std::static_pointer_cast<Player>(creature);
-                World::SendDespawnPacketsToPlayer(player, { zone });
-            }
-            break;
-
-        case VisionType::Move:
-            zone->AddPendingMove(creature);
-            break;
-        }
-    }
+        ApplyVision(notice.mover, notice.targetZone, notice.type);
 }
 
-void GameScene::BroadcastScene(uint32 deltaTimeMs)
+void GameScene::BroadcastScene()
 {
     for (ZoneRef& zone : _zones)
     {
-        if (!zone->IsActive()) continue;
-        if (zone->IsEmpty())   continue;
+        if (zone->IsEmpty()) continue;     
 
-        _broadcastPacket.Clear();
-
-        _broadcastPacket.set_deltatimems(deltaTimeMs);
-
-        auto flush = [&]()
+        if (zone->IsActive())          
         {
-            if (_broadcastPacket.spawns_size()   == 0 &&
-                _broadcastPacket.despawns_size() == 0 &&
-                _broadcastPacket.moves_size()    == 0) return;
-
-            BroadcastToZone(zone, MakeSendBuffer<Protocol::MsgId::S_UPDATE_SCENE>(_broadcastPacket));
             _broadcastPacket.Clear();
-        };
 
-        zone->FillUpdatePacket(_broadcastPacket, flush);
-        zone->ClearPending();
+            auto flush = [&]()
+            {
+                if (_broadcastPacket.spawns_size()   == 0 &&
+                    _broadcastPacket.despawns_size() == 0 &&
+                    _broadcastPacket.moves_size()    == 0) return;
+                BroadcastToZone(zone, MakeSendBuffer<Protocol::MsgId::S_UPDATE_SCENE>(_broadcastPacket));
+                _broadcastPacket.Clear();
+            };
+
+            zone->FillUpdatePacket(_broadcastPacket, flush);
+        }
+
+        zone->ClearPending();   
     }
 }
 
@@ -372,16 +341,10 @@ void GameScene::FindNearestPlayer(Vector<ZoneRef> zones, MonsterRef monster, Vec
     if (!bestPlayer) return;
 
     GameSceneRef monsterScene = monster->GetGameScene();
-    if (!monsterScene) return;
-
-    if (monsterScene.get() == this)
-        monster->HandleGatherResult(bestPlayer, minDistSq);
-    else
+    RunOnScene(monsterScene, [monster, bestPlayer, minDistSq]()
     {
-        monsterScene->DoAsync(MakeJob([monster, bestPlayer, minDistSq]() {
-            monster->HandleGatherResult(bestPlayer, minDistSq);
-        }));
-    }
+        monster->HandleGatherResult(bestPlayer, minDistSq);
+    });
 }
 
 void GameScene::HandleAttackHitDetection(PlayerRef attacker, Vector3 attackPos, float yaw)

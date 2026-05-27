@@ -74,6 +74,7 @@ message PosInfo {
     CreatureState state = 2; 
     Vector3 pos = 3; 
     float yaw = 4; 
+    Vector3 velocity = 5;
 }
 message StatInfo { 
     int32 hp = 1; 
@@ -118,10 +119,9 @@ message CLeaveGame {}
 message SLeaveGame {}
 
 message SUpdateScene { 
-    uint32 deltaTimeMs = 1;
-    repeated ObjectInfo spawns = 2; 
-    repeated uint64 despawns = 3; 
-    repeated PosInfo moves = 4; 
+    repeated ObjectInfo spawns = 1; 
+    repeated uint64 despawns = 2; 
+    repeated PosInfo moves = 3; 
 }
 message CMove { 
     PosInfo pos_info = 1; 

@@ -1,20 +1,24 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UI_Minimap : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private RectTransform _iconContainer;
-    [SerializeField] private RectTransform _myIcon;
+    [SerializeField] private RectTransform   _iconContainer;
+    [SerializeField] private RectTransform   _myIcon;
+    [SerializeField] private TextMeshProUGUI _coordText; 
 
     [Header("Settings")]
-    [SerializeField] private float  _zoomRange      = 30f;
-    [SerializeField] private float  _uiSize         = 300f;
+    [SerializeField] private float  _zoomRange      = 20f;
+    [SerializeField] private float  _uiSize         = 260f;
     [SerializeField] private string _iconPrefabName = "UI_OtherIcon";
 
     private const float UPDATE_INTERVAL = 0.05f;
 
+    private HashSet<ulong> _alive = new HashSet<ulong>();
+    private List<ulong> _removeBuffer = new List<ulong>();
     private float _nextUpdateTime;
     private float _sqrZoomRange;
     private float _uiRatio;
@@ -40,6 +44,12 @@ public class UI_Minimap : MonoBehaviour
         MyPlayerController myPlayer = Managers.Object.MyPlayer;
         if (myPlayer == null) return;
 
+        if (_coordText != null)
+        {
+            Vector3 p = myPlayer.transform.position;
+            _coordText.text = $"X {p.x:F1}  Y {p.y:F1}  Z {p.z:F1}";
+        }
+
         float camYaw = Camera.main.transform.eulerAngles.y;
         _iconContainer.localRotation = Quaternion.Euler(0, 0, camYaw);
 
@@ -51,8 +61,10 @@ public class UI_Minimap : MonoBehaviour
 
     private void UpdateOtherIcons(CreatureController myPlayer, float camYaw)
     {
-        Vector3                  myPos     = myPlayer.transform.position;
+        Vector3 myPos = myPlayer.transform.position;
         List<CreatureController> creatures = Managers.Object.GetCachedCreatures();
+
+        _alive.Clear();
 
         for (int i = 0; i < creatures.Count; i++)
         {
@@ -60,28 +72,35 @@ public class UI_Minimap : MonoBehaviour
             if (cc == null || cc == myPlayer) continue;
 
             ulong objId = cc.ObjectId;
+            _alive.Add(objId);
 
-            Vector3 offset = cc.transform.position - myPos;
+            Vector3 otherPos = cc.gameObject.activeSelf ? cc.transform.position : cc.DestPos;
+            Vector3 offset = otherPos - myPos;
 
-            if (Mathf.Abs(offset.x) > _zoomRange || Mathf.Abs(offset.z) > _zoomRange)
+            if (offset.sqrMagnitude > _sqrZoomRange)
             {
                 DisableIcon(objId);
                 continue;
             }
 
-            if (offset.sqrMagnitude <= _sqrZoomRange)
-            {
-                RectTransform icon = GetOrMakeIcon(cc, objId);
-                if (icon == null) continue;
+            RectTransform icon = GetOrMakeIcon(cc, objId);
+            if (icon == null) continue;
+            if (!icon.gameObject.activeSelf) icon.gameObject.SetActive(true);
+            icon.anchoredPosition = new Vector2(offset.x * _uiRatio, offset.z * _uiRatio);
+            icon.localRotation = Quaternion.Euler(0, 0, -cc.transform.eulerAngles.y);
+        }
 
-                if (!icon.gameObject.activeSelf) icon.gameObject.SetActive(true);
+        if (_iconDict.Count > 0)
+        {
+            _removeBuffer.Clear();
+            foreach (var kv in _iconDict)
+                if (!_alive.Contains(kv.Key))
+                    _removeBuffer.Add(kv.Key);
 
-                icon.anchoredPosition = new Vector2(offset.x * _uiRatio, offset.z * _uiRatio);
-                icon.localRotation    = Quaternion.Euler(0, 0, -cc.transform.eulerAngles.y);
-            }
+            for (int i = 0; i < _removeBuffer.Count; i++)
+                RemoveIcon(_removeBuffer[i]);
         }
     }
-
     public void ShowIcon(ulong id, bool show)
     {
         if (_iconDict.TryGetValue(id, out RectTransform icon))

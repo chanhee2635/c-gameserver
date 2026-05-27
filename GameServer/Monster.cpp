@@ -5,7 +5,8 @@
 #include "Player.h"
 #include "GameScene.h"
 #include "Zone.h"
-#include "NavigationManager.h"
+#include "GridMap.h"
+#include "GameGlobal.h"
 #include "Protocol/PacketUtils.h"
 #include "GameUtil.h"
 
@@ -37,13 +38,13 @@ void Monster::Reset()
     _state = Protocol::IDLE;
     _hp = _config->maxHp;
     _pos = _spawnPos;
-    _isDirty = true;
     _target.reset();
     _path.clear();
     _pathIndex = 0;
     _nextSearchTick = _nowTick;
     _nextAttackTick = 0;
     _lastTargetDistSq = 0.f;
+    _velocity = Vector3::Zero();
 }
 
 void Monster::Update(uint32 deltaTimeMs)
@@ -80,7 +81,6 @@ void Monster::HandleGatherResult(PlayerRef player, float distSq)
     {
         _state = Protocol::MOVING;
         ResetPath();
-        _isDirty = true;
     }
 }
 
@@ -132,7 +132,6 @@ void Monster::UpdateMoving()
     {
         _target.reset();
         ResetPath();
-        _isDirty = true;
         return;
     }
 
@@ -143,14 +142,13 @@ void Monster::UpdateMoving()
     {
         _target.reset();
         ResetPath();
-        _isDirty = true;
         return;
     }
 
     if (distSq <= GetAttackRangeSq())
     {
         _state = Protocol::ATTACK;
-        _isDirty = true;
+        _velocity = Vector3::Zero();
         UpdateAttack();
         return;
     }
@@ -167,7 +165,7 @@ void Monster::UpdateReturn()
         _pathIndex = 0;
         _state = Protocol::IDLE;
         _nextSearchTick = _nowTick;
-        _isDirty = true;
+        _velocity = Vector3::Zero();
         return;
     }
 
@@ -182,7 +180,6 @@ void Monster::UpdateAttack()
         _target.reset();
         _state = Protocol::MOVING;
         ResetPath();
-        _isDirty = true;
         return;
     }
 
@@ -190,7 +187,6 @@ void Monster::UpdateAttack()
     {
         _state = Protocol::MOVING;
         ResetPath();
-        _isDirty = true;
         return;
     }
 
@@ -210,8 +206,8 @@ void Monster::TickMoveTo(Vector3 targetPos)
         _path.clear();
         bool found = false;
 
-        if (GNavigationManager)
-            found = GNavigationManager->FindPath(_pos, targetPos, _path);
+        if (GGridMap && GGridMap->IsLoaded())
+            found = GGridMap->FindPath(_pos, targetPos, _path);
 
         if (!found)
         {
@@ -248,11 +244,10 @@ void Monster::TickMoveTo(Vector3 targetPos)
     }
 
     Vector3 dir = (nextWaypoint - _pos).Normalized();
-
-    _pos = _pos + dir * (_speed * _deltaTimeMs);
+    _velocity = dir * _speed;
+    _pos = _pos + _velocity * (_deltaTimeMs * 0.001f);
     _yaw = ::atan2f(dir.x, dir.z) * RAD2DEG;
     if (_yaw < 0.f) _yaw += 360.f;
-    _isDirty = true;
 }
 
 void Monster::ExecuteAttack(int64 now, PlayerRef target)
@@ -267,7 +262,6 @@ void Monster::ExecuteAttack(int64 now, PlayerRef target)
         toTarget = toTarget.Normalized();
         _yaw = ::atan2f(toTarget.x, toTarget.z) * (180.f / 3.141592f);
         if (_yaw < 0.f) _yaw += 360.f;
-        _isDirty = true;
     }
 
     GameScene* scene = GetGameSceneRaw();

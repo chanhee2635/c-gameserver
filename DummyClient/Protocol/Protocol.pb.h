@@ -4924,6 +4924,7 @@ class PosInfo final : public ::google::protobuf::Message
   // accessors -------------------------------------------------------
   enum : int {
     kPosFieldNumber = 3,
+    kVelocityFieldNumber = 5,
     kObjectIdFieldNumber = 1,
     kStateFieldNumber = 2,
     kYawFieldNumber = 4,
@@ -4941,6 +4942,21 @@ class PosInfo final : public ::google::protobuf::Message
   private:
   const ::Protocol::Vector3& _internal_pos() const;
   ::Protocol::Vector3* PROTOBUF_NONNULL _internal_mutable_pos();
+
+  public:
+  // .Protocol.Vector3 velocity = 5;
+  bool has_velocity() const;
+  void clear_velocity() ;
+  const ::Protocol::Vector3& velocity() const;
+  [[nodiscard]] ::Protocol::Vector3* PROTOBUF_NULLABLE release_velocity();
+  ::Protocol::Vector3* PROTOBUF_NONNULL mutable_velocity();
+  void set_allocated_velocity(::Protocol::Vector3* PROTOBUF_NULLABLE value);
+  void unsafe_arena_set_allocated_velocity(::Protocol::Vector3* PROTOBUF_NULLABLE value);
+  ::Protocol::Vector3* PROTOBUF_NULLABLE unsafe_arena_release_velocity();
+
+  private:
+  const ::Protocol::Vector3& _internal_velocity() const;
+  ::Protocol::Vector3* PROTOBUF_NONNULL _internal_mutable_velocity();
 
   public:
   // uint64 object_id = 1;
@@ -4977,8 +4993,8 @@ class PosInfo final : public ::google::protobuf::Message
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<2, 4,
-                                   1, 0,
+  static const ::google::protobuf::internal::TcParseTable<3, 5,
+                                   2, 0,
                                    2>
       _table_;
 
@@ -5000,6 +5016,7 @@ class PosInfo final : public ::google::protobuf::Message
     ::google::protobuf::internal::HasBits<1> _has_bits_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     ::Protocol::Vector3* PROTOBUF_NULLABLE pos_;
+    ::Protocol::Vector3* PROTOBUF_NULLABLE velocity_;
     ::uint64_t object_id_;
     int state_;
     float yaw_;
@@ -5797,12 +5814,11 @@ class SUpdateScene final : public ::google::protobuf::Message
 
   // accessors -------------------------------------------------------
   enum : int {
-    kSpawnsFieldNumber = 2,
-    kDespawnsFieldNumber = 3,
-    kMovesFieldNumber = 4,
-    kDeltaTimeMsFieldNumber = 1,
+    kSpawnsFieldNumber = 1,
+    kDespawnsFieldNumber = 2,
+    kMovesFieldNumber = 3,
   };
-  // repeated .Protocol.ObjectInfo spawns = 2;
+  // repeated .Protocol.ObjectInfo spawns = 1;
   int spawns_size() const;
   private:
   int _internal_spawns_size() const;
@@ -5819,7 +5835,7 @@ class SUpdateScene final : public ::google::protobuf::Message
   const ::Protocol::ObjectInfo& spawns(int index) const;
   ::Protocol::ObjectInfo* PROTOBUF_NONNULL add_spawns();
   const ::google::protobuf::RepeatedPtrField<::Protocol::ObjectInfo>& spawns() const;
-  // repeated uint64 despawns = 3;
+  // repeated uint64 despawns = 2;
   int despawns_size() const;
   private:
   int _internal_despawns_size() const;
@@ -5837,7 +5853,7 @@ class SUpdateScene final : public ::google::protobuf::Message
   ::google::protobuf::RepeatedField<::uint64_t>* PROTOBUF_NONNULL _internal_mutable_despawns();
 
   public:
-  // repeated .Protocol.PosInfo moves = 4;
+  // repeated .Protocol.PosInfo moves = 3;
   int moves_size() const;
   private:
   int _internal_moves_size() const;
@@ -5854,21 +5870,11 @@ class SUpdateScene final : public ::google::protobuf::Message
   const ::Protocol::PosInfo& moves(int index) const;
   ::Protocol::PosInfo* PROTOBUF_NONNULL add_moves();
   const ::google::protobuf::RepeatedPtrField<::Protocol::PosInfo>& moves() const;
-  // uint32 deltaTimeMs = 1;
-  void clear_deltatimems() ;
-  ::uint32_t deltatimems() const;
-  void set_deltatimems(::uint32_t value);
-
-  private:
-  ::uint32_t _internal_deltatimems() const;
-  void _internal_set_deltatimems(::uint32_t value);
-
-  public:
   // @@protoc_insertion_point(class_scope:Protocol.SUpdateScene)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<2, 4,
+  static const ::google::protobuf::internal::TcParseTable<2, 3,
                                    2, 0,
                                    2>
       _table_;
@@ -5894,7 +5900,6 @@ class SUpdateScene final : public ::google::protobuf::Message
     ::google::protobuf::RepeatedField<::uint64_t> despawns_;
     ::google::protobuf::internal::CachedSize _despawns_cached_byte_size_;
     ::google::protobuf::RepeatedPtrField< ::Protocol::PosInfo > moves_;
-    ::uint32_t deltatimems_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -6523,7 +6528,7 @@ inline void PosInfo::clear_object_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.object_id_ = ::uint64_t{0u};
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000002U);
+                  0x00000004U);
 }
 inline ::uint64_t PosInfo::object_id() const {
   // @@protoc_insertion_point(field_get:Protocol.PosInfo.object_id)
@@ -6531,7 +6536,7 @@ inline ::uint64_t PosInfo::object_id() const {
 }
 inline void PosInfo::set_object_id(::uint64_t value) {
   _internal_set_object_id(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
   // @@protoc_insertion_point(field_set:Protocol.PosInfo.object_id)
 }
 inline ::uint64_t PosInfo::_internal_object_id() const {
@@ -6548,7 +6553,7 @@ inline void PosInfo::clear_state() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.state_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000004U);
+                  0x00000008U);
 }
 inline ::Protocol::CreatureState PosInfo::state() const {
   // @@protoc_insertion_point(field_get:Protocol.PosInfo.state)
@@ -6556,7 +6561,7 @@ inline ::Protocol::CreatureState PosInfo::state() const {
 }
 inline void PosInfo::set_state(::Protocol::CreatureState value) {
   _internal_set_state(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
   // @@protoc_insertion_point(field_set:Protocol.PosInfo.state)
 }
 inline ::Protocol::CreatureState PosInfo::_internal_state() const {
@@ -6672,7 +6677,7 @@ inline void PosInfo::clear_yaw() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.yaw_ = 0;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000008U);
+                  0x00000010U);
 }
 inline float PosInfo::yaw() const {
   // @@protoc_insertion_point(field_get:Protocol.PosInfo.yaw)
@@ -6680,7 +6685,7 @@ inline float PosInfo::yaw() const {
 }
 inline void PosInfo::set_yaw(float value) {
   _internal_set_yaw(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
   // @@protoc_insertion_point(field_set:Protocol.PosInfo.yaw)
 }
 inline float PosInfo::_internal_yaw() const {
@@ -6690,6 +6695,105 @@ inline float PosInfo::_internal_yaw() const {
 inline void PosInfo::_internal_set_yaw(float value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.yaw_ = value;
+}
+
+// .Protocol.Vector3 velocity = 5;
+inline bool PosInfo::has_velocity() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000002U);
+  PROTOBUF_ASSUME(!value || _impl_.velocity_ != nullptr);
+  return value;
+}
+inline void PosInfo::clear_velocity() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.velocity_ != nullptr) _impl_.velocity_->Clear();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000002U);
+}
+inline const ::Protocol::Vector3& PosInfo::_internal_velocity() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  const ::Protocol::Vector3* p = _impl_.velocity_;
+  return p != nullptr ? *p : reinterpret_cast<const ::Protocol::Vector3&>(::Protocol::_Vector3_default_instance_);
+}
+inline const ::Protocol::Vector3& PosInfo::velocity() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:Protocol.PosInfo.velocity)
+  return _internal_velocity();
+}
+inline void PosInfo::unsafe_arena_set_allocated_velocity(
+    ::Protocol::Vector3* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.velocity_);
+  }
+  _impl_.velocity_ = reinterpret_cast<::Protocol::Vector3*>(value);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:Protocol.PosInfo.velocity)
+}
+inline ::Protocol::Vector3* PROTOBUF_NULLABLE PosInfo::release_velocity() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ::Protocol::Vector3* released = _impl_.velocity_;
+  _impl_.velocity_ = nullptr;
+  if (::google::protobuf::internal::DebugHardenForceCopyInRelease()) {
+    auto* old = reinterpret_cast<::google::protobuf::MessageLite*>(released);
+    released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    if (GetArena() == nullptr) {
+      delete old;
+    }
+  } else {
+    if (GetArena() != nullptr) {
+      released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    }
+  }
+  return released;
+}
+inline ::Protocol::Vector3* PROTOBUF_NULLABLE PosInfo::unsafe_arena_release_velocity() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:Protocol.PosInfo.velocity)
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ::Protocol::Vector3* temp = _impl_.velocity_;
+  _impl_.velocity_ = nullptr;
+  return temp;
+}
+inline ::Protocol::Vector3* PROTOBUF_NONNULL PosInfo::_internal_mutable_velocity() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.velocity_ == nullptr) {
+    auto* p = ::google::protobuf::Message::DefaultConstruct<::Protocol::Vector3>(GetArena());
+    _impl_.velocity_ = reinterpret_cast<::Protocol::Vector3*>(p);
+  }
+  return _impl_.velocity_;
+}
+inline ::Protocol::Vector3* PROTOBUF_NONNULL PosInfo::mutable_velocity()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ::Protocol::Vector3* _msg = _internal_mutable_velocity();
+  // @@protoc_insertion_point(field_mutable:Protocol.PosInfo.velocity)
+  return _msg;
+}
+inline void PosInfo::set_allocated_velocity(::Protocol::Vector3* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::Arena* message_arena = GetArena();
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (message_arena == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.velocity_);
+  }
+
+  if (value != nullptr) {
+    ::google::protobuf::Arena* submessage_arena = value->GetArena();
+    if (message_arena != submessage_arena) {
+      value = ::google::protobuf::internal::GetOwnedMessage(message_arena, value, submessage_arena);
+    }
+    SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  }
+
+  _impl_.velocity_ = reinterpret_cast<::Protocol::Vector3*>(value);
+  // @@protoc_insertion_point(field_set_allocated:Protocol.PosInfo.velocity)
 }
 
 // -------------------------------------------------------------------
@@ -7795,32 +7899,7 @@ inline void SEnterGame::set_allocated_my_player(::Protocol::ObjectInfo* PROTOBUF
 
 // SUpdateScene
 
-// uint32 deltaTimeMs = 1;
-inline void SUpdateScene::clear_deltatimems() {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.deltatimems_ = 0u;
-  ClearHasBit(_impl_._has_bits_[0],
-                  0x00000008U);
-}
-inline ::uint32_t SUpdateScene::deltatimems() const {
-  // @@protoc_insertion_point(field_get:Protocol.SUpdateScene.deltaTimeMs)
-  return _internal_deltatimems();
-}
-inline void SUpdateScene::set_deltatimems(::uint32_t value) {
-  _internal_set_deltatimems(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
-  // @@protoc_insertion_point(field_set:Protocol.SUpdateScene.deltaTimeMs)
-}
-inline ::uint32_t SUpdateScene::_internal_deltatimems() const {
-  ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.deltatimems_;
-}
-inline void SUpdateScene::_internal_set_deltatimems(::uint32_t value) {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.deltatimems_ = value;
-}
-
-// repeated .Protocol.ObjectInfo spawns = 2;
+// repeated .Protocol.ObjectInfo spawns = 1;
 inline int SUpdateScene::_internal_spawns_size() const {
   return _internal_spawns().size();
 }
@@ -7876,7 +7955,7 @@ SUpdateScene::_internal_mutable_spawns() {
   return &_impl_.spawns_;
 }
 
-// repeated uint64 despawns = 3;
+// repeated uint64 despawns = 2;
 inline int SUpdateScene::_internal_despawns_size() const {
   return _internal_despawns().size();
 }
@@ -7926,7 +8005,7 @@ SUpdateScene::_internal_mutable_despawns() {
   return &_impl_.despawns_;
 }
 
-// repeated .Protocol.PosInfo moves = 4;
+// repeated .Protocol.PosInfo moves = 3;
 inline int SUpdateScene::_internal_moves_size() const {
   return _internal_moves().size();
 }

@@ -50,13 +50,10 @@ public class PoolManager
             if (parent == null)
             {
                 BaseScene scene = Managers.Scene.CurrentScene;
-                poolable.transform.SetParent(scene != null ? scene.transform : null);
+                poolable.transform.SetParent(scene != null ? scene.transform : null, false);
             }
             else
             {
-                // worldPositionStays=false: RectTransform 레이아웃을 보존한다.
-                // true(기본값)로 두면 UI 요소의 크기·위치가 월드 좌표 기준으로 재계산되어
-                // Canvas 내부 아이템이 엉뚱한 위치에 배치된다.
                 poolable.transform.SetParent(parent, false);
             }
 

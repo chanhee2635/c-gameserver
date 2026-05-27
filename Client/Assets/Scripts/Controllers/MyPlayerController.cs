@@ -22,7 +22,8 @@ public class MyPlayerController : PlayerController
     private const float FORCE_SYNC_INTERVAL = 0.5f;
     private float       _lastSendTime;
     private Protocol.CreatureState _lastSendState;
-
+    private float _sendYaw;      
+    private float _lastSendYaw;  
 
     private int _maxCombo;
     private const float COMBO_INPUT_WINDOW = 0.45f;
@@ -32,6 +33,7 @@ public class MyPlayerController : PlayerController
     private bool  _comboQueued;
     private float _attackTimer;
     private float _comboDuration;
+    private Vector3 _sendVelocity;
 
     protected override void Awake()
     {
@@ -134,9 +136,13 @@ public class MyPlayerController : PlayerController
         {
             _isMoving = true;
             _agent.Move(inputDir * _agent.speed * Time.deltaTime);
+            _sendVelocity = inputDir * _agent.speed;
 
             Quaternion targetRot = Quaternion.LookRotation(inputDir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 20f);
+
+            _sendYaw = Mathf.Atan2(inputDir.x, inputDir.z) * Mathf.Rad2Deg;   
+            if (_sendYaw < 0f) _sendYaw += 360f;
 
             State = _isSprinting ? Protocol.CreatureState.Sprinting : Protocol.CreatureState.Moving;
         }
@@ -157,6 +163,7 @@ public class MyPlayerController : PlayerController
     {
         _isMoving = false;
         _isSprinting = false;
+        _sendVelocity = Vector3.zero;
         _agent.velocity = Vector3.zero;
         State = Protocol.CreatureState.Idle;
         _animator.SetFloat("Move", 0f, 0.1f, Time.deltaTime);
@@ -238,15 +245,22 @@ public class MyPlayerController : PlayerController
     {
         if (_isAttacking) return;
 
+        bool moving = (State == Protocol.CreatureState.Moving || State == Protocol.CreatureState.Sprinting);
+        if (moving && Mathf.Abs(Mathf.DeltaAngle(_lastSendYaw, _sendYaw)) > 30f)
+        {
+            SendMovePacket();
+            _tickTimer = 0f;
+            return;
+        }
+
         _tickTimer += Time.deltaTime;
         if (_tickTimer < TICK_INTERVAL) return;
         _tickTimer = 0f;
 
-        bool isMovingNow = (State == Protocol.CreatureState.Moving || State == Protocol.CreatureState.Sprinting);
         bool stateChanged = _lastSendState != State;
         bool isTimeOut = Time.time - _lastSendTime >= FORCE_SYNC_INTERVAL;
 
-        if (isMovingNow || stateChanged || isTimeOut)
+        if (moving || stateChanged || isTimeOut)
             SendMovePacket();
     }
 
@@ -257,12 +271,14 @@ public class MyPlayerController : PlayerController
             PosInfo = new Protocol.PosInfo
             {
                 Pos = Util.ToProto(transform.position),
-                Yaw = transform.rotation.eulerAngles.y,
-                State = State
+                Yaw = _sendYaw,
+                State = State,
+                Velocity = Util.ToProto(_sendVelocity)
             }
         });
 
         _lastSendState = State;
+        _lastSendYaw = _sendYaw;
         _lastSendTime = Time.time;
     }
 

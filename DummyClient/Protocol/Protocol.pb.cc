@@ -604,6 +604,7 @@ inline constexpr PosInfo::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
         pos_{nullptr},
+        velocity_{nullptr},
         object_id_{::uint64_t{0u}},
         state_{static_cast< ::Protocol::CreatureState >(0)},
         yaw_{0} {}
@@ -713,8 +714,7 @@ inline constexpr SUpdateScene::Impl_::Impl_(
         spawns_{},
         despawns_{},
         _despawns_cached_byte_size_{0},
-        moves_{},
-        deltatimems_{0u} {}
+        moves_{} {}
 
 template <typename>
 PROTOBUF_CONSTEXPR SUpdateScene::SUpdateScene(::_pbi::ConstantInitialized)
@@ -804,15 +804,17 @@ const ::uint32_t
         4,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::Protocol::PosInfo, _impl_._has_bits_),
-        7, // hasbit index offset
+        8, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::Protocol::PosInfo, _impl_.object_id_),
         PROTOBUF_FIELD_OFFSET(::Protocol::PosInfo, _impl_.state_),
         PROTOBUF_FIELD_OFFSET(::Protocol::PosInfo, _impl_.pos_),
         PROTOBUF_FIELD_OFFSET(::Protocol::PosInfo, _impl_.yaw_),
-        1,
+        PROTOBUF_FIELD_OFFSET(::Protocol::PosInfo, _impl_.velocity_),
         2,
-        0,
         3,
+        0,
+        4,
+        1,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::Protocol::StatInfo, _impl_._has_bits_),
         6, // hasbit index offset
@@ -879,12 +881,10 @@ const ::uint32_t
         0x000, // bitmap
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::Protocol::SUpdateScene, _impl_._has_bits_),
-        7, // hasbit index offset
-        PROTOBUF_FIELD_OFFSET(::Protocol::SUpdateScene, _impl_.deltatimems_),
+        6, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::Protocol::SUpdateScene, _impl_.spawns_),
         PROTOBUF_FIELD_OFFSET(::Protocol::SUpdateScene, _impl_.despawns_),
         PROTOBUF_FIELD_OFFSET(::Protocol::SUpdateScene, _impl_.moves_),
-        3,
         0,
         1,
         2,
@@ -987,19 +987,19 @@ static const ::_pbi::MigrationSchema
         {9, sizeof(::Protocol::PlayerSummary)},
         {20, sizeof(::Protocol::ObjectSummary)},
         {33, sizeof(::Protocol::PosInfo)},
-        {44, sizeof(::Protocol::StatInfo)},
-        {53, sizeof(::Protocol::ObjectInfo)},
-        {62, sizeof(::Protocol::CAuthToken)},
-        {67, sizeof(::Protocol::SPlayerList)},
-        {76, sizeof(::Protocol::CCreatePlayer)},
-        {83, sizeof(::Protocol::SCreatePlayer)},
-        {92, sizeof(::Protocol::CLoadCompleted)},
-        {93, sizeof(::Protocol::CEnterGame)},
-        {98, sizeof(::Protocol::SEnterGame)},
-        {105, sizeof(::Protocol::SReadyToEnter)},
-        {106, sizeof(::Protocol::CLeaveGame)},
-        {107, sizeof(::Protocol::SLeaveGame)},
-        {108, sizeof(::Protocol::SUpdateScene)},
+        {46, sizeof(::Protocol::StatInfo)},
+        {55, sizeof(::Protocol::ObjectInfo)},
+        {64, sizeof(::Protocol::CAuthToken)},
+        {69, sizeof(::Protocol::SPlayerList)},
+        {78, sizeof(::Protocol::CCreatePlayer)},
+        {85, sizeof(::Protocol::SCreatePlayer)},
+        {94, sizeof(::Protocol::CLoadCompleted)},
+        {95, sizeof(::Protocol::CEnterGame)},
+        {100, sizeof(::Protocol::SEnterGame)},
+        {107, sizeof(::Protocol::SReadyToEnter)},
+        {108, sizeof(::Protocol::CLeaveGame)},
+        {109, sizeof(::Protocol::SLeaveGame)},
+        {110, sizeof(::Protocol::SUpdateScene)},
         {119, sizeof(::Protocol::CMove)},
         {124, sizeof(::Protocol::CAttack)},
         {133, sizeof(::Protocol::SAttack)},
@@ -1051,66 +1051,66 @@ const char descriptor_table_protodef_Protocol_2eproto[] ABSL_ATTRIBUTE_SECTION_V
     "ectSummary\022\021\n\tobject_id\030\001 \001(\004\022\014\n\004name\030\002 "
     "\001(\t\022\r\n\005level\030\003 \001(\005\022\023\n\013template_id\030\004 \001(\005\022"
     "-\n\013object_type\030\005 \001(\0162\030.Protocol.GameObje"
-    "ctType\"q\n\007PosInfo\022\021\n\tobject_id\030\001 \001(\004\022&\n\005"
-    "state\030\002 \001(\0162\027.Protocol.CreatureState\022\036\n\003"
-    "pos\030\003 \001(\0132\021.Protocol.Vector3\022\013\n\003yaw\030\004 \001("
-    "\002\"/\n\010StatInfo\022\n\n\002hp\030\001 \001(\005\022\n\n\002mp\030\002 \001(\005\022\013\n"
-    "\003exp\030\003 \001(\003\"\202\001\n\nObjectInfo\022(\n\007summary\030\001 \001"
-    "(\0132\027.Protocol.ObjectSummary\022#\n\010pos_info\030"
-    "\002 \001(\0132\021.Protocol.PosInfo\022%\n\tstat_info\030\003 "
-    "\001(\0132\022.Protocol.StatInfo\" \n\nCAuthToken\022\022\n"
-    "\nauth_token\030\001 \001(\t\"X\n\013SPlayerList\022\017\n\007succ"
-    "ess\030\001 \001(\010\022\016\n\006reason\030\002 \001(\t\022(\n\007players\030\003 \003"
-    "(\0132\027.Protocol.PlayerSummary\"2\n\rCCreatePl"
-    "ayer\022\014\n\004name\030\001 \001(\t\022\023\n\013template_id\030\002 \001(\005\""
-    "Y\n\rSCreatePlayer\022\017\n\007success\030\001 \001(\010\022\016\n\006rea"
-    "son\030\002 \001(\t\022\'\n\006player\030\003 \001(\0132\027.Protocol.Pla"
-    "yerSummary\"\020\n\016CLoadCompleted\"\032\n\nCEnterGa"
-    "me\022\014\n\004name\030\001 \001(\t\"F\n\nSEnterGame\022\017\n\007succes"
-    "s\030\001 \001(\010\022\'\n\tmy_player\030\002 \001(\0132\024.Protocol.Ob"
-    "jectInfo\"\017\n\rSReadyToEnter\"\014\n\nCLeaveGame\""
-    "\014\n\nSLeaveGame\"}\n\014SUpdateScene\022\023\n\013deltaTi"
-    "meMs\030\001 \001(\r\022$\n\006spawns\030\002 \003(\0132\024.Protocol.Ob"
-    "jectInfo\022\020\n\010despawns\030\003 \003(\004\022 \n\005moves\030\004 \003("
-    "\0132\021.Protocol.PosInfo\",\n\005CMove\022#\n\010pos_inf"
-    "o\030\001 \001(\0132\021.Protocol.PosInfo\"K\n\007CAttack\022\013\n"
-    "\003yaw\030\001 \001(\002\022\023\n\013combo_index\030\002 \001(\005\022\036\n\003pos\030\003"
-    " \001(\0132\021.Protocol.Vector3\"^\n\007SAttack\022\021\n\tob"
-    "ject_id\030\001 \001(\004\022\013\n\003yaw\030\002 \001(\002\022\023\n\013combo_inde"
-    "x\030\003 \001(\005\022\036\n\003pos\030\004 \001(\0132\021.Protocol.Vector3\""
-    "\031\n\004SDie\022\021\n\tobject_id\030\001 \001(\004\"!\n\007CRevive\022\026\n"
-    "\016is_current_pos\030\001 \001(\010\"E\n\007SRevive\022\036\n\003pos\030"
-    "\001 \001(\0132\021.Protocol.Vector3\022\016\n\006max_hp\030\002 \001(\005"
-    "\022\n\n\002hp\030\003 \001(\005\":\n\tSChangeHp\022\021\n\tobject_id\030\001"
-    " \001(\004\022\n\n\002hp\030\002 \001(\005\022\016\n\006damage\030\003 \001(\005\",\n\nSCha"
-    "ngeExp\022\021\n\tobject_id\030\001 \001(\004\022\013\n\003exp\030\002 \001(\003\"Y"
-    "\n\014SChangeLevel\022\021\n\tobject_id\030\001 \001(\004\022\r\n\005lev"
-    "el\030\002 \001(\005\022\016\n\006max_hp\030\003 \001(\005\022\n\n\002hp\030\004 \001(\005\022\013\n\003"
-    "exp\030\005 \001(\003\"<\n\005CChat\022\014\n\004chat\030\001 \001(\t\022%\n\tchat"
-    "_type\030\002 \001(\0162\022.Protocol.ChatType\"]\n\005SChat"
-    "\022\021\n\tobject_id\030\001 \001(\004\022\014\n\004name\030\002 \001(\t\022\014\n\004cha"
-    "t\030\003 \001(\t\022%\n\tchat_type\030\004 \001(\0162\022.Protocol.Ch"
-    "atType*\206\003\n\005MsgId\022\010\n\004NONE\020\000\022\020\n\014C_AUTH_TOK"
-    "EN\020\001\022\021\n\rS_PLAYER_LIST\020\002\022\023\n\017C_CREATE_PLAY"
-    "ER\020\003\022\023\n\017S_CREATE_PLAYER\020\004\022\024\n\020C_LOAD_COMP"
-    "LETED\020\005\022\020\n\014C_ENTER_GAME\020\006\022\020\n\014S_ENTER_GAM"
-    "E\020\007\022\024\n\020S_READY_TO_ENTER\020\010\022\020\n\014C_LEAVE_GAM"
-    "E\020\t\022\020\n\014S_LEAVE_GAME\020\n\022\022\n\016S_UPDATE_SCENE\020"
-    "\013\022\n\n\006C_MOVE\020\014\022\014\n\010C_ATTACK\020\r\022\014\n\010S_ATTACK\020"
-    "\016\022\t\n\005S_DIE\020\017\022\014\n\010C_REVIVE\020\020\022\014\n\010S_REVIVE\020\021"
-    "\022\017\n\013S_CHANGE_HP\020\022\022\020\n\014S_CHANGE_EXP\020\023\022\022\n\016S"
-    "_CHANGE_LEVEL\020\024\022\n\n\006C_CHAT\020\025\022\n\n\006S_CHAT\020\026*"
-    "J\n\rCreatureState\022\010\n\004IDLE\020\000\022\n\n\006MOVING\020\001\022\r"
-    "\n\tSPRINTING\020\002\022\n\n\006ATTACK\020\003\022\010\n\004DEAD\020\004*6\n\016G"
-    "ameObjectType\022\013\n\007UNKNOWN\020\000\022\n\n\006PLAYER\020\001\022\013"
-    "\n\007MONSTER\020\002*)\n\010ChatType\022\r\n\tCHAT_NEAR\020\000\022\016"
-    "\n\nCHAT_WORLD\020\001b\006proto3"
+    "ctType\"\226\001\n\007PosInfo\022\021\n\tobject_id\030\001 \001(\004\022&\n"
+    "\005state\030\002 \001(\0162\027.Protocol.CreatureState\022\036\n"
+    "\003pos\030\003 \001(\0132\021.Protocol.Vector3\022\013\n\003yaw\030\004 \001"
+    "(\002\022#\n\010velocity\030\005 \001(\0132\021.Protocol.Vector3\""
+    "/\n\010StatInfo\022\n\n\002hp\030\001 \001(\005\022\n\n\002mp\030\002 \001(\005\022\013\n\003e"
+    "xp\030\003 \001(\003\"\202\001\n\nObjectInfo\022(\n\007summary\030\001 \001(\013"
+    "2\027.Protocol.ObjectSummary\022#\n\010pos_info\030\002 "
+    "\001(\0132\021.Protocol.PosInfo\022%\n\tstat_info\030\003 \001("
+    "\0132\022.Protocol.StatInfo\" \n\nCAuthToken\022\022\n\na"
+    "uth_token\030\001 \001(\t\"X\n\013SPlayerList\022\017\n\007succes"
+    "s\030\001 \001(\010\022\016\n\006reason\030\002 \001(\t\022(\n\007players\030\003 \003(\013"
+    "2\027.Protocol.PlayerSummary\"2\n\rCCreatePlay"
+    "er\022\014\n\004name\030\001 \001(\t\022\023\n\013template_id\030\002 \001(\005\"Y\n"
+    "\rSCreatePlayer\022\017\n\007success\030\001 \001(\010\022\016\n\006reaso"
+    "n\030\002 \001(\t\022\'\n\006player\030\003 \001(\0132\027.Protocol.Playe"
+    "rSummary\"\020\n\016CLoadCompleted\"\032\n\nCEnterGame"
+    "\022\014\n\004name\030\001 \001(\t\"F\n\nSEnterGame\022\017\n\007success\030"
+    "\001 \001(\010\022\'\n\tmy_player\030\002 \001(\0132\024.Protocol.Obje"
+    "ctInfo\"\017\n\rSReadyToEnter\"\014\n\nCLeaveGame\"\014\n"
+    "\nSLeaveGame\"h\n\014SUpdateScene\022$\n\006spawns\030\001 "
+    "\003(\0132\024.Protocol.ObjectInfo\022\020\n\010despawns\030\002 "
+    "\003(\004\022 \n\005moves\030\003 \003(\0132\021.Protocol.PosInfo\",\n"
+    "\005CMove\022#\n\010pos_info\030\001 \001(\0132\021.Protocol.PosI"
+    "nfo\"K\n\007CAttack\022\013\n\003yaw\030\001 \001(\002\022\023\n\013combo_ind"
+    "ex\030\002 \001(\005\022\036\n\003pos\030\003 \001(\0132\021.Protocol.Vector3"
+    "\"^\n\007SAttack\022\021\n\tobject_id\030\001 \001(\004\022\013\n\003yaw\030\002 "
+    "\001(\002\022\023\n\013combo_index\030\003 \001(\005\022\036\n\003pos\030\004 \001(\0132\021."
+    "Protocol.Vector3\"\031\n\004SDie\022\021\n\tobject_id\030\001 "
+    "\001(\004\"!\n\007CRevive\022\026\n\016is_current_pos\030\001 \001(\010\"E"
+    "\n\007SRevive\022\036\n\003pos\030\001 \001(\0132\021.Protocol.Vector"
+    "3\022\016\n\006max_hp\030\002 \001(\005\022\n\n\002hp\030\003 \001(\005\":\n\tSChange"
+    "Hp\022\021\n\tobject_id\030\001 \001(\004\022\n\n\002hp\030\002 \001(\005\022\016\n\006dam"
+    "age\030\003 \001(\005\",\n\nSChangeExp\022\021\n\tobject_id\030\001 \001"
+    "(\004\022\013\n\003exp\030\002 \001(\003\"Y\n\014SChangeLevel\022\021\n\tobjec"
+    "t_id\030\001 \001(\004\022\r\n\005level\030\002 \001(\005\022\016\n\006max_hp\030\003 \001("
+    "\005\022\n\n\002hp\030\004 \001(\005\022\013\n\003exp\030\005 \001(\003\"<\n\005CChat\022\014\n\004c"
+    "hat\030\001 \001(\t\022%\n\tchat_type\030\002 \001(\0162\022.Protocol."
+    "ChatType\"]\n\005SChat\022\021\n\tobject_id\030\001 \001(\004\022\014\n\004"
+    "name\030\002 \001(\t\022\014\n\004chat\030\003 \001(\t\022%\n\tchat_type\030\004 "
+    "\001(\0162\022.Protocol.ChatType*\206\003\n\005MsgId\022\010\n\004NON"
+    "E\020\000\022\020\n\014C_AUTH_TOKEN\020\001\022\021\n\rS_PLAYER_LIST\020\002"
+    "\022\023\n\017C_CREATE_PLAYER\020\003\022\023\n\017S_CREATE_PLAYER"
+    "\020\004\022\024\n\020C_LOAD_COMPLETED\020\005\022\020\n\014C_ENTER_GAME"
+    "\020\006\022\020\n\014S_ENTER_GAME\020\007\022\024\n\020S_READY_TO_ENTER"
+    "\020\010\022\020\n\014C_LEAVE_GAME\020\t\022\020\n\014S_LEAVE_GAME\020\n\022\022"
+    "\n\016S_UPDATE_SCENE\020\013\022\n\n\006C_MOVE\020\014\022\014\n\010C_ATTA"
+    "CK\020\r\022\014\n\010S_ATTACK\020\016\022\t\n\005S_DIE\020\017\022\014\n\010C_REVIV"
+    "E\020\020\022\014\n\010S_REVIVE\020\021\022\017\n\013S_CHANGE_HP\020\022\022\020\n\014S_"
+    "CHANGE_EXP\020\023\022\022\n\016S_CHANGE_LEVEL\020\024\022\n\n\006C_CH"
+    "AT\020\025\022\n\n\006S_CHAT\020\026*J\n\rCreatureState\022\010\n\004IDL"
+    "E\020\000\022\n\n\006MOVING\020\001\022\r\n\tSPRINTING\020\002\022\n\n\006ATTACK"
+    "\020\003\022\010\n\004DEAD\020\004*6\n\016GameObjectType\022\013\n\007UNKNOW"
+    "N\020\000\022\n\n\006PLAYER\020\001\022\013\n\007MONSTER\020\002*)\n\010ChatType"
+    "\022\r\n\tCHAT_NEAR\020\000\022\016\n\nCHAT_WORLD\020\001b\006proto3"
 };
 static ::absl::once_flag descriptor_table_Protocol_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_Protocol_2eproto = {
     false,
     false,
-    2422,
+    2439,
     descriptor_table_protodef_Protocol_2eproto,
     "Protocol.proto",
     &descriptor_table_Protocol_2eproto_once,
@@ -2305,6 +2305,9 @@ PosInfo::PosInfo(
   _impl_.pos_ = (CheckHasBit(cached_has_bits, 0x00000001U))
                 ? ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.pos_)
                 : nullptr;
+  _impl_.velocity_ = (CheckHasBit(cached_has_bits, 0x00000002U))
+                ? ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.velocity_)
+                : nullptr;
   ::memcpy(reinterpret_cast<char*>(&_impl_) +
                offsetof(Impl_, object_id_),
            reinterpret_cast<const char*>(&from._impl_) +
@@ -2341,6 +2344,7 @@ inline void PosInfo::SharedDtor(MessageLite& self) {
   this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   ABSL_DCHECK(this_.GetArena() == nullptr);
   delete this_._impl_.pos_;
+  delete this_._impl_.velocity_;
   this_._impl_.~Impl_();
 }
 
@@ -2387,17 +2391,17 @@ PosInfo::GetClassData() const {
   return PosInfo_class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<2, 4, 1, 0, 2>
+const ::_pbi::TcParseTable<3, 5, 2, 0, 2>
 PosInfo::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(PosInfo, _impl_._has_bits_),
     0, // no _extensions_
-    4, 24,  // max_field_number, fast_idx_mask
+    5, 56,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967280,  // skipmap
+    4294967264,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    4,  // num_field_entries
-    1,  // num_aux_entries
+    5,  // num_field_entries
+    2,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     PosInfo_class_data_.base(),
     nullptr,  // post_loop_handler
@@ -2406,35 +2410,45 @@ PosInfo::_table_ = {
     ::_pbi::TcParser::GetTable<::Protocol::PosInfo>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // float yaw = 4;
-    {::_pbi::TcParser::FastF32S1,
-     {37, 3, 0,
-      PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.yaw_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // uint64 object_id = 1;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(PosInfo, _impl_.object_id_), 1>(),
-     {8, 1, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(PosInfo, _impl_.object_id_), 2>(),
+     {8, 2, 0,
       PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.object_id_)}},
     // .Protocol.CreatureState state = 2;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(PosInfo, _impl_.state_), 2>(),
-     {16, 2, 0,
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(PosInfo, _impl_.state_), 3>(),
+     {16, 3, 0,
       PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.state_)}},
     // .Protocol.Vector3 pos = 3;
     {::_pbi::TcParser::FastMtS1,
      {26, 0, 0,
       PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.pos_)}},
+    // float yaw = 4;
+    {::_pbi::TcParser::FastF32S1,
+     {37, 4, 0,
+      PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.yaw_)}},
+    // .Protocol.Vector3 velocity = 5;
+    {::_pbi::TcParser::FastMtS1,
+     {42, 1, 1,
+      PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.velocity_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
   }}, {{
     // uint64 object_id = 1;
-    {PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.object_id_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+    {PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.object_id_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
     // .Protocol.CreatureState state = 2;
-    {PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.state_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kOpenEnum)},
+    {PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.state_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kOpenEnum)},
     // .Protocol.Vector3 pos = 3;
     {PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.pos_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
     // float yaw = 4;
-    {PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.yaw_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kFloat)},
+    {PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.yaw_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kFloat)},
+    // .Protocol.Vector3 velocity = 5;
+    {PROTOBUF_FIELD_OFFSET(PosInfo, _impl_.velocity_), _Internal::kHasBitsOffset + 1, 1, (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
+      {::_pbi::TcParser::GetTable<::Protocol::Vector3>()},
       {::_pbi::TcParser::GetTable<::Protocol::Vector3>()},
   }},
   {{
@@ -2448,11 +2462,17 @@ PROTOBUF_NOINLINE void PosInfo::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
-    ABSL_DCHECK(_impl_.pos_ != nullptr);
-    _impl_.pos_->Clear();
+  if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      ABSL_DCHECK(_impl_.pos_ != nullptr);
+      _impl_.pos_->Clear();
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      ABSL_DCHECK(_impl_.velocity_ != nullptr);
+      _impl_.velocity_->Clear();
+    }
   }
-  if (BatchCheckHasBit(cached_has_bits, 0x0000000eU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001cU)) {
     ::memset(&_impl_.object_id_, 0, static_cast<::size_t>(
         reinterpret_cast<char*>(&_impl_.yaw_) -
         reinterpret_cast<char*>(&_impl_.object_id_)) + sizeof(_impl_.yaw_));
@@ -2481,7 +2501,7 @@ PROTOBUF_NOINLINE void PosInfo::Clear() {
 
   cached_has_bits = this_._impl_._has_bits_[0];
   // uint64 object_id = 1;
-  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
     if (this_._internal_object_id() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
@@ -2490,7 +2510,7 @@ PROTOBUF_NOINLINE void PosInfo::Clear() {
   }
 
   // .Protocol.CreatureState state = 2;
-  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
     if (this_._internal_state() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteEnumToArray(
@@ -2506,12 +2526,19 @@ PROTOBUF_NOINLINE void PosInfo::Clear() {
   }
 
   // float yaw = 4;
-  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
     if (::absl::bit_cast<::uint32_t>(this_._internal_yaw()) != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteFloatToArray(
           4, this_._internal_yaw(), target);
     }
+  }
+
+  // .Protocol.Vector3 velocity = 5;
+  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        5, *this_._impl_.velocity_, this_._impl_.velocity_->GetCachedSize(), target,
+        stream);
   }
 
   if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -2539,28 +2566,33 @@ PROTOBUF_NOINLINE void PosInfo::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
   cached_has_bits = this_._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001fU)) {
     // .Protocol.Vector3 pos = 3;
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       total_size += 1 +
                     ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.pos_);
     }
-    // uint64 object_id = 1;
+    // .Protocol.Vector3 velocity = 5;
     if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      total_size += 1 +
+                    ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.velocity_);
+    }
+    // uint64 object_id = 1;
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       if (this_._internal_object_id() != 0) {
         total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
             this_._internal_object_id());
       }
     }
     // .Protocol.CreatureState state = 2;
-    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
       if (this_._internal_state() != 0) {
         total_size += 1 +
                       ::_pbi::WireFormatLite::EnumSize(this_._internal_state());
       }
     }
     // float yaw = 4;
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (::absl::bit_cast<::uint32_t>(this_._internal_yaw()) != 0) {
         total_size += 5;
       }
@@ -2585,7 +2617,7 @@ void PosInfo::MergeImpl(::google::protobuf::MessageLite& to_msg,
   (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001fU)) {
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       ABSL_DCHECK(from._impl_.pos_ != nullptr);
       if (_this->_impl_.pos_ == nullptr) {
@@ -2595,16 +2627,24 @@ void PosInfo::MergeImpl(::google::protobuf::MessageLite& to_msg,
       }
     }
     if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      ABSL_DCHECK(from._impl_.velocity_ != nullptr);
+      if (_this->_impl_.velocity_ == nullptr) {
+        _this->_impl_.velocity_ = ::google::protobuf::Message::CopyConstruct(arena, *from._impl_.velocity_);
+      } else {
+        _this->_impl_.velocity_->MergeFrom(*from._impl_.velocity_);
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       if (from._internal_object_id() != 0) {
         _this->_impl_.object_id_ = from._impl_.object_id_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
       if (from._internal_state() != 0) {
         _this->_impl_.state_ = from._impl_.state_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (::absl::bit_cast<::uint32_t>(from._internal_yaw()) != 0) {
         _this->_impl_.yaw_ = from._impl_.yaw_;
       }
@@ -5688,7 +5728,6 @@ SUpdateScene::SUpdateScene(
   _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
       from._internal_metadata_);
   new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
-  _impl_.deltatimems_ = from._impl_.deltatimems_;
 
   // @@protoc_insertion_point(copy_constructor:Protocol.SUpdateScene)
 }
@@ -5703,7 +5742,6 @@ PROTOBUF_NDEBUG_INLINE SUpdateScene::Impl_::Impl_(
 
 inline void SUpdateScene::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
-  _impl_.deltatimems_ = {};
 }
 SUpdateScene::~SUpdateScene() {
   // @@protoc_insertion_point(destructor:Protocol.SUpdateScene)
@@ -5782,16 +5820,16 @@ SUpdateScene::GetClassData() const {
   return SUpdateScene_class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<2, 4, 2, 0, 2>
+const ::_pbi::TcParseTable<2, 3, 2, 0, 2>
 SUpdateScene::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_._has_bits_),
     0, // no _extensions_
-    4, 24,  // max_field_number, fast_idx_mask
+    3, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967280,  // skipmap
+    4294967288,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    4,  // num_field_entries
+    3,  // num_field_entries
     2,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     SUpdateScene_class_data_.base(),
@@ -5801,32 +5839,27 @@ SUpdateScene::_table_ = {
     ::_pbi::TcParser::GetTable<::Protocol::SUpdateScene>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // repeated .Protocol.PosInfo moves = 4;
+    {::_pbi::TcParser::MiniParse, {}},
+    // repeated .Protocol.ObjectInfo spawns = 1;
     {::_pbi::TcParser::FastMtR1,
-     {34, 2, 1,
-      PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.moves_)}},
-    // uint32 deltaTimeMs = 1;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(SUpdateScene, _impl_.deltatimems_), 3>(),
-     {8, 3, 0,
-      PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.deltatimems_)}},
-    // repeated .Protocol.ObjectInfo spawns = 2;
-    {::_pbi::TcParser::FastMtR1,
-     {18, 0, 0,
+     {10, 0, 0,
       PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.spawns_)}},
-    // repeated uint64 despawns = 3;
+    // repeated uint64 despawns = 2;
     {::_pbi::TcParser::FastV64P1,
-     {26, 1, 0,
+     {18, 1, 0,
       PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.despawns_)}},
+    // repeated .Protocol.PosInfo moves = 3;
+    {::_pbi::TcParser::FastMtR1,
+     {26, 2, 1,
+      PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.moves_)}},
   }}, {{
     65535, 65535
   }}, {{
-    // uint32 deltaTimeMs = 1;
-    {PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.deltatimems_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt32)},
-    // repeated .Protocol.ObjectInfo spawns = 2;
+    // repeated .Protocol.ObjectInfo spawns = 1;
     {PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.spawns_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
-    // repeated uint64 despawns = 3;
+    // repeated uint64 despawns = 2;
     {PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.despawns_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcRepeated | ::_fl::kPackedUInt64)},
-    // repeated .Protocol.PosInfo moves = 4;
+    // repeated .Protocol.PosInfo moves = 3;
     {PROTOBUF_FIELD_OFFSET(SUpdateScene, _impl_.moves_), _Internal::kHasBitsOffset + 2, 1, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }},
   {{
@@ -5855,7 +5888,6 @@ PROTOBUF_NOINLINE void SUpdateScene::Clear() {
       _impl_.moves_.Clear();
     }
   }
-  _impl_.deltatimems_ = 0u;
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
@@ -5879,16 +5911,7 @@ PROTOBUF_NOINLINE void SUpdateScene::Clear() {
   (void)cached_has_bits;
 
   cached_has_bits = this_._impl_._has_bits_[0];
-  // uint32 deltaTimeMs = 1;
-  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
-    if (this_._internal_deltatimems() != 0) {
-      target = stream->EnsureSpace(target);
-      target = ::_pbi::WireFormatLite::WriteUInt32ToArray(
-          1, this_._internal_deltatimems(), target);
-    }
-  }
-
-  // repeated .Protocol.ObjectInfo spawns = 2;
+  // repeated .Protocol.ObjectInfo spawns = 1;
   if (CheckHasBitForRepeated(cached_has_bits, 0x00000001U)) {
     for (unsigned i = 0, n = static_cast<unsigned>(
                              this_._internal_spawns_size());
@@ -5896,23 +5919,23 @@ PROTOBUF_NOINLINE void SUpdateScene::Clear() {
       const auto& repfield = this_._internal_spawns().Get(i);
       target =
           ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
-              2, repfield, repfield.GetCachedSize(),
+              1, repfield, repfield.GetCachedSize(),
               target, stream);
     }
   }
 
-  // repeated uint64 despawns = 3;
+  // repeated uint64 despawns = 2;
   if (CheckHasBitForRepeated(cached_has_bits, 0x00000002U)) {
     {
       int byte_size = this_._impl_._despawns_cached_byte_size_.Get();
       if (byte_size > 0) {
         target = stream->WriteUInt64Packed(
-            3, this_._internal_despawns(), byte_size, target);
+            2, this_._internal_despawns(), byte_size, target);
       }
     }
   }
 
-  // repeated .Protocol.PosInfo moves = 4;
+  // repeated .Protocol.PosInfo moves = 3;
   if (CheckHasBitForRepeated(cached_has_bits, 0x00000004U)) {
     for (unsigned i = 0, n = static_cast<unsigned>(
                              this_._internal_moves_size());
@@ -5920,7 +5943,7 @@ PROTOBUF_NOINLINE void SUpdateScene::Clear() {
       const auto& repfield = this_._internal_moves().Get(i);
       target =
           ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
-              4, repfield, repfield.GetCachedSize(),
+              3, repfield, repfield.GetCachedSize(),
               target, stream);
     }
   }
@@ -5950,33 +5973,26 @@ PROTOBUF_NOINLINE void SUpdateScene::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
   cached_has_bits = this_._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
-    // repeated .Protocol.ObjectInfo spawns = 2;
+  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
+    // repeated .Protocol.ObjectInfo spawns = 1;
     if (CheckHasBitForRepeated(cached_has_bits, 0x00000001U)) {
       total_size += 1UL * this_._internal_spawns_size();
       for (const auto& msg : this_._internal_spawns()) {
         total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
       }
     }
-    // repeated uint64 despawns = 3;
+    // repeated uint64 despawns = 2;
     if (CheckHasBitForRepeated(cached_has_bits, 0x00000002U)) {
       total_size +=
           ::_pbi::WireFormatLite::UInt64SizeWithPackedTagSize(
               this_._internal_despawns(), 1,
               this_._impl_._despawns_cached_byte_size_);
     }
-    // repeated .Protocol.PosInfo moves = 4;
+    // repeated .Protocol.PosInfo moves = 3;
     if (CheckHasBitForRepeated(cached_has_bits, 0x00000004U)) {
       total_size += 1UL * this_._internal_moves_size();
       for (const auto& msg : this_._internal_moves()) {
         total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
-      }
-    }
-    // uint32 deltaTimeMs = 1;
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
-      if (this_._internal_deltatimems() != 0) {
-        total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(
-            this_._internal_deltatimems());
       }
     }
   }
@@ -5999,7 +6015,7 @@ void SUpdateScene::MergeImpl(::google::protobuf::MessageLite& to_msg,
   (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
     if (CheckHasBitForRepeated(cached_has_bits, 0x00000001U)) {
       _this->_internal_mutable_spawns()->InternalMergeFromWithArena(
           ::google::protobuf::MessageLite::internal_visibility(), arena,
@@ -6012,11 +6028,6 @@ void SUpdateScene::MergeImpl(::google::protobuf::MessageLite& to_msg,
       _this->_internal_mutable_moves()->InternalMergeFromWithArena(
           ::google::protobuf::MessageLite::internal_visibility(), arena,
           from._internal_moves());
-    }
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
-      if (from._internal_deltatimems() != 0) {
-        _this->_impl_.deltatimems_ = from._impl_.deltatimems_;
-      }
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
@@ -6039,7 +6050,6 @@ void SUpdateScene::InternalSwap(SUpdateScene* PROTOBUF_RESTRICT PROTOBUF_NONNULL
   _impl_.spawns_.InternalSwap(&other->_impl_.spawns_);
   _impl_.despawns_.InternalSwap(&other->_impl_.despawns_);
   _impl_.moves_.InternalSwap(&other->_impl_.moves_);
-  swap(_impl_.deltatimems_, other->_impl_.deltatimems_);
 }
 
 ::google::protobuf::Metadata SUpdateScene::GetMetadata() const {

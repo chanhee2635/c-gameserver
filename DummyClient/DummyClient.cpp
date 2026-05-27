@@ -10,7 +10,6 @@ enum { WORKER_TICK = 16 };
 static constexpr int32  LOGIN_BATCH    = 20;
 static constexpr int32  BATCH_DELAY_MS = 100;
 static constexpr int32  LOGIN_PORT     = 5245;
-static constexpr bool   SETUP_MODE     = false;
 static const     string SERVER_IP      = "127.0.0.1";
 static const     string PASSWORD       = "test1234";
 
@@ -78,13 +77,6 @@ int main()
             cli.set_connection_timeout(10);
             cli.set_read_timeout(10);
 
-            if (SETUP_MODE)
-            {
-                nlohmann::json body = { {"AccountName", account}, {"Password", PASSWORD} };
-                cli.Post("/api/auth/create", body.dump(), "application/json");
-                return nullptr;
-            }
-
             nlohmann::json body = { {"AccountName", account}, {"Password", PASSWORD} };
             auto res = cli.Post("/api/auth/login", body.dump(), "application/json");
 
@@ -95,10 +87,11 @@ int main()
             }
 
             auto   resJson = nlohmann::json::parse(res->body);
-            string token   = resJson["AuthToken"].get<string>();
+            string token = resJson["AuthToken"].get<string>();
 
             auto session = MakeShared<DummySession>();
             session->SetAuthToken(token);
+            session->SetAccountIdx(accountIdx);   // (앞서 추가한 것, 유지)
             return session;
         }
         catch (...) { LOG_ERROR(L"Exception in login thread"); return nullptr; }
@@ -177,6 +170,35 @@ int main()
         GDummySimulator->RemoveN(n);
     };
 
+    auto createAccounts = [&](int32 n)
+    {
+        for (int32 start = 0; start < n; start += LOGIN_BATCH)
+        {
+            int32          end = std::min(start + LOGIN_BATCH, n);
+            Vector<Thread> threads;
+
+            for (int32 i = start; i < end; i++)
+            {
+                threads.emplace_back([i]()
+                    {
+                        try
+                        {
+                            string account = "dummy_" + std::to_string(i);
+                            httplib::Client cli(SERVER_IP, LOGIN_PORT);
+                            cli.set_connection_timeout(10);
+                            cli.set_read_timeout(10);
+                            nlohmann::json body = { {"AccountName", account}, {"Password", PASSWORD} };
+                            cli.Post("/api/auth/create", body.dump(), "application/json");
+                        }
+                        catch (...) { LOG_ERROR(L"Account create failed"); }
+                    });
+            }
+            for (auto& t : threads) t.join();
+            if (end < n) std::this_thread::sleep_for(std::chrono::milliseconds(BATCH_DELAY_MS));
+        }
+        LOG_INFO(L"[Dummy] Created accounts dummy_0 ~ dummy_" + std::to_wstring(n - 1));
+    };
+
     // 콘솔 입력 루프
     LOG_INFO(L"=== Dummy Client Console ===");
 
@@ -197,6 +219,11 @@ int main()
             {
                 int32 n = std::stoi(line.substr(1));
                 if (n > 0) removeDummies(n);
+            }
+            else if (line.rfind(L"setup ", 0) == 0)
+            {
+                int32 n = std::stoi(line.substr(6));
+                if (n > 0) createAccounts(n);
             }
             else
             {

@@ -16,14 +16,15 @@ class GameScene : public JobQueue
 public:
     GameScene() = default;
 
+    void  SetId(int32 id) { _id = id; }
+    int32 GetId() const { return _id; }
+
     void AddZone(ZoneRef zone);
 
     void AddPlayer(PlayerRef player);
     void RemovePlayer(uint64 objectId);
     void AddMonster(MonsterRef monster);
     void RemoveMonster(uint64 objectId);
-
-    void PushMoveJob(MoveJob job);
 
     void BroadcastToZone(ZoneRef zone, SendBufferRef buffer, uint64 exceptId = 0);
     void BroadcastToAdjacentZones(ZoneRef zone, SendBufferRef buffer, uint64 exceptId = 0);
@@ -37,36 +38,34 @@ public:
     void Update();
 
 private:
-    void UpdateObjects(uint32 deltaTimeMs,
-        FrameVector<MoveJob>& jobsCache,
-        FrameVector<CreatureRef>& movingCreatures);
-
-    void CollectMoveNotices(FrameVector<CreatureRef>& movingCreatures,
-        FrameVector<CreatureRef>& snapshot,
-        FrameHashMap<GameScene*, Vector<MoveNotice>>& sceneNotices);
-
-    void HandleZoneChange(CreatureRef creature, ZoneRef oldZone, ZoneRef newZone,
-        FrameHashMap<GameScene*, Vector<MoveNotice>>& sceneNotices);
-
-    void CollectMovingCreature(const CreatureRef& creature,
-        FrameVector<CreatureRef>& movingCreatures);
-
-    void DispatchNotices(FrameHashMap<GameScene*, Vector<MoveNotice>>& sceneNotices);
+    void UpdateObjects(uint64 nowMs, uint32 deltaTimeMs, FrameVector<CreatureRef>& movingCreatures);
+    void CollectMoveNotices(FrameVector<CreatureRef>& movingCreatures, FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices);
+    void HandleZoneChange(CreatureRef creature, ZoneRef oldZone, ZoneRef newZone, FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices);
+    void CollectMovingCreature(const CreatureRef& creature, uint64 nowMs, FrameVector<CreatureRef>& movingCreatures);
+    void ApplyVision(const CreatureRef& creature, const ZoneRef& zone, VisionType type);
+    void EmitVision(const CreatureRef& creature, const ZoneRef& zone, VisionType type, FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices); 
+    void DispatchNotices(FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices);
     void ProcessNotices(const Vector<MoveNotice>& notices);
-    void BroadcastScene(uint32 deltaTimeMs);
+    void BroadcastScene();
+    void ApplyHitToMonster(PlayerRef attacker, MonsterRef monster, Vector3 attackPos, ZoneRef myZone);
 
-    void ApplyHitToMonster(PlayerRef attacker, MonsterRef monster,
-        Vector3 attackPos, ZoneRef myZone);
+    template<typename Fn>
+    void RunOnScene(const GameSceneRef& target, Fn&& fn)
+    {
+        if (!target) return;
+        if (target.get() == this)
+            fn();
+        else
+            target->DoAsync(MakeJob(std::forward<Fn>(fn)));
+    }
 
 private:
+    int32  _id = 0;
     uint64 _lastUpdateTick = 0;
 
-    Vector<ZoneRef>            _zones;
+    Vector<ZoneRef>             _zones;
     HashMap<uint64, PlayerRef>  _players;
     HashMap<uint64, MonsterRef> _monsters;
-
-    Mutex           _moveLock;
-    Vector<MoveJob> _pendingMoveJobs;
 
     Protocol::SUpdateScene _broadcastPacket;
 };

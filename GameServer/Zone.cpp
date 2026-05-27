@@ -4,8 +4,8 @@
 #include "Player.h"
 #include "Monster.h"
 
-void Zone::AddPendingSpawn(CreatureRef creature) { _pendingSpawns[creature->GetObjectId()] = creature; }
-void Zone::AddPendingMove(CreatureRef creature)  { _pendingMoves[creature->GetObjectId()] = creature; }
+void Zone::AddPendingSpawn(CreatureRef creature) { _pendingSpawns.push_back(creature); }
+void Zone::AddPendingMove(CreatureRef creature)  { _pendingMoves.push_back(creature); }
 
 Zone::Zone(int32 x, int32 z, int32 zoneSize)
     : _x(x), _z(z), _zoneSize(zoneSize), _id(0)
@@ -22,14 +22,14 @@ void Zone::Enter(CreatureRef creature)
 
     switch (creature->GetObjectType())
     {
-    case Protocol::PLAYER:
+    case Protocol::GameObjectType::PLAYER:
     {
         PlayerRef player = std::static_pointer_cast<Player>(creature);
         _players[objectId] = player;
         AddPlayerCount();
         break;
     }
-    case Protocol::MONSTER:
+    case Protocol::GameObjectType::MONSTER:
     {
         MonsterRef monster = std::static_pointer_cast<Monster>(creature);
         _monsters[objectId] = monster;
@@ -48,11 +48,11 @@ void Zone::Leave(CreatureRef creature)
 
     switch (creature->GetObjectType())
     {
-    case Protocol::PLAYER:
+    case Protocol::GameObjectType::PLAYER:
         _players.erase(objectId);
         SubPlayerCount();
         break;
-    case Protocol::MONSTER:
+    case Protocol::GameObjectType::MONSTER:
         _monsters.erase(objectId);
         break;
     default:

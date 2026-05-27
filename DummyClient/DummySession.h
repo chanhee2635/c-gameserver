@@ -13,6 +13,8 @@ public:
     virtual void OnSend(uint32 len) override;
 
     void          SetAuthToken(const string& token) { _authToken = token; }
+    void          SetAccountIdx(int32 idx) { _accountIdx = idx; }  
+    int32         GetAccountIdx() const { return _accountIdx; } 
     void          SetPlayerName(const string& name) { _playerName = name; }
     const string& GetPlayerName() const { return _playerName; }
 
@@ -20,6 +22,7 @@ public:
     Vector3 GetSpawnPos() const { return _spawnPos; }  
 
 private:
+    int32   _accountIdx = -1;
     string  _authToken;
     string  _playerName;
     Vector3 _spawnPos = {};  

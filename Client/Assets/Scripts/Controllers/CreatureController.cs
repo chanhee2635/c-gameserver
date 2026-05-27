@@ -6,6 +6,8 @@ public class CreatureController : BaseController
     protected int      _templateId;
     protected float    _baseSpeed;
     private bool       _initialized;
+    private Vector3    _velocity;
+    private float      _lastMoveTime;
 
     public Protocol.CreatureState State { get; protected set; } = Protocol.CreatureState.Idle;
     public string Name  { get; protected set; }
@@ -14,9 +16,9 @@ public class CreatureController : BaseController
     public int    Hp    { get; protected set; }
 
     private Vector3    _destPos;
+    public Vector3     DestPos => _destPos;
     private Quaternion _destDir;
     private float      _noUpdateTimer;
-    private uint       _lastDeltaTimeMs;
     private const float NO_UPDATE_TIMEOUT = 1.0f;
     private const float TELEPORT_DIST_SQ  = 100.0f;
 
@@ -37,7 +39,11 @@ public class CreatureController : BaseController
             transform.SetPositionAndRotation(_destPos, _destDir);
     }
 
-    private void OnDisable() => ClearUI();
+    private void OnDisable()
+    {
+        if (_summaryCanvas != null) _summaryCanvas.enabled = false;
+        _isUIShowing = false;
+    }
 
     protected virtual void Update()
     {
@@ -52,52 +58,22 @@ public class CreatureController : BaseController
     {
         transform.rotation = Quaternion.Slerp(transform.rotation, _destDir, Time.deltaTime * 20f);
 
-        if (State == Protocol.CreatureState.Idle || State == Protocol.CreatureState.Attack)
-        {
-            if ((transform.position - _destPos).sqrMagnitude > 0.0001f)
-            {
-                transform.position = Vector3.MoveTowards(
-                    transform.position,
-                    _destPos,
-                    _baseSpeed * 0.5f * Time.deltaTime 
-                );
-            }
-        }
-        else if (State == Protocol.CreatureState.Moving || State == Protocol.CreatureState.Sprinting)
-        {
-            float speed = (State == Protocol.CreatureState.Sprinting) ? _baseSpeed * 2.0f : _baseSpeed;
-
-            float serverDeltaTime = (_lastDeltaTimeMs > 0)
-                ? _lastDeltaTimeMs / 1000f
-                : 0.05f;
-
-            float adjustedSpeed = speed * (serverDeltaTime / 0.05f);
-
-            float driftSq = (transform.position - _destPos).sqrMagnitude;
-            if (driftSq > 0.25f)
-                transform.position = Vector3.MoveTowards(transform.position, _destPos, adjustedSpeed * Time.deltaTime);
-            else
-            {
-                Vector3 forward = transform.forward;
-                transform.position += forward * speed * Time.deltaTime;
-            }
-        }
+        Vector3 predicted = _destPos + _velocity * (Time.time - _lastMoveTime);
+        transform.position = Vector3.Lerp(
+            transform.position, predicted, 1f - Mathf.Exp(-15f * Time.deltaTime));
     }
 
-    public void OnMoveUpdate(Protocol.PosInfo posInfo, uint deltaTimeMs)
+    public void OnMoveUpdate(Protocol.PosInfo posInfo)
     {
         _noUpdateTimer = 0f;
         State = posInfo.State;
-        _destDir = Quaternion.Euler(0, posInfo.Yaw, 0);
+        _destDir = Quaternion.Euler(0f, posInfo.Yaw, 0f);    
+        _destPos = new Vector3(posInfo.Pos.X, posInfo.Pos.Y, posInfo.Pos.Z);
+        _velocity = new Vector3(posInfo.Velocity.X, posInfo.Velocity.Y, posInfo.Velocity.Z);
+        _lastMoveTime = Time.time;                           
 
-        Vector3 serverPos = new Vector3(posInfo.Pos.X, posInfo.Pos.Y, posInfo.Pos.Z);
-
-        _lastDeltaTimeMs = deltaTimeMs;
-
-        if ((transform.position - serverPos).sqrMagnitude > TELEPORT_DIST_SQ)
-            transform.position = serverPos;
-
-        _destPos = serverPos;
+        if ((transform.position - _destPos).sqrMagnitude > TELEPORT_DIST_SQ)
+            transform.position = _destPos;
     }
 
     public void UpdateUIByDistance(float distSq)
@@ -117,7 +93,7 @@ public class CreatureController : BaseController
     private void SetupUI()
     {
         Transform  uiRoot = transform.Find("UIRoot") ?? transform;
-        GameObject go     = Managers.Resource.Instantiate("UI/UI_Summary");
+        GameObject go     = Managers.Resource.Instantiate("UI/UI_Summary", transform);
 
         _summaryCanvas = go.GetComponent<Canvas>();
         _summaryUI     = go.GetComponent<UI_Summary>();
@@ -237,7 +213,7 @@ public class CreatureController : BaseController
             _noUpdateTimer += Time.deltaTime;
             if (_noUpdateTimer >= NO_UPDATE_TIMEOUT)
             {
-                State    = Protocol.CreatureState.Idle;
+                _velocity = Vector3.zero;
                 _destPos = transform.position;
             }
         }

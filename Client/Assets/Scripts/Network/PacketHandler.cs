@@ -99,7 +99,7 @@ public static partial class PacketHandler
         foreach (var movePos in pkt.Moves)
         {
             if (Managers.Scene.CurrentScene is GameScene { IsSceneReady: true })
-                Managers.Object.OnMove(movePos, pkt.DeltaTimeMs);
+                Managers.Object.OnMove(movePos);
         }
     }
 

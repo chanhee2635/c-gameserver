@@ -6,14 +6,14 @@ class DBManager;
 class RedisManager;
 class SessionManager;
 class DataManager;
-class NavigationManager;
+class GridMap;
 class World;
 
 extern DBManager*        GDBManager;
 extern RedisManager*     GRedisManager;
 extern SessionManager*   GSessionManager;
 extern DataManager*      GDataManager;
-extern NavigationManager* GNavigationManager;
+extern GridMap*          GGridMap;
 extern World*            GWorld;
 
 class GameGlobal
@@ -29,6 +29,6 @@ private:
     static std::shared_ptr<RedisManager>      _redisManager;
     static std::unique_ptr<SessionManager>    _sessionManager;
     static std::unique_ptr<DataManager>       _dataManager;
-    static std::unique_ptr<NavigationManager> _navManager;
+    static std::unique_ptr<GridMap>           _gridMap;
     static std::shared_ptr<World>             _world;
 };

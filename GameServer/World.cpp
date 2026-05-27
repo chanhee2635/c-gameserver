@@ -28,14 +28,22 @@ void World::CreateScene()
     int32 count = _config.sceneCount;
     _scenes.resize(count);
     for (int32 i = 0; i < count; ++i)
+    {
         _scenes[i] = MakeShared<GameScene>();
+        _scenes[i]->SetId(i);
+    }
 }
 
 void World::CreateZone()
 {
-    int32 zoneCount      = _config.mapSize / _config.zoneSize;
+    int32 zoneCount = _config.mapSize / _config.zoneSize;
     int32 totalZoneCount = zoneCount * zoneCount;
     _zones.reserve(totalZoneCount);
+
+    int32 sceneCols = 1;
+    for (int32 i = 1; i * i <= _config.sceneCount; ++i)
+        if (_config.sceneCount % i == 0) sceneCols = i;
+    int32 sceneRows = _config.sceneCount / sceneCols;
 
     for (int32 z = 0; z < zoneCount; ++z)
     {
@@ -46,12 +54,9 @@ void World::CreateZone()
             zone->SetId(linearIdx);
             _zones.push_back(zone);
 
-            int32 sceneIdx = 0;
-            if (_config.sceneCount > 1)
-            {
-                int32 zonesPerScene = totalZoneCount / _config.sceneCount;
-                sceneIdx = std::min(linearIdx / zonesPerScene, _config.sceneCount - 1);
-            }
+            int32 sceneX = x * sceneCols / zoneCount;
+            int32 sceneZ = z * sceneRows / zoneCount;
+            int32 sceneIdx = sceneZ * sceneCols + sceneX;
 
             _scenes[sceneIdx]->AddZone(zone);
             zone->SetScene(_scenes[sceneIdx]);
@@ -115,6 +120,7 @@ void World::EnterCreature(CreatureRef creature)
 
     creature->SetZone(mainZone);
     creature->SetGameScene(mainScene);
+    creature->CommitMoveAnchor(::GetTickCount64());
 
     if (GServerStats)
     {

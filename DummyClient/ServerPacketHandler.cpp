@@ -21,7 +21,7 @@ bool ServerPacketHandler::OnHandle_S_PLAYER_LIST(DummySessionRef session, const 
     }
     else
     {
-        string name = "Dummy_" + std::to_string(rand() % 100000);
+        string name = "Dummy_" + std::to_string(session->GetAccountIdx());
 
         Protocol::CCreatePlayer createPkt;
         createPkt.set_name(name);
@@ -59,7 +59,7 @@ bool ServerPacketHandler::OnHandle_S_ENTER_GAME(DummySessionRef session, const P
     const auto& info = pkt.my_player();
     const auto& pos = info.pos_info().pos();
 
-    session->SetSpawnPos({ 280.f, 0.f, 240.f });
+    session->SetSpawnPos({ pos.x(), pos.y(), pos.z() });
     return true;
 }
 bool ServerPacketHandler::OnHandle_S_READY_TO_ENTER(DummySessionRef session, const Protocol::SReadyToEnter& pkt)

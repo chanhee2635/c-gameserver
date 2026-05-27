@@ -3,10 +3,6 @@
 #include "IocpEvent.h"
 #include "ServerStats.h"
 
-/*-----------------
-     IocpCore
------------------*/
-
 IocpCore::IocpCore()
 {
     _iocpHandle = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);

@@ -20,15 +20,18 @@ public:
     ZoneRef GetZone() { return _zone.lock(); }
     void    SetZone(ZoneRef zone) { _zone = zone; }
 
-    bool IsDirty()           const { return _isDirty; }
-    void SetDirty(bool flag) { _isDirty = flag; }
-
     virtual int32 GetAttack()      const { return 0; }
     virtual int32 GetDefense()     const { return 0; }
     virtual float GetAttackSpeed() const { return 1.0f; }
-    virtual float GetMoveSpeed()   const { return _speed; }
+
+    void           SetVelocity(const Vector3& v) { _velocity = v; }
+    const Vector3& GetVelocity() const { return _velocity; }
 
     uint64 GetHitDelay(int32 comboIndex) const;
+
+    bool    ShouldBroadcastMove(uint64 nowMs) const;
+    Vector3 PredictPos(uint64 nowMs) const;
+    void    CommitMoveAnchor(uint64 nowMs);
 
     void MakePosInfo(Protocol::PosInfo& info)   const override;
     void MakeStatInfo(Protocol::StatInfo& info) const override;
@@ -41,7 +44,12 @@ protected:
     int32   _hp = 0;
     int32   _maxHp = 0;
     float   _speed = 0.f;
-    bool    _isDirty = false;
+    Vector3 _velocity{};
+
+    Vector3                 _lastSentPos{};
+    Vector3                 _lastSentVelocity{};
+    Protocol::CreatureState _lastSentState = Protocol::IDLE;
+    uint64                  _lastSentTick = 0;
 
     ZoneWeakRef _zone;
 };

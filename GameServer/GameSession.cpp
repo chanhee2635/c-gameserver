@@ -15,30 +15,9 @@ void GameSession::OnConnected()
 void GameSession::OnDisconnected()
 {
     if (_dbId != 0)
-        GSessionManager->Unregister(_dbId);
+        GSessionManager->Unregister(_dbId, this);
 
-    PlayerRef player = GetPlayer();
-    if (player)
-    {
-        _player.reset();  
-
-        uint64  dbId = player->GetPlayerDbId();
-        int32   hp   = player->GetHp();
-        int32   mp   = player->GetMp();
-        int64   exp  = player->GetExp();
-        Vector3 pos  = player->GetPos();
-        float   yaw  = player->GetYaw();
-
-        GDBManager->DoAsync([dbId, hp, mp, exp, pos, yaw]()
-        {
-            GDBManager->SavePlayerInfo(dbId, hp, mp, exp, pos, yaw);
-        });
-
-        GWorld->DoAsync([player]()
-        {
-            GWorld->LeaveCreature(player);
-        });
-    }
+    LeavePlayer();
 
     GServerStats->game.connectedSessions.fetch_sub(1, std::memory_order_relaxed);
 }
@@ -55,4 +34,30 @@ void GameSession::OnRecvPacket(std::span<const BYTE> packet, uint16 type)
     ClientPacketHandler::Handle(
         std::static_pointer_cast<GameSession>(shared_from_this()),
         packet, type);
+}
+
+void GameSession::LeavePlayer()
+{
+    PlayerRef player = GetPlayer();
+    if (!player) return;
+
+    SetPlayer(nullptr);
+
+    uint64  dbId = player->GetPlayerDbId();
+    int32   level = player->GetLevel();
+    int32   hp   = player->GetHp();
+    int32   mp   = player->GetMp();
+    int64   exp  = player->GetExp();
+    Vector3 pos  = player->GetPos();
+    float   yaw  = player->GetYaw();
+
+    GDBManager->DoAsync([dbId, level, hp, mp, exp, pos, yaw]()
+    {
+        GDBManager->SavePlayerLevelUp(dbId, level, hp, mp, exp, pos, yaw);
+    });
+
+    GWorld->DoAsync([player]()
+    {
+        GWorld->LeaveCreature(player);
+    });
 }

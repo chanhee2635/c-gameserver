@@ -27,9 +27,10 @@ public:
     virtual int32 GetAttack()      const override { return _config ? _config->attack : 0; }
     virtual int32 GetDefense()     const override { return _config ? _config->defense : 0; }
     virtual float GetAttackSpeed() const override { return _config ? _config->attackSpeed : 1.f; }
-    virtual float GetMoveSpeed()   const override { return _config ? _config->speed : 0.f; }
 
     void HandleMoveJob(const MoveJob& job);
+    void SetPendingMove(const MoveJob& job);
+    bool TakePendingMove(MoveJob& out);
     void HandleAttack(float yaw, int32 comboIndex, Vector3 clientPos);
     void GainExp(int64 rewardExp);
     void Revive(Vector3 pos);
@@ -42,6 +43,10 @@ protected:
 private:
     void TryLevelUp();
 
+    Mutex    _moveLock;
+    MoveJob  _pendingMove;
+    bool     _hasPendingMove = false;
+
     uint64  _playerDbId  = 0;
     int32   _mp          = 0;
     int64   _exp         = 0;
@@ -50,5 +55,4 @@ private:
 
     const PlayerData* _config = nullptr;
     GameSessionWeakRef _session;
-
 };

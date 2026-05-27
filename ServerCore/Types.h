@@ -46,4 +46,4 @@ constexpr int32 len32(T(&arr)[N]) { return static_cast<int32>(N); }
 enum class AllocType { Frame, Stomp, Pool };
 enum class ThreadType : uint8 { NONE, WORKER, DB, MONITOR };
 
-//#define _STOMP
+#define _STOMP
