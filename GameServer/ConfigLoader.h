@@ -23,6 +23,7 @@ struct ServerConfig
     string ip = "127.0.0.1";
     uint32 port = 7777;
     int32  maxSessions = 2000;
+    int32  acceptPool = 256;
 };
 
 struct WorldConfig

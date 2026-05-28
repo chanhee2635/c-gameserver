@@ -46,6 +46,7 @@ bool ConfigLoader::Load(const string& path, AppConfig& outConfig)
         if (sv.contains("ip"))          outConfig.server.ip = sv["ip"].get<std::string>();
         if (sv.contains("port"))        outConfig.server.port = sv["port"].get<uint32>();
         if (sv.contains("maxSessions")) outConfig.server.maxSessions = sv["maxSessions"].get<int32>();
+        if (sv.contains("acceptPool"))  outConfig.server.acceptPool = sv["acceptPool"].get<int32>();
     }
 
     // Redis

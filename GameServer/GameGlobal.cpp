@@ -7,6 +7,10 @@
 #include "DataManager.h"
 #include "GridMap.h"
 #include "World.h"
+#include "Service.h"
+
+#include <timeapi.h>
+#pragma comment(lib, "winmm.lib")
 
 AppConfig                          GameGlobal::_config         = {};
 std::shared_ptr<DBManager>         GameGlobal::_dbManager      = nullptr;
@@ -15,6 +19,7 @@ std::unique_ptr<SessionManager>    GameGlobal::_sessionManager = nullptr;
 std::unique_ptr<DataManager>       GameGlobal::_dataManager    = nullptr;
 std::unique_ptr<GridMap>           GameGlobal::_gridMap        = nullptr;
 std::shared_ptr<World>             GameGlobal::_world          = nullptr;
+std::shared_ptr<ServerService>     GameGlobal::_service        = nullptr;
 
 DBManager*        GDBManager        = nullptr;
 RedisManager*     GRedisManager     = nullptr;
@@ -25,6 +30,8 @@ World*            GWorld            = nullptr;
 
 void GameGlobal::Init()
 {
+    timeBeginPeriod(1);
+
     CoreGlobal::Init();
 
     if (!ConfigLoader::Load("server.json", _config))
@@ -58,6 +65,14 @@ void GameGlobal::Init()
     _sessionManager = std::make_unique<SessionManager>();
     GSessionManager = _sessionManager.get();
 
+    _service = MakeShared<ServerService>(
+        NetAddress(Utils::ToWString(_config.server.ip), _config.server.port),  // ← config 사용
+        MakeShared<IocpCore>(),
+        []() { return MakeShared<GameSession>(); },
+        std::max(_config.server.acceptPool, 64)
+    );
+    ASSERT_CRASH(_service->Start());
+
     LOG_INFO(L"=== [Server Ready to Accept Connections] ===");
 }
 
@@ -87,4 +102,6 @@ void GameGlobal::Clear()
     _dataManager = nullptr;
 
     CoreGlobal::Clear();
+
+    timeEndPeriod(1);
 }

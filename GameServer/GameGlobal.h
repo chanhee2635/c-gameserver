@@ -22,6 +22,7 @@ public:
     static void Init();
     static void Clear();
     static const AppConfig& GetConfig() { return _config; }
+    static const ServerServiceRef& GetService() { return _service; }
 
 private:
     static AppConfig                          _config;
@@ -31,4 +32,5 @@ private:
     static std::unique_ptr<DataManager>       _dataManager;
     static std::unique_ptr<GridMap>           _gridMap;
     static std::shared_ptr<World>             _world;
+    static std::shared_ptr<ServerService>     _service;
 };
