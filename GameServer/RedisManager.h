@@ -15,11 +15,15 @@ public:
 
 private:
     bool Connect(const string& host, int32 port);
-    void RegisterServer(const string& name, const string& ip, int32 port, int32 maxCount);
+    void RegisterServer();
     void ScheduleHeartbeat();
     void Heartbeat();
 
 private:
-    int32 _serverId = 0;
+    int32  _serverId = 0;
+    string _name;     
+    string _ip;       
+    int32  _port = 0; 
+    int32  _maxCount = 0;
     std::unique_ptr<sw::redis::Redis> _redis;
 };
