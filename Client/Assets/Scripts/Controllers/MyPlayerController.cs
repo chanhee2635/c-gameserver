@@ -57,7 +57,7 @@ public class MyPlayerController : PlayerController
     {
         base.SetInfo(info, position, rotation);
 
-        _maxExp = Managers.Data.GetRequireExp(_templateId, Level);
+        _maxExp = Managers.Data.GetRequireExp(_templateId, Level + 1);
         _exp = info.StatInfo.Exp;
         _maxCombo = Managers.Data.GetMaxCombo(_templateId);
 
@@ -82,7 +82,7 @@ public class MyPlayerController : PlayerController
         if (_attackCoolImage != null)
             _attackCoolImage.fillAmount = 1.0f;
     }
-    public float GetExpRatio() => _maxExp > 0 ? (float)_exp / _maxExp : 0f;
+    public float GetExpRatio() => _maxExp > 0 ? (float)_exp / _maxExp : 1f;
 
     protected override void Update()
     {
@@ -285,13 +285,13 @@ public class MyPlayerController : PlayerController
     public void OnChangeExp(long exp)
     {
         _exp = exp;
-        _maxExp = Managers.Data.GetRequireExp(_templateId, Level);
+        _maxExp = Managers.Data.GetRequireExp(_templateId, Level + 1);
     }
 
     public void OnLevelUp(int level, int maxHp, int hp, long exp)
     {
         _exp = exp;
-        _maxExp = Managers.Data.GetRequireExp(_templateId, level);
+        _maxExp = Managers.Data.GetRequireExp(_templateId, level + 1);
         base.OnLevelUp(level, maxHp, hp);
     }
 

@@ -22,7 +22,11 @@ public class DataManager
     public int GetMaxHp(int templateId, int level) => GetPlayerData(templateId, level).maxHp;
     public int GetMaxMp(int templateId, int level) => GetPlayerData(templateId, level).maxMp;
     public float GetSpeed(int templateId, int level) => GetPlayerData(templateId, level).speed;
-    public long GetRequireExp(int templateId, int level) => GetPlayerData(templateId, level).reqExp;
+    public long GetRequireExp(int templateId, int level)
+    {
+        PlayerData data = GetPlayerData(templateId, level);
+        return data != null ? data.reqExp : 0;
+    }
     public int GetMaxCombo(int templateId) => PrefabDataDict[templateId].maxCombo;
 
     public int   GetMonsterMaxHp(int templateId) => MonsterDataDict[templateId].maxHp;

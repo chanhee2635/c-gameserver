@@ -22,5 +22,6 @@ public class PlayerController : CreatureController
         Hp = hp;
         _maxMp = Managers.Data.GetMaxMp(_templateId, level);
         _mp = _maxMp;
+        RefreshSummaryUI();
     }
 }

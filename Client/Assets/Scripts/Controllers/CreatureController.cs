@@ -199,6 +199,10 @@ public class CreatureController : BaseController
         }
         if (_isUIShowing) _summaryUI?.RefreshInfo();
     }
+    protected void RefreshSummaryUI()
+    {
+        if (_isUIShowing) _summaryUI?.RefreshInfo();
+    }
 
     public void OnDead()
     {
