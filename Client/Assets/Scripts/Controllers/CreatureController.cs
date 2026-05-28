@@ -36,7 +36,12 @@ public class CreatureController : BaseController
     private void OnEnable()
     {
         if (_initialized)
+        {
             transform.SetPositionAndRotation(_destPos, _destDir);
+            _velocity      = Vector3.zero;
+            _lastMoveTime  = Time.time;
+            _noUpdateTimer = 0f;
+        }
     }
 
     private void OnDisable()
@@ -144,6 +149,8 @@ public class CreatureController : BaseController
         State          = info.PosInfo.State;
         _destPos       = position;
         _destDir       = rotation;
+        _velocity      = Vector3.zero; 
+        _lastMoveTime  = Time.time;
         _noUpdateTimer = 0f;
 
         transform.SetPositionAndRotation(position, rotation);
