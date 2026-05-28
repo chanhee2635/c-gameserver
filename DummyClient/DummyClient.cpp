@@ -4,6 +4,9 @@
 #include "ThreadManager.h"
 #include "DummySimulator.h"
 #include "DummyTypes.h"
+#include "DummyNet.h"
+#include "DummyGateSession.h"
+#include "DummyGlobal.h"
 
 enum { WORKER_TICK = 16 };
 
@@ -31,29 +34,9 @@ void DoWorkerJob(ClientServiceRef& service)
 
 int main()
 {
-    CoreGlobal::Init();
+    DummyGlobal::Init();
 
-    GDummySimulator = new DummySimulator();
-    GDummySimulator->Start();
-
-    std::queue<DummySessionRef> pendingQueue;
-    Mutex                       pendingMutex;
-
-    auto service = MakeShared<ClientService>(
-        NetAddress(L"127.0.0.1", 7777),
-        MakeShared<IocpCore>(),
-        [&pendingQueue, &pendingMutex]() -> SessionRef
-        {
-            LockGuard guard(pendingMutex);
-            if (pendingQueue.empty()) return nullptr;
-            auto s = pendingQueue.front();
-            pendingQueue.pop();
-            return s;
-        },
-        0   
-    );
-
-    ASSERT_CRASH(service->Start());
+    ClientServiceRef service = DummyGlobal::GetService();
 
     const int32 workerCount = std::max(2, static_cast<int32>(Thread::hardware_concurrency()));
     for (int32 i = 0; i < workerCount; i++)
@@ -68,36 +51,36 @@ int main()
 
     Atomic<int32> nextAccountIdx = 0;
 
-    auto tryLogin = [&](int32 accountIdx) -> DummySessionRef
-    {
-        try
+    auto tryLogin = [&](int32 accountIdx) -> DummyGateSessionRef
         {
-            string account = "dummy_" + std::to_string(accountIdx);
-            httplib::Client cli(SERVER_IP, LOGIN_PORT);
-            cli.set_connection_timeout(10);
-            cli.set_read_timeout(10);
-
-            nlohmann::json body = { {"AccountName", account}, {"Password", PASSWORD} };
-            auto res = cli.Post("/api/auth/login", body.dump(), "application/json");
-
-            if (!res || res->status != 200)
+            try
             {
-                LOG_ERROR(L"Login failed: " + Utils::ToWString(account));
-                return nullptr;
+                string account = "dummy_" + std::to_string(accountIdx);
+                httplib::Client cli(SERVER_IP, LOGIN_PORT);
+                cli.set_connection_timeout(10);
+                cli.set_read_timeout(10);
+
+                nlohmann::json body = { {"AccountName", account}, {"Password", PASSWORD} };
+                auto res = cli.Post("/api/auth/login", body.dump(), "application/json");
+                if (!res || res->status != 200)
+                {
+                    LOG_ERROR(L"Login failed: " + Utils::ToWString(account));
+                    return nullptr;
+                }
+
+                auto   resJson = nlohmann::json::parse(res->body);
+                string queueToken = resJson["QueueToken"].get<string>();   // ← AuthToken 아님
+
+                auto s = MakeShared<DummyGateSession>();
+                s->SetQueueToken(queueToken);
+                s->SetServerId(1);
+                s->SetAccountIdx(accountIdx);
+                return s;
             }
+            catch (...) { LOG_ERROR(L"Exception in login thread"); return nullptr; }
+        };
 
-            auto   resJson = nlohmann::json::parse(res->body);
-            string token = resJson["AuthToken"].get<string>();
-
-            auto session = MakeShared<DummySession>();
-            session->SetAuthToken(token);
-            session->SetAccountIdx(accountIdx);   // (앞서 추가한 것, 유지)
-            return session;
-        }
-        catch (...) { LOG_ERROR(L"Exception in login thread"); return nullptr; }
-    };
-
-    auto loginBatch = [&](int32 count, Vector<DummySessionRef>& out, Mutex& outMutex)
+    auto loginBatch = [&](int32 count, Vector<DummyGateSessionRef>& out, Mutex& outMutex)
     {
         for (int32 start = 0; start < count; start += LOGIN_BATCH)
         {
@@ -128,8 +111,8 @@ int main()
 
     auto connectDummies = [&](int32 n)
     {
-        Vector<DummySessionRef> newSessions;
-        Mutex                   newMutex;
+        Vector<DummyGateSessionRef> newSessions;
+        Mutex newMutex;
 
         for (int32 attempt = 0; attempt < MAX_LOGIN_RETRIES; attempt++)
         {
@@ -149,20 +132,8 @@ int main()
         if (shortfall > 0)
             LOG_WARN(L"[Dummy] " + std::to_wstring(shortfall) + L" logins failed after retries");
 
-        {
-            LockGuard guard(pendingMutex);
-            for (auto& s : newSessions)
-                pendingQueue.push(s);
-        }
-
-        int32 connected = 0;
-        for (int32 i = 0; i < static_cast<int32>(newSessions.size()); i++)
-        {
-            SessionRef session = service->CreateSession();
-            if (!session) break;
-            session->RegisterConnect(service->GetAddress());
-            connected++;
-        }
+        for (auto& s : newSessions)
+            GDummyNet->ConnectGate(s);
     };
 
     auto removeDummies = [&](int32 n)
@@ -243,10 +214,6 @@ int main()
         }
     }
 
-    GDummySimulator->Stop();
-    delete GDummySimulator;
-    GDummySimulator = nullptr;
-
-    CoreGlobal::Clear();
+    DummyGlobal::Clear();
     return 0;
 }

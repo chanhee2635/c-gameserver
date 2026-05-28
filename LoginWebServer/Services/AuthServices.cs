@@ -8,14 +8,18 @@ public class AuthService
 {
     private readonly AppDbContext _db;
     private readonly IConnectionMultiplexer _redis;
+    private readonly string _gateIp;
+    private readonly int _gatePort;
 
     private const int TOKEN_TTL_SECONDS = 600;
     private const int MIN_PASSWORD_LENGTH = 8;
 
-    public AuthService(AppDbContext db, IConnectionMultiplexer redis)
+    public AuthService(AppDbContext db, IConnectionMultiplexer redis, IConfiguration config)
     {
         _db = db;
         _redis = redis;
+        _gateIp = config["Gateway:Ip"] ?? "127.0.0.1";
+        _gatePort = int.TryParse(config["Gateway:Port"], out var p) ? p : 6666;
     }
 
     public async Task<CreateAccountRes> CreateAccountAsync(CreateAccountReq req)
@@ -70,19 +74,17 @@ public class AuthService
             return res;
         }
 
-        string token = Guid.NewGuid().ToString("N");
         var redisDb = _redis.GetDatabase();
 
-        string? oldToken = await redisDb.StringGetAsync($"session:{account.AccountId}");
-        if (oldToken != null)
-            await redisDb.KeyDeleteAsync(oldToken);
-
-        await redisDb.StringSetAsync(token, account.AccountId.ToString(), TimeSpan.FromSeconds(TOKEN_TTL_SECONDS));
-        await redisDb.StringSetAsync($"session:{account.AccountId}", token, TimeSpan.FromSeconds(TOKEN_TTL_SECONDS));
+        string queueToken = Guid.NewGuid().ToString("N");
+        await redisDb.StringSetAsync($"qsession:{queueToken}", account.AccountId.ToString(),
+                                     TimeSpan.FromSeconds(TOKEN_TTL_SECONDS));
 
         res.Success = true;
         res.AccountId = account.AccountId;
-        res.AuthToken = token;
+        res.QueueToken = queueToken;
+        res.GateIp = _gateIp;
+        res.GatePort = _gatePort;
         res.ServerList = await GetServerListAsync(redisDb);
 
         return res;

@@ -73,10 +73,10 @@ public class UI_SelectServerPopup : UI_Popup
     private void OnClickEnterButton(PointerEventData evt)
     {
         if (_selectServerId == 0) return;
-
         ServerInfo info = Items[_selectServerId].Info;
         if (info == null) return;
 
-        Managers.Network.ConnectToGameServer(info);
+        Managers.UI.ShowPopupUI<UI_QueuePopup>();   
+        Managers.Network.ConnectToGateway(info.Id);
     }
 }

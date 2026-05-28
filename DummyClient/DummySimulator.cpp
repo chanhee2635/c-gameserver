@@ -3,8 +3,6 @@
 #include "DummySession.h"
 #include "Protocol/PacketUtils.h"
 
-DummySimulator* GDummySimulator = nullptr;
-
 void DummySimulator::Start()
 {
     _running = true;

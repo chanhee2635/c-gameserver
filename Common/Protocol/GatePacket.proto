@@ -1,0 +1,17 @@
+syntax = "proto3";
+package Protocol;
+
+enum GateMsgId {
+    G_NONE         = 0;
+    C_Q_ENTER      = 1;   // 클라->게이트: 큐 등록
+    S_Q_ENTER      = 2;   // 게이트->클라: 등록 결과
+    S_Q_STATUS     = 3;   // 게이트->클라: 순번 푸시(주기적)
+    S_Q_ADMITTED   = 4;   // 게이트->클라: 입장 허가 + 게임서버 정보
+    C_Q_LEAVE      = 5;   // 클라->게이트: 취소
+}
+
+message CQEnter    { string queue_token = 1; int32 server_id = 2; }
+message SQEnter    { bool success = 1; string reason = 2; }
+message SQStatus   { int32 position = 1; int32 total = 2; int32 eta_sec = 3; }
+message SQAdmitted { string auth_token = 1; string game_ip = 2; int32 game_port = 3; }
+message CQLeave    {}

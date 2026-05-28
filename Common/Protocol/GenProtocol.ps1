@@ -11,9 +11,10 @@ if (-not (Test-Path $protoc)) {
 # Common 삭제 — Game.proto 하나로 통합
 $deployMap = @{
     "Protocol" = @("GameServer", "DummyClient")
+    "GatePacket" = @("GateServer", "DummyClient") 
 }
 
-$unityProtos = @("Protocol")
+$unityProtos = @("Protocol", "GatePacket")
 
 # ─── C++ 생성 ─────────────────────────────────────────────────────────────────
 

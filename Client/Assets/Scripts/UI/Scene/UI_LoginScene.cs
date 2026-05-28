@@ -50,7 +50,10 @@ public class UI_LoginScene : UI_Scene
             if (res.Success)
             {
                 Managers.Network.AccountId = res.AccountId;
-                Managers.Network.AuthToken = res.AuthToken;
+                Managers.Network.QueueToken = res.QueueToken;   
+                Managers.Network.GateIp = res.GateIp;
+                Managers.Network.GatePort = res.GatePort;
+
                 UI_SelectServerPopup popup = Managers.UI.ShowPopupUI<UI_SelectServerPopup>();
                 popup.SetServers(res.ServerList);
             }

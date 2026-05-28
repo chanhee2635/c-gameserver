@@ -37,6 +37,8 @@ public class LoginAccountRes
 {
     public bool Success;
     public int AccountId;
-    public string AuthToken;
+    public string QueueToken;   
+    public string GateIp;
+    public int GatePort;
     public List<ServerInfo> ServerList = new();
 }

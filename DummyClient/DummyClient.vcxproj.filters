@@ -5,51 +5,42 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="소스 파일\Protocol">
-      <UniqueIdentifier>{c0c59e09-5ee4-4c66-9111-b90b06ef459a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Protocol\Proto">
-      <UniqueIdentifier>{877d6e1f-e0b6-4af7-a835-9a406b66d791}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Main">
-      <UniqueIdentifier>{d3c61ebf-3d3d-4dc7-a19b-639d1b3c662f}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DummySession.cpp">
-      <Filter>소스 파일\Main</Filter>
-    </ClCompile>
-    <ClCompile Include="DummyClient.cpp">
-      <Filter>소스 파일\Main</Filter>
-    </ClCompile>
-    <ClCompile Include="pch.cpp">
-      <Filter>소스 파일\Main</Filter>
-    </ClCompile>
     <ClCompile Include="Protocol\ServerPacketHandler_Generated.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="ServerPacketHandler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Protocol\Protocol.pb.cc">
-      <Filter>소스 파일\Protocol</Filter>
-    </ClCompile>
     <ClCompile Include="DummySimulator.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Protocol\Protocol.pb.cc">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DummyClient.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DummySession.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DummyGateSession.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DummyGlobal.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Protocol\GatePacket.pb.cc">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DummySession.h">
-      <Filter>소스 파일\Main</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>소스 파일\Main</Filter>
-    </ClInclude>
     <ClInclude Include="Protocol\ServerPacketHandler.h">
       <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Protocol\Protocol.pb.h">
-      <Filter>소스 파일\Protocol</Filter>
     </ClInclude>
     <ClInclude Include="Protocol\PacketUtils.h">
       <Filter>소스 파일</Filter>
@@ -58,6 +49,25 @@
       <Filter>소스 파일</Filter>
     </ClInclude>
     <ClInclude Include="DummySimulator.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Protocol\Protocol.pb.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DummySession.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyNet.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyGateSession.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyGlobal.h" />
+    <ClInclude Include="Protocol\GatePacket.pb.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
   </ItemGroup>
