@@ -25,5 +25,6 @@ private:
     string _ip;       
     int32  _port = 0; 
     int32  _maxCount = 0;
+    bool   _registeredLogged = false;
     std::unique_ptr<sw::redis::Redis> _redis;
 };

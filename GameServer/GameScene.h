@@ -30,6 +30,10 @@ public:
     void BroadcastToAdjacentZones(ZoneRef zone, SendBufferRef buffer, uint64 exceptId = 0);
     void BroadcastToAllPlayers(SendBufferRef buffer);
 
+    // Broadcast HP-change / death packets to adjacent zones (shared packet build).
+    void BroadcastHpChange(const ZoneRef& zone, uint64 objectId, int32 hp, int32 damage);
+    void BroadcastDie(const ZoneRef& zone, uint64 objectId);
+
     void FindNearestPlayer(Vector<ZoneRef> zones, MonsterRef monster, Vector3 monsterPos);
     void HandleAttackHitDetection(PlayerRef attacker, Vector3 attackPos, float yaw);
     void HandleRevive(PlayerRef player, bool isCurrentPos);
@@ -47,6 +51,7 @@ private:
     void DispatchNotices(FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices);
     void ProcessNotices(const Vector<MoveNotice>& notices);
     void BroadcastScene();
+    void OffloadBroadcast(const ZoneRef& zone, SendBufferRef sendBuffer);
     void ApplyHitToMonster(PlayerRef attacker, MonsterRef monster, Vector3 attackPos, ZoneRef myZone);
 
     template<typename Fn>

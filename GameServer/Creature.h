@@ -20,6 +20,11 @@ public:
     ZoneRef GetZone() { return _zone.lock(); }
     void    SetZone(ZoneRef zone) { _zone = zone; }
 
+    // Register/unregister into the scene's per-type container (_players/_monsters).
+    // Derived types cast themselves and call the matching GameScene method.
+    virtual void AddToScene(GameScene* scene) = 0;
+    virtual void RemoveFromScene(GameScene* scene) = 0;
+
     virtual int32 GetAttack()      const { return 0; }
     virtual int32 GetDefense()     const { return 0; }
     virtual float GetAttackSpeed() const { return 1.0f; }

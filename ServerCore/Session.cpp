@@ -17,16 +17,42 @@ void Session::Send(SendBufferRef sendBuffer)
     if (!_connected)
         return;
 
-    bool registerSend = false;
+    static constexpr uint32 MAX_SEND_QUEUE_DEPTH = 1024;
+
+    bool   registerSend  = false;
+    bool   queueOverflow = false;
+    uint32 queueDepth    = 0;
     {
         LockGuard guard(_sendLock);
-        _sendQueue.push_back(sendBuffer);
-
-        if (!_isSendRegistered)
+        if (_sendQueue.size() >= MAX_SEND_QUEUE_DEPTH)
         {
-            _isSendRegistered = true;
-            registerSend = true;
+            queueOverflow = true;
         }
+        else
+        {
+            _sendQueue.push_back(sendBuffer);
+            queueDepth = static_cast<uint32>(_sendQueue.size());
+
+            if (!_isSendRegistered)
+            {
+                _isSendRegistered = true;
+                registerSend = true;
+            }
+        }
+    }
+
+    if (queueOverflow)
+    {
+        LOG_WARN(L"Send queue overflow, disconnecting slow session addr=" + GetNetAddress().GetIpAddress());
+        Disconnect();
+        return;
+    }
+
+    if (GServerStats)
+    {
+        uint32 prev = GServerStats->network.sendQueueMaxDepth.load(std::memory_order_relaxed);
+        while (queueDepth > prev &&
+            !GServerStats->network.sendQueueMaxDepth.compare_exchange_weak(prev, queueDepth, std::memory_order_relaxed));
     }
 
     if (registerSend)
@@ -147,7 +173,8 @@ void Session::ProcessRecv(int32 numOfBytes)
         return;
     }
 
-    GServerStats->network.recvBytes.fetch_add(numOfBytes, std::memory_order_relaxed);
+    if (GServerStats)
+        GServerStats->network.recvBytes.fetch_add(numOfBytes, std::memory_order_relaxed);
 
     if (!_recvBuffer.OnWrite(numOfBytes))
     {
@@ -243,8 +270,11 @@ void Session::ProcessSend(int32 numOfBytes)
         return;
     }
 
-    GServerStats->network.sendBytes.fetch_add(numOfBytes, std::memory_order_relaxed);
-    GServerStats->network.sendPackets.fetch_add(1, std::memory_order_relaxed);
+    if (GServerStats)
+    {
+        GServerStats->network.sendBytes.fetch_add(numOfBytes, std::memory_order_relaxed);
+        GServerStats->network.sendPackets.fetch_add(1, std::memory_order_relaxed);
+    }
 
     OnSend(numOfBytes);
 
@@ -278,7 +308,8 @@ int32 PacketSession::OnRecv(const BYTE* buffer, uint32 len)
             break;
 
         OnRecvPacket(data.first(header.size), header.type);
-        GServerStats->network.recvPackets.fetch_add(1, std::memory_order_relaxed);
+        if (GServerStats)
+            GServerStats->network.recvPackets.fetch_add(1, std::memory_order_relaxed);
 
         data = data.subspan(header.size);
         processLen += header.size;

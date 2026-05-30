@@ -66,8 +66,10 @@
     <ClInclude Include="DummyGateSession.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DummyGlobal.h" />
     <ClInclude Include="Protocol\GatePacket.pb.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyGlobal.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
   </ItemGroup>

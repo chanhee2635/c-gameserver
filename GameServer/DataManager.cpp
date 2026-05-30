@@ -5,6 +5,30 @@
 
 using json = nlohmann::json;
 
+namespace
+{
+    // Open and parse a data file, returning its "data" array node via outArray.
+    // Logs an error and returns false on failure.
+    bool LoadJsonArray(const char* path, json& outArray)
+    {
+        std::ifstream file(path);
+        if (!file.is_open())
+        {
+            LOG_ERROR(Utils::ToWString(path) + L" open failed");
+            return false;
+        }
+
+        json j = json::parse(file, nullptr, false);
+        if (j.is_discarded() || !j.contains("data"))
+        {
+            LOG_ERROR(Utils::ToWString(path) + L" parse failed");
+            return false;
+        }
+
+        outArray = std::move(j["data"]);
+        return true;
+    }
+}
 
 bool DataManager::LoadData()
 {
@@ -22,15 +46,11 @@ bool DataManager::LoadPrefabData()
 {
     _prefabData.clear();
 
-    std::ifstream file("../Client/Assets/Resources/Data/PrefabData.json");
-    if (!file.is_open())
-    {
-        LOG_ERROR(L"PrefabData.json open failed");
+    json data;
+    if (!LoadJsonArray("../Client/Assets/Resources/Data/PrefabData.json", data))
         return false;
-    }
 
-    json j = json::parse(file);
-    for (const auto& item : j["data"])
+    for (const auto& item : data)
     {
         PrefabData data;
         data.id              = item["id"];
@@ -53,15 +73,11 @@ bool DataManager::LoadPlayerData()
 {
     _playerData.clear();
 
-    std::ifstream file("../Client/Assets/Resources/Data/PlayerData.json");
-    if (!file.is_open())
-    {
-        LOG_ERROR(L"PlayerData.json open failed");
+    json data;
+    if (!LoadJsonArray("../Client/Assets/Resources/Data/PlayerData.json", data))
         return false;
-    }
 
-    json j = json::parse(file);
-    for (const auto& item : j["data"])
+    for (const auto& item : data)
     {
         PlayerData data;
         data.id          = item["id"];
@@ -85,15 +101,11 @@ bool DataManager::LoadMonsterData()
 {
     _monsterData.clear();
 
-    std::ifstream file("../Client/Assets/Resources/Data/MonsterData.json");
-    if (!file.is_open())
-    {
-        LOG_ERROR(L"MonsterData.json open failed");
+    json data;
+    if (!LoadJsonArray("../Client/Assets/Resources/Data/MonsterData.json", data))
         return false;
-    }
 
-    json j = json::parse(file);
-    for (const auto& item : j["data"])
+    for (const auto& item : data)
     {
         MonsterData data;
         data.id             = item["id"];
@@ -118,15 +130,11 @@ bool DataManager::LoadPlayerSpawnData()
 {
     _playerSpawnData.clear();
 
-    std::ifstream file("../Client/Assets/Resources/Data/PlayerSpawnData.json");
-    if (!file.is_open())
-    {
-        LOG_ERROR(L"PlayerSpawnData.json open failed");
+    json data;
+    if (!LoadJsonArray("../Client/Assets/Resources/Data/PlayerSpawnData.json", data))
         return false;
-    }
 
-    json j = json::parse(file);
-    for (const auto& item : j["data"])
+    for (const auto& item : data)
     {
         SpawnData data;
         data.id    = item["id"];
@@ -144,15 +152,11 @@ bool DataManager::LoadMonsterSpawnData()
 {
     _monsterSpawnList.clear();
 
-    std::ifstream file("../Client/Assets/Resources/Data/MonsterSpawnData.json");
-    if (!file.is_open())
-    {
-        LOG_ERROR(L"MonsterSpawnData.json open failed");
+    json data;
+    if (!LoadJsonArray("../Client/Assets/Resources/Data/MonsterSpawnData.json", data))
         return false;
-    }
 
-    json j = json::parse(file);
-    for (const auto& item : j["data"])
+    for (const auto& item : data)
     {
         SpawnData data;
         data.id             = item["id"];

@@ -25,6 +25,9 @@ public:
 
     PlayerRef GetTargetPlayer() const { return _target.lock(); }
 
+    void AddToScene(GameScene* scene) override;
+    void RemoveFromScene(GameScene* scene) override;
+
 protected:
     virtual void OnDead() override;
 
@@ -59,7 +62,9 @@ private:
     int64  _nextFindPathTick = 0;
     uint64 _respawnDelayMs = 10000;
 
-    static constexpr float ARRIVE_DIST_SQ = 0.04f;  
+    static constexpr float ARRIVE_DIST_SQ = 0.04f;             // path waypoint arrival distance^2
+    static constexpr float ATTACK_RANGE_HYSTERESIS = 1.1f;     // attack-range slack when switching ATTACK->MOVING
+    static constexpr float ATTACK_HIT_LENIENCY_MULT = 4.0f;    // range^2 leniency on hit apply (latency tolerance)
 
     PlayerWeakRef _target;
 };

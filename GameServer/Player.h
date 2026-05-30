@@ -37,6 +37,9 @@ public:
 
     void MakeStatInfo(Protocol::StatInfo& info) const override;
 
+    void AddToScene(GameScene* scene) override;
+    void RemoveFromScene(GameScene* scene) override;
+
 protected:
     virtual void OnDead() override;
 

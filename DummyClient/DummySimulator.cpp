@@ -77,11 +77,15 @@ void DummySimulator::Run()
 {
     using clock = std::chrono::steady_clock;
     const float tickSec = TICK_MS / 1000.f;
+    auto lastBacklogSample = clock::now();
 
     while (_running)
     {
         LEndTickCount = ::GetTickCount64() + TICK_MS;
         auto now = clock::now();
+        bool   sampleBacklog = (now - lastBacklogSample >= std::chrono::seconds(1));  
+        u_long maxBacklog = 0;                                                    
+        if (sampleBacklog) lastBacklogSample = now;                                 
 
         Vector<std::pair<DummySessionRef, SendBufferRef>> toSend;
         {
@@ -96,6 +100,13 @@ void DummySimulator::Run()
             {
                 DummySessionRef session = agent.session.lock();
                 if (!session) continue;
+
+                if (sampleBacklog)                                                    
+                {                                                                    
+                    u_long avail = 0;                                                
+                    if (::ioctlsocket(session->GetSocket(), FIONREAD, &avail) == 0)   
+                        maxBacklog = std::max(maxBacklog, avail);                     
+                }
 
                 // ---- 이동: 목표를 향해 직선 전진, 도달하면 새 목표 선택 ----
                 if (now >= agent.nextMoveTime)
@@ -156,6 +167,9 @@ void DummySimulator::Run()
                 }
             }
         }
+
+        if (sampleBacklog)                                                           
+            GServerStats->network.recvBacklogBytes.store(maxBacklog, std::memory_order_relaxed);                            
 
         for (auto& [session, buffer] : toSend)
             session->Send(buffer);

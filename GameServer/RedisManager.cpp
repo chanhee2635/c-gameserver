@@ -89,7 +89,11 @@ void RedisManager::RegisterServer()
         _redis->hsetnx(key, "current", "0");
         _redis->expire(key, std::chrono::seconds(15));
         _redis->sadd("server_ids", std::to_string(_serverId));
-        LOG_INFO(L"Server registered to Redis id=" + std::to_wstring(_serverId));
+        if (!_registeredLogged)
+        {
+            _registeredLogged = true;
+            LOG_INFO(L"Server registered to Redis id=" + std::to_wstring(_serverId));
+        }
     }
     catch (const Error& e)
     {

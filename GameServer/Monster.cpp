@@ -16,7 +16,7 @@ void Monster::Init(const SpawnData& data)
     ASSERT_CRASH(_config != nullptr);
 
     _objectId = IdGenerator::Generate();
-    _objectType = Protocol::MONSTER;
+    _objectType = Protocol::GameObjectType::MONSTER;
     _templateId = _config->id;
     _level = _config->level;
     SetName(_config->name);
@@ -55,7 +55,7 @@ void Monster::Update(uint32 deltaTimeMs)
     if (_state == Protocol::IDLE)
     {
         if (_nowTick < _nextUpdateTick) return;
-        _nextUpdateTick = _nowTick + 500;
+        _nextUpdateTick = _nowTick + GameGlobal::GetConfig().gameplay.monsterIdleTickMs;
     }
 
     switch (_state)
@@ -183,7 +183,7 @@ void Monster::UpdateAttack()
         return;
     }
 
-    if (_pos.DistanceSq(target->GetPos()) > GetAttackRangeSq() * 1.1f)
+    if (_pos.DistanceSq(target->GetPos()) > GetAttackRangeSq() * ATTACK_RANGE_HYSTERESIS)
     {
         _state = Protocol::MOVING;
         ResetPath();
@@ -195,7 +195,17 @@ void Monster::UpdateAttack()
     ExecuteAttack(_nowTick, target);
 }
 
-void Monster::UpdateDead() {}
+void Monster::UpdateDead() {}  // 사망 연출/리스폰은 GameScene::HandleMonsterDead 타이머가 처리
+
+void Monster::AddToScene(GameScene* scene)
+{
+    scene->AddMonster(std::static_pointer_cast<Monster>(shared_from_this()));
+}
+
+void Monster::RemoveFromScene(GameScene* scene)
+{
+    scene->RemoveMonster(_objectId);
+}
 
 void Monster::TickMoveTo(Vector3 targetPos)
 {
@@ -217,7 +227,7 @@ void Monster::TickMoveTo(Vector3 targetPos)
         }
         else
         {
-            _nextFindPathTick = _nowTick + 300;
+            _nextFindPathTick = _nowTick + GameGlobal::GetConfig().gameplay.monsterRepathCooldownMs;
         }
 
         _pathIndex        = 1;
@@ -246,8 +256,7 @@ void Monster::TickMoveTo(Vector3 targetPos)
     Vector3 dir = (nextWaypoint - _pos).Normalized();
     _velocity = dir * _speed;
     _pos = _pos + _velocity * (_deltaTimeMs * 0.001f);
-    _yaw = ::atan2f(dir.x, dir.z) * RAD2DEG;
-    if (_yaw < 0.f) _yaw += 360.f;
+    _yaw = GameUtil::YawFromDir(dir);
 }
 
 void Monster::ExecuteAttack(int64 now, PlayerRef target)
@@ -258,11 +267,7 @@ void Monster::ExecuteAttack(int64 now, PlayerRef target)
     Vector3 toTarget = target->GetPos() - _pos;
     toTarget.y = 0.f;
     if (!toTarget.IsZero())
-    {
-        toTarget = toTarget.Normalized();
-        _yaw = ::atan2f(toTarget.x, toTarget.z) * (180.f / 3.141592f);
-        if (_yaw < 0.f) _yaw += 360.f;
-    }
+        _yaw = GameUtil::YawFromDir(toTarget);
 
     GameScene* scene = GetGameSceneRaw();
     if (!scene) return;
@@ -294,7 +299,7 @@ void Monster::ApplyAttackDamage(PlayerRef target)
     if (!target || target->IsDead()) return;
 
     // 허용 범위 초과 시 무효 (레이턴시 허용)
-    if (_pos.DistanceSq(target->GetPos()) > GetAttackRangeSq() * 4.0f) return;
+    if (_pos.DistanceSq(target->GetPos()) > GetAttackRangeSq() * ATTACK_HIT_LENIENCY_MULT) return;
 
     int32 damage = target->TakeDamage(_config->attack);
     if (damage <= 0) return;
@@ -303,18 +308,8 @@ void Monster::ApplyAttackDamage(PlayerRef target)
     ZoneRef      zone = GetZone();
     if (!scene || !zone) return;
 
-    Protocol::SChangeHp hpPkt;
-    hpPkt.set_object_id(target->GetObjectId());
-    hpPkt.set_hp(target->GetHp());
-    hpPkt.set_damage(-damage);
-    scene->BroadcastToAdjacentZones(zone,
-        MakeSendBuffer<Protocol::MsgId::S_CHANGE_HP>(hpPkt));
+    scene->BroadcastHpChange(zone, target->GetObjectId(), target->GetHp(), -damage);
 
     if (target->IsDead())
-    {
-        Protocol::SDie diePkt;
-        diePkt.set_object_id(target->GetObjectId());
-        scene->BroadcastToAdjacentZones(zone,
-            MakeSendBuffer<Protocol::MsgId::S_DIE>(diePkt));
-    }
+        scene->BroadcastDie(zone, target->GetObjectId());
 }

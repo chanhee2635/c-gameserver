@@ -28,9 +28,9 @@ struct ServerConfig
 
 struct WorldConfig
 {
-    int32 mapSize    = 500;
-    int32 zoneSize   = 50;
-    int32 sceneCount = 1;
+    int32 mapSize    = 1000;
+    int32 zoneSize   = 20;
+    int32 sceneCount = 4;
 };
 
 struct GameplayConfig
@@ -38,6 +38,8 @@ struct GameplayConfig
     uint32 updateTickMs           = 50;
     float  attackPosToleranceSq   = 9.0f;
     int64  monsterSearchTickMs    = 500;
+    int64  monsterIdleTickMs      = 500;
+    int64  monsterRepathCooldownMs = 300;
     int64  findPathFailCooldownMs = 3000;
 };
 

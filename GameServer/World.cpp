@@ -124,7 +124,7 @@ void World::EnterCreature(CreatureRef creature)
 
     if (GServerStats)
     {
-        if (creature->GetObjectType() == Protocol::PLAYER)
+        if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
         {
             int32 cur  = GServerStats->game.activePlayers.fetch_add(1, std::memory_order_relaxed) + 1;
             int32 peak = GServerStats->game.peakPlayers.load(std::memory_order_relaxed);
@@ -133,7 +133,7 @@ void World::EnterCreature(CreatureRef creature)
                        peak, cur, std::memory_order_relaxed))
             {}
         }
-        else if (creature->GetObjectType() == Protocol::MONSTER)
+        else if (creature->GetObjectType() == Protocol::GameObjectType::MONSTER)
             GServerStats->game.activeMonsters.fetch_add(1, std::memory_order_relaxed);
     }
 
@@ -154,16 +154,15 @@ void World::EnterCreature(CreatureRef creature)
                 zone->AddPendingSpawn(creature);  
             }
 
-            if (creature->GetObjectType() == Protocol::PLAYER)
-            {
-                PlayerRef player = std::static_pointer_cast<Player>(creature);
-                scene->AddPlayer(player);
-                World::SendSpawnPacketsToPlayer(player, zones);
-            }
-            else if (creature->GetObjectType() == Protocol::MONSTER)
-            {
-                scene->AddMonster(std::static_pointer_cast<Monster>(creature));
-            }
+            // scene-level 등록은 본인 소속(mainScene)에만. 인접 scene 그룹은 vision 전용.
+            bool isMainScene = (scene == mainZone->GetSceneRaw());
+
+            if (isMainScene)
+                creature->AddToScene(scene);
+
+            // 플레이어는 인접 scene 그룹 전체에 대해 스폰 패킷 수신(vision)
+            if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
+                World::SendSpawnPacketsToPlayer(std::static_pointer_cast<Player>(creature), zones);
         }));
     }
 }
@@ -180,9 +179,9 @@ void World::LeaveCreature(CreatureRef creature)
 
     if (GServerStats)
     {
-        if (creature->GetObjectType() == Protocol::PLAYER)
+        if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
             GServerStats->game.activePlayers.fetch_sub(1, std::memory_order_relaxed);
-        else if (creature->GetObjectType() == Protocol::MONSTER)
+        else if (creature->GetObjectType() == Protocol::GameObjectType::MONSTER)
             GServerStats->game.activeMonsters.fetch_sub(1, std::memory_order_relaxed);
     }
    
@@ -209,10 +208,11 @@ void World::LeaveCreature(CreatureRef creature)
                 zone->AddPendingDespawn(objectId);  
             }
 
-            if (creature->GetObjectType() == Protocol::PLAYER)
-                scene->RemovePlayer(objectId);
-            else if (creature->GetObjectType() == Protocol::MONSTER)
-                scene->RemoveMonster(objectId);
+            // scene-level 해제도 본인 소속(mainScene)에만.
+            bool isMainScene = (scene == mainZone->GetSceneRaw());
+
+            if (isMainScene)
+                creature->RemoveFromScene(scene);
         }));
     }
 }

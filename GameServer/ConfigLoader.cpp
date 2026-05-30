@@ -5,6 +5,22 @@
 
 using json = nlohmann::json;
 
+namespace
+{
+    // Assign into out if the key exists. Type is deduced from out.
+    template<typename T>
+    void ReadField(const json& j, const char* key, T& out)
+    {
+        if (j.contains(key)) out = j[key].get<T>();
+    }
+
+    // Convert a UTF-8 string field into a wstring field.
+    void ReadWString(const json& j, const char* key, wstring& out)
+    {
+        if (j.contains(key)) out = Utils::ToWString(j[key].get<std::string>());
+    }
+}
+
 bool ConfigLoader::Load(const string& path, AppConfig& outConfig)
 {
     std::ifstream file(path);
@@ -29,51 +45,53 @@ bool ConfigLoader::Load(const string& path, AppConfig& outConfig)
     if (j.contains("database"))
     {
         auto& db = j["database"];
-        if (db.contains("host"))     outConfig.db.host = Utils::ToWString(db["host"].get<string>());
-        if (db.contains("port"))     outConfig.db.port = db["port"].get<uint32>();
-        if (db.contains("user"))     outConfig.db.user = Utils::ToWString(db["user"].get<string>());
-        if (db.contains("password")) outConfig.db.password = Utils::ToWString(db["password"].get<string>());
-        if (db.contains("name"))     outConfig.db.name = Utils::ToWString(db["name"].get<string>());
-        if (db.contains("threads"))  outConfig.db.threads = db["threads"].get<int32>();
+        ReadWString(db, "host",     outConfig.db.host);
+        ReadField  (db, "port",     outConfig.db.port);
+        ReadWString(db, "user",     outConfig.db.user);
+        ReadWString(db, "password", outConfig.db.password);
+        ReadWString(db, "name",     outConfig.db.name);
+        ReadField  (db, "threads",  outConfig.db.threads);
     }
 
     // Server
     if (j.contains("server"))
     {
         auto& sv = j["server"];
-        if (sv.contains("id"))          outConfig.server.id = sv["id"].get<int32>();
-        if (sv.contains("name"))        outConfig.server.name = sv["name"].get<std::string>();
-        if (sv.contains("ip"))          outConfig.server.ip = sv["ip"].get<std::string>();
-        if (sv.contains("port"))        outConfig.server.port = sv["port"].get<uint32>();
-        if (sv.contains("maxSessions")) outConfig.server.maxSessions = sv["maxSessions"].get<int32>();
-        if (sv.contains("acceptPool"))  outConfig.server.acceptPool = sv["acceptPool"].get<int32>();
+        ReadField(sv, "id",          outConfig.server.id);
+        ReadField(sv, "name",        outConfig.server.name);
+        ReadField(sv, "ip",          outConfig.server.ip);
+        ReadField(sv, "port",        outConfig.server.port);
+        ReadField(sv, "maxSessions", outConfig.server.maxSessions);
+        ReadField(sv, "acceptPool",  outConfig.server.acceptPool);
     }
 
     // Redis
     if (j.contains("redis"))
     {
         auto& r = j["redis"];
-        if (r.contains("host")) outConfig.redis.host = r["host"].get<std::string>();
-        if (r.contains("port")) outConfig.redis.port = r["port"].get<int32>();
+        ReadField(r, "host", outConfig.redis.host);
+        ReadField(r, "port", outConfig.redis.port);
     }
 
     // World
     if (j.contains("world"))
     {
         auto& w = j["world"];
-        if (w.contains("mapSize"))    outConfig.world.mapSize    = w["mapSize"].get<int32>();
-        if (w.contains("zoneSize"))   outConfig.world.zoneSize   = w["zoneSize"].get<int32>();
-        if (w.contains("sceneCount")) outConfig.world.sceneCount = w["sceneCount"].get<int32>();
+        ReadField(w, "mapSize",    outConfig.world.mapSize);
+        ReadField(w, "zoneSize",   outConfig.world.zoneSize);
+        ReadField(w, "sceneCount", outConfig.world.sceneCount);
     }
 
     // Gameplay
     if (j.contains("gameplay"))
     {
         auto& g = j["gameplay"];
-        if (g.contains("updateTickMs"))           outConfig.gameplay.updateTickMs           = g["updateTickMs"].get<uint32>();
-        if (g.contains("attackPosToleranceSq"))   outConfig.gameplay.attackPosToleranceSq   = g["attackPosToleranceSq"].get<float>();
-        if (g.contains("monsterSearchTickMs"))    outConfig.gameplay.monsterSearchTickMs    = g["monsterSearchTickMs"].get<int64>();
-        if (g.contains("findPathFailCooldownMs")) outConfig.gameplay.findPathFailCooldownMs = g["findPathFailCooldownMs"].get<int64>();
+        ReadField(g, "updateTickMs",            outConfig.gameplay.updateTickMs);
+        ReadField(g, "attackPosToleranceSq",    outConfig.gameplay.attackPosToleranceSq);
+        ReadField(g, "monsterSearchTickMs",     outConfig.gameplay.monsterSearchTickMs);
+        ReadField(g, "monsterIdleTickMs",       outConfig.gameplay.monsterIdleTickMs);
+        ReadField(g, "monsterRepathCooldownMs", outConfig.gameplay.monsterRepathCooldownMs);
+        ReadField(g, "findPathFailCooldownMs",  outConfig.gameplay.findPathFailCooldownMs);
     }
 
     LOG_INFO(L"Config loaded successfully");

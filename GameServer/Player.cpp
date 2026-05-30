@@ -7,11 +7,17 @@
 #include "GameUtil.h"
 #include "IdGenerator.h"
 
+namespace
+{
+    // Attack-position tolerance multiplier: beyond tolerance^2 * MULT is treated as a cheat.
+    constexpr float ATTACK_POS_TOLERANCE_MULT = 4.f;
+}
+
 void Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData)
 {
     _playerDbId = summary.dbId;
     _objectId = IdGenerator::Generate();
-    _objectType = Protocol::PLAYER;
+    _objectType = Protocol::GameObjectType::PLAYER;
     _level = summary.level;
     _templateId = summary.templateId;
     SetName(summary.name);
@@ -37,6 +43,16 @@ void Player::Send(SendBufferRef sendBuffer)
 {
     if (auto session = _session.lock())
         session->Send(sendBuffer);
+}
+
+void Player::AddToScene(GameScene* scene)
+{
+    scene->AddPlayer(std::static_pointer_cast<Player>(shared_from_this()));
+}
+
+void Player::RemoveFromScene(GameScene* scene)
+{
+    scene->RemovePlayer(_objectId);
 }
 
 void Player::HandleMoveJob(const MoveJob& job)
@@ -71,7 +87,7 @@ void Player::HandleAttack(float yaw, int32 comboIndex, Vector3 clientPos)
     float distSq = clientPos.DistanceSq(_pos);
     float attackPosToleranceSq = GameGlobal::GetConfig().gameplay.attackPosToleranceSq;
 
-    if (distSq > attackPosToleranceSq * 4.f)
+    if (distSq > attackPosToleranceSq * ATTACK_POS_TOLERANCE_MULT)
     {
         LOG_WARN(L"[AntiCheat] Attack pos too far: objectId={0}, dist={1:.1f}",
             _objectId, sqrtf(distSq));

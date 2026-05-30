@@ -41,7 +41,7 @@ protected:
     }
 
     uint64                   _objectId   = 0;
-    Protocol::GameObjectType _objectType = Protocol::UNKNOWN;
+    Protocol::GameObjectType _objectType = Protocol::GameObjectType::UNKNOWN;
     int32                    _templateId = 0;
     int32                    _level      = 0;
 

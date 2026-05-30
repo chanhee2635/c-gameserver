@@ -45,7 +45,7 @@ void GameGlobal::Init()
     _gridMap = std::make_unique<GridMap>();
     GGridMap = _gridMap.get();
     if (!GGridMap->Load("../Common/Map/walkmap.bin"))
-        LOG_WARN(L"GridMap: ../Common/Map/walkmap.bin 로드 실패 (충돌/길찾기 비활성화됨)");
+        LOG_WARN(L"GridMap: failed to load ../Common/Map/walkmap.bin (collision/pathfinding disabled)");
 
     _world = MakeShared<World>();
     GWorld = _world.get();

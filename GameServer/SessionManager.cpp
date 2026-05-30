@@ -13,7 +13,7 @@ void SessionManager::Register(uint64 accountId, GameSessionRef session)
     }
     if (old)
     {
-        LOG_WARN(L"중복 로그인 기존 세션 해제 accountId=" + std::to_wstring(accountId));
+        LOG_WARN(L"Duplicate login, releasing existing session accountId=" + std::to_wstring(accountId));
         old->Disconnect();                
     }
 }

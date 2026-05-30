@@ -48,6 +48,11 @@ int main()
     }
 
     GThread->InitMainThread(ThreadType::MONITOR);
+    GThread->Launch(ThreadType::MONITOR, []()
+    {
+        if (GServerStats)
+            GServerStats->RunUpdateLoop();
+    });
 
     Atomic<int32> nextAccountIdx = 0;
 

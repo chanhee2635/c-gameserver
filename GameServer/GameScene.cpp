@@ -10,6 +10,25 @@
 #include "Protocol/PacketUtils.h"
 #include "DBManager.h"
 
+// 브로드캐스트 전송을 분산할 send-lane 풀. zone 별로 lane 고정(zoneId % N)해 순서 보존
+namespace
+{
+    constexpr int32 SEND_LANE_COUNT = 8;
+
+    Vector<JobQueueRef>& SendLanes()
+    {
+        static Vector<JobQueueRef> s_lanes = []()
+        {
+            Vector<JobQueueRef> lanes;
+            lanes.reserve(SEND_LANE_COUNT);
+            for (int32 i = 0; i < SEND_LANE_COUNT; ++i)
+                lanes.push_back(MakeShared<JobQueue>());
+            return lanes;
+        }();
+        return s_lanes;
+    }
+}
+
 void GameScene::AddZone(ZoneRef zone)
 {
     _zones.push_back(zone);
@@ -39,7 +58,7 @@ void GameScene::Update()
 {
     uint64 now = ::GetTickCount64();
     uint32 updateTickMs = GameGlobal::GetConfig().gameplay.updateTickMs;
-    if (_lastUpdateTick > 0)
+    if (_lastUpdateTick > 0 && GServerStats)
     {
         uint64 expectedThisTick = _lastUpdateTick + updateTickMs;
         if (now > expectedThisTick)
@@ -80,7 +99,8 @@ void GameScene::UpdateObjects(uint64 nowMs, uint32 deltaTimeMs, FrameVector<Crea
             bool blocked = (GGridMap && GGridMap->IsLoaded() && !GGridMap->IsWalkable(job.pos));
             if (!blocked)
                 player->HandleMoveJob(job);
-            // 이동할 수 없는 위치로 이동했다면 빽 시키는 코드
+            // TODO: blocked인 경우 클라이언트에 위치 보정(S_MOVE 되돌리기) 패킷 전송 필요.
+            //       현재는 이동만 무시하므로 클라/서버 위치가 어긋날 수 있음.
         }
 
         if (player->ShouldBroadcastMove(nowMs))
@@ -158,20 +178,13 @@ void GameScene::HandleZoneChange(CreatureRef creature, ZoneRef oldZone, ZoneRef 
 
     if (sceneChanged)
     {
-        if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
-            RemovePlayer(creature->GetObjectId());
-        else if (creature->GetObjectType() == Protocol::GameObjectType::MONSTER)
-            RemoveMonster(creature->GetObjectId());
+        creature->RemoveFromScene(this);
 
         newScene->DoAsync(MakeJob([newScene, newZone, creature]()
         {
             newZone->Enter(creature);
             creature->SetGameScene(newScene);
-
-            if (creature->GetObjectType() == Protocol::GameObjectType::PLAYER)
-                newScene->AddPlayer(std::static_pointer_cast<Player>(creature));
-            else if (creature->GetObjectType() == Protocol::GameObjectType::MONSTER)
-                newScene->AddMonster(std::static_pointer_cast<Monster>(creature));
+            creature->AddToScene(newScene.get());
         }));
     }
     else
@@ -255,7 +268,7 @@ void GameScene::BroadcastScene()
                 if (_broadcastPacket.spawns_size()   == 0 &&
                     _broadcastPacket.despawns_size() == 0 &&
                     _broadcastPacket.moves_size()    == 0) return;
-                BroadcastToZone(zone, MakeSendBuffer<Protocol::MsgId::S_UPDATE_SCENE>(_broadcastPacket));
+                OffloadBroadcast(zone, MakeSendBuffer<Protocol::MsgId::S_UPDATE_SCENE>(_broadcastPacket));
                 _broadcastPacket.Clear();
             };
 
@@ -275,6 +288,27 @@ void GameScene::BroadcastToZone(ZoneRef zone, SendBufferRef sendBuffer, uint64 e
         if (id == exceptId) continue;
         player->Send(sendBuffer);
     }
+}
+
+// zone 플레이어를 스냅샷한 뒤 실제 전송은 send-lane으로 넘겨 워커가 병렬 처리한다
+void GameScene::OffloadBroadcast(const ZoneRef& zone, SendBufferRef sendBuffer)
+{
+    if (!sendBuffer) return;
+
+    const auto& players = zone->GetPlayers();
+    if (players.empty()) return;
+
+    auto targets = MakeShared<Vector<PlayerRef>>();
+    targets->reserve(players.size());
+    for (auto& [id, player] : players)
+        targets->push_back(player);
+
+    JobQueueRef lane = SendLanes()[zone->GetId() % SEND_LANE_COUNT];
+    lane->DoAsync([targets = std::move(targets), sendBuffer = std::move(sendBuffer)]()
+    {
+        for (PlayerRef& p : *targets)
+            p->Send(sendBuffer);
+    });
 }
 
 void GameScene::BroadcastToAdjacentZones(ZoneRef zone, SendBufferRef sendBuffer, uint64 exceptId)
@@ -313,6 +347,26 @@ void GameScene::BroadcastToAllPlayers(SendBufferRef buffer)
 {
     for (auto& [id, player] : _players)
         player->Send(buffer);
+}
+
+void GameScene::BroadcastHpChange(const ZoneRef& zone, uint64 objectId, int32 hp, int32 damage)
+{
+    if (!zone) return;
+
+    Protocol::SChangeHp pkt;
+    pkt.set_object_id(objectId);
+    pkt.set_hp(hp);
+    pkt.set_damage(damage);
+    BroadcastToAdjacentZones(zone, MakeSendBuffer<Protocol::MsgId::S_CHANGE_HP>(pkt));
+}
+
+void GameScene::BroadcastDie(const ZoneRef& zone, uint64 objectId)
+{
+    if (!zone) return;
+
+    Protocol::SDie pkt;
+    pkt.set_object_id(objectId);
+    BroadcastToAdjacentZones(zone, MakeSendBuffer<Protocol::MsgId::S_DIE>(pkt));
 }
 
 void GameScene::FindNearestPlayer(Vector<ZoneRef> zones, MonsterRef monster, Vector3 monsterPos)
@@ -388,11 +442,7 @@ void GameScene::ApplyHitToMonster(PlayerRef attacker, MonsterRef monster,
     if (actualDamage == 0)
         return;
 
-    Protocol::SChangeHp hpPkt;
-    hpPkt.set_object_id(monster->GetObjectId());
-    hpPkt.set_hp(monster->GetHp());
-    hpPkt.set_damage(-actualDamage);
-    BroadcastToAdjacentZones(myZone, MakeSendBuffer<Protocol::MsgId::S_CHANGE_HP>(hpPkt));
+    BroadcastHpChange(myZone, monster->GetObjectId(), monster->GetHp(), -actualDamage);
 
     if (monster->IsDead())
     {
@@ -406,10 +456,7 @@ void GameScene::HandleMonsterDead(MonsterRef monster)
     ZoneRef zone = monster->GetZone();
     if (!zone) return;
 
-    Protocol::SDie diePkt;
-    diePkt.set_object_id(monster->GetObjectId());
-    BroadcastToAdjacentZones(zone,
-        MakeSendBuffer<Protocol::MsgId::S_DIE>(diePkt));
+    BroadcastDie(zone, monster->GetObjectId());
 
     int32 deadAnimMs = GDataManager->GetDeathDurationMs(monster->GetTemplateId());
     DoTimer(deadAnimMs, [monster]()

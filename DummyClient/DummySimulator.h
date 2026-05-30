@@ -30,7 +30,7 @@ private:
     bool    RollWorldChat();
 
     static constexpr uint32 TICK_MS    = 100;    
-    static constexpr float  MOVE_SPEED = 6.0f; 
+    static constexpr float  MOVE_SPEED = 4.0f; 
 
     static constexpr float  MAP_MIN        = 10.f;   
     static constexpr float  MAP_MAX        = 990.f;

@@ -9,6 +9,8 @@ struct NetworkStats {
     Atomic<uint64> sendBytes   = 0;
     Atomic<uint64> recvPackets = 0;
     Atomic<uint64> sendPackets = 0;
+    Atomic<uint64> recvBacklogBytes = 0;
+    Atomic<uint32> sendQueueMaxDepth = 0;
 };
 
 struct JobStats {

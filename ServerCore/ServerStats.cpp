@@ -76,17 +76,25 @@ void ServerStats::RenderReport()
     uint64 sendKB = network.sendBytes.exchange(0) / 1024;
     uint64 recvPkt = network.recvPackets.exchange(0);
     uint64 sendPkt = network.sendPackets.exchange(0);
+    uint64 recvBacklogKB = network.recvBacklogBytes.load() / 1024;
+    uint32 sendQueueMax = network.sendQueueMaxDepth.exchange(0);
     uint64 lagTotal = game.tickLagTotalMs.exchange(0);
     uint64 lagCount = game.tickLagCount.exchange(0);
     uint64 lagMax = game.tickLagMaxMs.exchange(0);
     uint64 avgLagMs = (lagCount > 0) ? (lagTotal / lagCount) : 0;
+
 
     std::wstringstream ss;
 
     ss << L"==================== [ SERVER STATUS ] ====================\033[K\n";
     ss << L" [UPTIME]   " << game.GetUptime() << L"s  [CPU] " << std::fixed << std::setprecision(1) << system.cpuUsage << L"%  [MEM] " << system.memUsageMB << L"MB\033[K\n";
     ss << L" [SESSIONS] Active: " << game.connectedSessions.load() << L" (Total: " << game.totalConnections.load() << L")\033[K\n";
-    ss << L" [NETWORK]  In: " << recvKB << L"KB/s (" << recvPkt << L"pkt/s)  Out: " << sendKB << L"KB/s (" << sendPkt << L"pkt/s)\033[K\n";
+    ss << L" [NETWORK]  In: " << recvKB << L"KB/s (" << recvPkt << L"pkt/s)  Out: "
+        << sendKB << L"KB/s (" << sendPkt << L"pkt/s)  Backlog: " << recvBacklogKB << L"KB"
+        << L"  SendQMax: " << sendQueueMax;
+    if (recvBacklogKB > 32) ss << L"  \033[31m[WARN: recv stall]\033[0m";
+    if (sendQueueMax > 128) ss << L"  \033[31m[WARN: sendQ depth]\033[0m";
+    ss << L"\033[K\n";
     ss << L" [ENGINE]   IOCP: " << iocpCount << L"/s (" << avgIocpUs << L"us)  Job: " << jobs << L"/s\033[K\n";
     ss << L" [TICKS]    Scene: " << ticks << L"/s  AvgLag: " << avgLagMs << L"ms  MaxLag: " << lagMax << L"ms";
     if (avgLagMs >= 30)
