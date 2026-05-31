@@ -21,10 +21,23 @@ public:
     void      SetPlayer(PlayerRef player) { _player = player; }
     PlayerRef GetPlayer()          const  { return _player.lock(); }
 
+    // Returns true only for the first caller; blocks duplicate enter while entering/in-game.
+    bool TryBeginEnterGame() { bool e = false; return _enterGameLatched.compare_exchange_strong(e, true); }
+    void ResetEnterGame()    { _enterGameLatched.store(false); }
+
+    // Inbound rate limiter. Called serially per session on the IO thread, so plain members are safe.
+    bool AllowRecv();                  // false => over packet-rate limit
+    bool AllowChat(uint64 cooldownMs); // false => chat sent too soon
+
     void LeavePlayer();
 
 private:
     uint64        _dbId       = 0;   // account DB id
     uint64        _playerDbId = 0;   // selected player DB id (0 = not in-game)
     PlayerWeakRef _player;           // 게임 입장 후 연결된 플레이어 (0 = 로비/미입장)
+    std::atomic<bool> _enterGameLatched = false;   // one in-flight/active enter per session
+
+    uint64 _rateWindowStart = 0;     // current 1s window start tick
+    uint32 _rateWindowCount = 0;     // packets received in the current window
+    uint64 _lastChatTick    = 0;     // last accepted chat tick
 };

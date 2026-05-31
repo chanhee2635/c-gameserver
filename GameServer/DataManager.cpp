@@ -183,6 +183,12 @@ const PlayerData* DataManager::GetPlayerData(int32 templateId, int32 level) cons
     return it != _playerData.end() ? &it->second : nullptr;
 }
 
+bool DataManager::IsValidPlayerTemplate(int32 templateId) const
+{
+    // A creatable class must have level-1 base data.
+    return GetPlayerData(templateId, 1) != nullptr;
+}
+
 const MonsterData* DataManager::GetMonsterData(int32 templateId) const
 {
     auto it = _monsterData.find(templateId);

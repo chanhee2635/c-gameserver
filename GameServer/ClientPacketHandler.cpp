@@ -8,6 +8,7 @@
 #include "GameScene.h"
 #include "Player.h"
 #include "GameUtil.h"
+#include "DataManager.h"
 
 bool ClientPacketHandler::OnHandle_C_AUTH_TOKEN(GameSessionRef session, const Protocol::CAuthToken& pkt)
 {
@@ -73,6 +74,16 @@ bool ClientPacketHandler::OnHandle_C_CREATE_PLAYER(GameSessionRef session, const
     int32       templateId = pkt.template_id();
     const string& name    = pkt.name();
 
+    // Reject unknown class ids at the trust boundary so they never reach the DB / Player::Init.
+    if (!GDataManager->IsValidPlayerTemplate(templateId))
+    {
+        Protocol::SCreatePlayer res;
+        res.set_success(false);
+        res.set_reason("Invalid class");
+        session->Send(MakeSendBuffer<Protocol::MsgId::S_CREATE_PLAYER>(res));
+        return true;
+    }
+
     if (!GDBManager)
     {
         Protocol::SCreatePlayer res;
@@ -118,6 +129,13 @@ bool ClientPacketHandler::OnHandle_C_ENTER_GAME(GameSessionRef session, const Pr
 {
     if (!IsAuthenticated(session)) return false;
 
+    // Synchronous latch: one in-flight/active enter per session (prevents ghost players).
+    if (!session->TryBeginEnterGame())
+    {
+        LOG_WARN(L"Duplicate enter game blocked accountDbId=" + std::to_wstring(session->GetDbId()));
+        return true;
+    }
+
     uint64        accountDbId = session->GetDbId();
     const wstring playerName  = Utils::ToWString(pkt.name());
 
@@ -129,6 +147,7 @@ bool ClientPacketHandler::OnHandle_C_ENTER_GAME(GameSessionRef session, const Pr
 
         if (!ok)
         {
+            session->ResetEnterGame();
             Protocol::SEnterGame res;
             res.set_success(false);
             session->Send(MakeSendBuffer<Protocol::MsgId::S_ENTER_GAME>(res));
@@ -167,6 +186,14 @@ bool ClientPacketHandler::OnHandle_C_MOVE(GameSessionRef session, const Protocol
     job.velocity = GameUtil::ToServer(pkt.pos_info().velocity());
     job.yaw      = pkt.pos_info().yaw();
     job.state    = static_cast<Protocol::CreatureState>(pkt.pos_info().state());
+
+    // Reject non-finite input (NaN/Inf) before it enters the simulation (UB in zone math, poisoned prediction).
+    if (!job.pos.IsFinite() || !job.velocity.IsFinite() || !std::isfinite(job.yaw))
+    {
+        if (GServerStats)
+            GServerStats->game.suspiciousPackets.fetch_add(1, std::memory_order_relaxed);
+        return true;  // drop malformed move
+    }
 
     player->SetPendingMove(job);
     return true;
@@ -222,7 +249,16 @@ bool ClientPacketHandler::OnHandle_C_CHAT(GameSessionRef session, const Protocol
 
     const string& msg = pkt.chat();
     if (msg.empty() || msg.size() > 200)
-        return true;  
+        return true;
+
+    // World chat is broadcast to everyone, so throttle it harder than nearby chat.
+    const uint64 chatCooldownMs = (pkt.chat_type() == Protocol::CHAT_WORLD) ? 5000 : 500;
+    if (!session->AllowChat(chatCooldownMs))
+    {
+        if (GServerStats)
+            GServerStats->network.droppedPackets.fetch_add(1, std::memory_order_relaxed);
+        return true;  // silently drop chat spam
+    }
 
     Protocol::SChat res;
     res.set_object_id(player->GetObjectId());

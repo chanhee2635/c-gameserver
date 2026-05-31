@@ -97,10 +97,18 @@ void GameScene::UpdateObjects(uint64 nowMs, uint32 deltaTimeMs, FrameVector<Crea
         if (player->TakePendingMove(job))
         {
             bool blocked = (GGridMap && GGridMap->IsLoaded() && !GGridMap->IsWalkable(job.pos));
-            if (!blocked)
+            bool allowed = player->IsMoveAllowed(job.pos, job.velocity, nowMs);
+
+            if (!blocked && allowed)
+            {
                 player->HandleMoveJob(job);
-            // TODO: blocked인 경우 클라이언트에 위치 보정(S_MOVE 되돌리기) 패킷 전송 필요.
-            //       현재는 이동만 무시하므로 클라/서버 위치가 어긋날 수 있음.
+            }
+            else if (!allowed && GServerStats)
+            {
+                GServerStats->game.suspiciousPackets.fetch_add(1, std::memory_order_relaxed);
+            }
+            // Rejected moves are ignored so the server stays authoritative (no teleport/speedhack).
+            // TODO: send a position-correction packet so client/server positions cannot drift.
         }
 
         if (player->ShouldBroadcastMove(nowMs))

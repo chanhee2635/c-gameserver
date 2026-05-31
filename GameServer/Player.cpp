@@ -6,6 +6,7 @@
 #include "Protocol/PacketUtils.h"
 #include "GameUtil.h"
 #include "IdGenerator.h"
+#include "GameConfig.h"
 
 namespace
 {
@@ -13,7 +14,7 @@ namespace
     constexpr float ATTACK_POS_TOLERANCE_MULT = 4.f;
 }
 
-void Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData)
+bool Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData)
 {
     _playerDbId = summary.dbId;
     _objectId = IdGenerator::Generate();
@@ -23,7 +24,13 @@ void Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadDa
     SetName(summary.name);
 
     _config = GDataManager->GetPlayerData(_templateId, _level);
-    ASSERT_CRASH(_config != nullptr);
+    if (_config == nullptr)
+    {
+        // Corrupt/missing data must not abort the whole server. Fail this entry only.
+        LOG_ERROR(L"Player::Init missing data templateId=" + std::to_wstring(_templateId)
+                  + L" level=" + std::to_wstring(_level));
+        return false;
+    }
 
     _maxCombo = GDataManager->GetMaxCombo(_templateId);
     _maxHp = _config->maxHp;
@@ -37,6 +44,7 @@ void Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadDa
     _state = Protocol::IDLE;
 
     _prefabData = GDataManager->GetPrefabData(_templateId);
+    return true;
 }
 
 void Player::Send(SendBufferRef sendBuffer)
@@ -76,6 +84,30 @@ bool Player::TakePendingMove(MoveJob& out)
     if (!_hasPendingMove) return false;
     out = _pendingMove;
     _hasPendingMove = false;
+    return true;
+}
+
+bool Player::IsMoveAllowed(const Vector3& dst, const Vector3& vel, uint64 nowMs)
+{
+    const float maxSpeed = _speed * GameConfig::Move::SPRINT_MULT * GameConfig::Move::SPEED_TOLERANCE;
+
+    // Velocity-magnitude cap: defeats velocity-based speedhack and poisoned move prediction.
+    if (vel.LengthSq() > maxSpeed * maxSpeed)
+        return false;
+
+    // Distance-vs-time cap: position must be reachable at max speed since the last accepted move.
+    if (_lastMoveTick != 0)
+    {
+        uint64 dtMs = nowMs - _lastMoveTick;
+        if (dtMs > GameConfig::Move::MAX_MOVE_DT_MS)
+            dtMs = GameConfig::Move::MAX_MOVE_DT_MS;
+
+        const float allowed = maxSpeed * (dtMs / 1000.0f) + GameConfig::Move::MOVE_DIST_EPS;
+        if (_pos.DistanceSq(dst) > allowed * allowed)
+            return false;
+    }
+
+    _lastMoveTick = nowMs;
     return true;
 }
 

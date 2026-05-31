@@ -52,6 +52,9 @@ struct Vector3
     // 영벡터 체크
     bool IsZero() const { return LengthSq() < 1e-12f; }
 
+    // Finite check: rejects NaN/Inf from untrusted input.
+    bool IsFinite() const { return std::isfinite(x) && std::isfinite(y) && std::isfinite(z); }
+
     // 상수
     static Vector3 Zero()    { return { 0.f, 0.f, 0.f }; }
     static Vector3 Up()      { return { 0.f, 1.f, 0.f }; }

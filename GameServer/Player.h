@@ -7,7 +7,7 @@ public:
     Player() = default;
     virtual ~Player() = default;
 
-    void Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData);
+    bool Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData);
 
     void           SetSession(GameSessionRef session) { _session = session; }
     GameSessionRef GetSession() { return _session.lock(); }
@@ -31,6 +31,8 @@ public:
     void HandleMoveJob(const MoveJob& job);
     void SetPendingMove(const MoveJob& job);
     bool TakePendingMove(MoveJob& out);
+    // Server-authoritative speed gate. Updates the move clock only when the move is accepted.
+    bool IsMoveAllowed(const Vector3& dst, const Vector3& vel, uint64 nowMs);
     void HandleAttack(float yaw, int32 comboIndex, Vector3 clientPos);
     void GainExp(int64 rewardExp);
     void Revive(Vector3 pos);
@@ -49,6 +51,7 @@ private:
     Mutex    _moveLock;
     MoveJob  _pendingMove;
     bool     _hasPendingMove = false;
+    uint64   _lastMoveTick   = 0;   // tick of last accepted move (speed gate)
 
     uint64  _playerDbId  = 0;
     int32   _mp          = 0;

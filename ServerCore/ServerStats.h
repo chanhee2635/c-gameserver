@@ -11,6 +11,7 @@ struct NetworkStats {
     Atomic<uint64> sendPackets = 0;
     Atomic<uint64> recvBacklogBytes = 0;
     Atomic<uint32> sendQueueMaxDepth = 0;
+    Atomic<uint64> droppedPackets = 0;   // rate-limited / chat-cooldown drops
 };
 
 struct JobStats {

@@ -78,6 +78,7 @@ void ServerStats::RenderReport()
     uint64 sendPkt = network.sendPackets.exchange(0);
     uint64 recvBacklogKB = network.recvBacklogBytes.load() / 1024;
     uint32 sendQueueMax = network.sendQueueMaxDepth.exchange(0);
+    uint64 dropped = network.droppedPackets.exchange(0);
     uint64 lagTotal = game.tickLagTotalMs.exchange(0);
     uint64 lagCount = game.tickLagCount.exchange(0);
     uint64 lagMax = game.tickLagMaxMs.exchange(0);
@@ -94,6 +95,7 @@ void ServerStats::RenderReport()
         << L"  SendQMax: " << sendQueueMax;
     if (recvBacklogKB > 32) ss << L"  \033[31m[WARN: recv stall]\033[0m";
     if (sendQueueMax > 128) ss << L"  \033[31m[WARN: sendQ depth]\033[0m";
+    if (dropped > 0)        ss << L"  \033[31mDropped: " << dropped << L"/s\033[0m";
     ss << L"\033[K\n";
     ss << L" [ENGINE]   IOCP: " << iocpCount << L"/s (" << avgIocpUs << L"us)  Job: " << jobs << L"/s\033[K\n";
     ss << L" [TICKS]    Scene: " << ticks << L"/s  AvgLag: " << avgLagMs << L"ms  MaxLag: " << lagMax << L"ms";

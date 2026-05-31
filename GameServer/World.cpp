@@ -92,7 +92,16 @@ void World::PlayerEnterToGame(GameSessionRef session,
     if (!session) return;
 
     PlayerRef player = MakeShared<Player>();
-    player->Init(summary, loadData);
+    if (!player->Init(summary, loadData))
+    {
+        Protocol::SEnterGame fail;
+        fail.set_success(false);
+        session->Send(MakeSendBuffer<Protocol::MsgId::S_ENTER_GAME>(fail));
+        session->SetPlayerDbId(0);   // keep the session slot clean for retry
+        session->ResetEnterGame();   // allow re-enter after failed init
+        return;
+    }
+
     player->SetSession(session);
     session->SetPlayer(player);
 

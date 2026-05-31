@@ -9,6 +9,7 @@ public:
     // 조회
     const PrefabData*  GetPrefabData(int32 templateId) const;
     const PlayerData*  GetPlayerData(int32 templateId, int32 level) const;
+    bool               IsValidPlayerTemplate(int32 templateId) const;
     const MonsterData* GetMonsterData(int32 templateId) const;
 
     int64 GetPlayerRequireExp(int32 templateId, int32 level) const;
