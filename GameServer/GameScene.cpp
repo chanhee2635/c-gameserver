@@ -9,6 +9,7 @@
 #include "GridMap.h"
 #include "Protocol/PacketUtils.h"
 #include "DBManager.h"
+#include <chrono>
 
 // 브로드캐스트 전송을 분산할 send-lane 풀. zone 별로 lane 고정(zoneId % N)해 순서 보존
 namespace
@@ -83,10 +84,25 @@ void GameScene::Update()
     FrameVector<CreatureRef> movingCreatures;
     FrameHashMap<GameScene*, Vector<MoveNotice>> crossNotices;
 
+    using PhaseClock = std::chrono::steady_clock;
+    auto p0 = PhaseClock::now();
     UpdateObjects(now, deltaTimeMs, movingCreatures);
+    auto p1 = PhaseClock::now();
     CollectMoveNotices(movingCreatures, crossNotices);
     DispatchNotices(crossNotices);
+    auto p2 = PhaseClock::now();
     BroadcastScene();
+    auto p3 = PhaseClock::now();
+
+    if (GServerStats)
+    {
+        auto us = [](auto a, auto b) {
+            return (uint64)std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
+        };
+        GServerStats->game.tickPhaseUpdateUs.fetch_add(us(p0, p1), std::memory_order_relaxed);
+        GServerStats->game.tickPhaseNoticeUs.fetch_add(us(p1, p2), std::memory_order_relaxed);
+        GServerStats->game.tickPhaseBroadcastUs.fetch_add(us(p2, p3), std::memory_order_relaxed);
+    }
 }
 
 void GameScene::UpdateObjects(uint64 nowMs, uint32 deltaTimeMs, FrameVector<CreatureRef>& movingCreatures)
