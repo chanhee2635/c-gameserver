@@ -8,9 +8,15 @@ public class CreatureController : BaseController
     private bool       _initialized;
     private Vector3    _velocity;
     private float      _lastMoveTime;
-    private Vector3    _smoothVel;                      // SmoothDamp momentum (keeps motion continuous)
-    private const float SMOOTH_TIME = 0.12f;            // follow smoothing; carries velocity through stalls
-    private const float MAX_EXTRAP  = 0.5f;             // cap dead-reckoning so stop/turn can't overshoot far
+
+    // Projective velocity blending: the visual position advances at the server velocity every
+    // frame (so it never stalls at a waypoint, even when the next packet is late), while the
+    // positional error vs the latest server position is bled in smoothly. This decouples
+    // visible speed (constant) from error correction, so arrival jitter no longer turns into
+    // stop/overshoot - which is what made Sprinting (2x speed = 2x error) hitch.
+    private Vector3    _renderPos;                      // continuous visual position
+    private Vector3    _posError;                       // outstanding correction, bled in over time
+    private const float CORRECT_RATE = 8f;              // 1/s; how fast positional error is absorbed
 
     public Protocol.CreatureState State { get; protected set; } = Protocol.CreatureState.Idle;
     public string Name  { get; protected set; }
@@ -46,8 +52,9 @@ public class CreatureController : BaseController
         if (_initialized)
         {
             transform.SetPositionAndRotation(_destPos, _destDir);
+            _renderPos     = _destPos;
+            _posError      = Vector3.zero;
             _velocity      = Vector3.zero;
-            _smoothVel     = Vector3.zero;
             _lastMoveTime  = Time.time;
             _noUpdateTimer = 0f;
         }
@@ -70,17 +77,19 @@ public class CreatureController : BaseController
 
     private void UpdateMovement()
     {
-        transform.rotation = Quaternion.Slerp(transform.rotation, _destDir, Time.deltaTime * 20f);
+        float dt = Time.deltaTime;
 
-        // Dead reckoning toward the server position, capped so a stop/turn (where the real
-        // path falls short of velocity*time) can't extrapolate far past the truth.
-        float elapsed = Mathf.Min(Time.time - _lastMoveTime, MAX_EXTRAP);
-        Vector3 predicted = _destPos + _velocity * elapsed;
+        transform.rotation = Quaternion.Slerp(transform.rotation, _destDir, dt * 20f);
 
-        // SmoothDamp (not Lerp) so the body carries momentum: when an update lands behind the
-        // extrapolated point, it eases instead of hard-stopping -> no visible "툭" stall.
-        transform.position = Vector3.SmoothDamp(
-            transform.position, predicted, ref _smoothVel, SMOOTH_TIME);
+        // 1) Keep moving at the server-reported velocity (continuous, never stalls).
+        _renderPos += _velocity * dt;
+
+        // 2) Bleed the outstanding positional error in smoothly (no snap, no backward jerk).
+        float k = 1f - Mathf.Exp(-CORRECT_RATE * dt);
+        _renderPos += _posError * k;
+        _posError  *= (1f - k);
+
+        transform.position = _renderPos;
     }
 
     public void OnMoveUpdate(Protocol.PosInfo posInfo)
@@ -92,10 +101,17 @@ public class CreatureController : BaseController
         _velocity = new Vector3(posInfo.Velocity.X, posInfo.Velocity.Y, posInfo.Velocity.Z);
         _lastMoveTime = Time.time;
 
-        if ((transform.position - _destPos).sqrMagnitude > TELEPORT_DIST_SQ)
+        if ((_destPos - _renderPos).sqrMagnitude > TELEPORT_DIST_SQ)
         {
-            transform.position = _destPos;
-            _smoothVel = Vector3.zero;   // drop stale momentum on teleport
+            // Too far to blend: snap.
+            _renderPos = _destPos;
+            _posError  = Vector3.zero;
+            transform.position = _renderPos;
+        }
+        else
+        {
+            // Correct toward the authoritative position; absorbed over ~1/CORRECT_RATE seconds.
+            _posError = _destPos - _renderPos;
         }
     }
 
@@ -167,7 +183,9 @@ public class CreatureController : BaseController
         State          = info.PosInfo.State;
         _destPos       = position;
         _destDir       = rotation;
-        _velocity      = Vector3.zero; 
+        _renderPos     = position;
+        _posError      = Vector3.zero;
+        _velocity      = Vector3.zero;
         _lastMoveTime  = Time.time;
         _noUpdateTimer = 0f;
 
@@ -195,8 +213,12 @@ public class CreatureController : BaseController
         if ((transform.position - serverPos).sqrMagnitude > TELEPORT_DIST_SQ)
             transform.position = serverPos;
 
-        _destPos = transform.position;
-        _destDir = Quaternion.Euler(0f, packet.Yaw, 0f);
+        // Stop in place for the attack: clear motion/correction so nothing drifts.
+        _renderPos = transform.position;
+        _posError  = Vector3.zero;
+        _velocity  = Vector3.zero;
+        _destPos   = transform.position;
+        _destDir   = Quaternion.Euler(0f, packet.Yaw, 0f);
         State = Protocol.CreatureState.Idle;
 
         if (_animator)
@@ -242,8 +264,10 @@ public class CreatureController : BaseController
             _noUpdateTimer += Time.deltaTime;
             if (_noUpdateTimer >= NO_UPDATE_TIMEOUT)
             {
+                // No updates for a while: stop coasting so we don't drift off into the distance.
                 _velocity = Vector3.zero;
-                _destPos = transform.position;
+                _posError = Vector3.zero;
+                _destPos  = _renderPos;
             }
         }
         else
