@@ -31,6 +31,11 @@ public class CreatureController : BaseController
     protected virtual void Awake()
     {
         _animator = GetComponent<Animator>();
+
+        // Position is driven explicitly (server-authoritative dead reckoning). Animator
+        // root motion would also push the transform each frame, fighting the position
+        // writes and making remote movement stutter. Disable it for replicated entities.
+        if (_animator) _animator.applyRootMotion = false;
     }
 
     private void OnEnable()
