@@ -8,6 +8,9 @@ public class CreatureController : BaseController
     private bool       _initialized;
     private Vector3    _velocity;
     private float      _lastMoveTime;
+    private Vector3    _smoothVel;                      // SmoothDamp momentum (keeps motion continuous)
+    private const float SMOOTH_TIME = 0.12f;            // follow smoothing; carries velocity through stalls
+    private const float MAX_EXTRAP  = 0.5f;             // cap dead-reckoning so stop/turn can't overshoot far
 
     public Protocol.CreatureState State { get; protected set; } = Protocol.CreatureState.Idle;
     public string Name  { get; protected set; }
@@ -44,6 +47,7 @@ public class CreatureController : BaseController
         {
             transform.SetPositionAndRotation(_destPos, _destDir);
             _velocity      = Vector3.zero;
+            _smoothVel     = Vector3.zero;
             _lastMoveTime  = Time.time;
             _noUpdateTimer = 0f;
         }
@@ -68,22 +72,31 @@ public class CreatureController : BaseController
     {
         transform.rotation = Quaternion.Slerp(transform.rotation, _destDir, Time.deltaTime * 20f);
 
-        Vector3 predicted = _destPos + _velocity * (Time.time - _lastMoveTime);
-        transform.position = Vector3.Lerp(
-            transform.position, predicted, 1f - Mathf.Exp(-15f * Time.deltaTime));
+        // Dead reckoning toward the server position, capped so a stop/turn (where the real
+        // path falls short of velocity*time) can't extrapolate far past the truth.
+        float elapsed = Mathf.Min(Time.time - _lastMoveTime, MAX_EXTRAP);
+        Vector3 predicted = _destPos + _velocity * elapsed;
+
+        // SmoothDamp (not Lerp) so the body carries momentum: when an update lands behind the
+        // extrapolated point, it eases instead of hard-stopping -> no visible "툭" stall.
+        transform.position = Vector3.SmoothDamp(
+            transform.position, predicted, ref _smoothVel, SMOOTH_TIME);
     }
 
     public void OnMoveUpdate(Protocol.PosInfo posInfo)
     {
         _noUpdateTimer = 0f;
         State = posInfo.State;
-        _destDir = Quaternion.Euler(0f, posInfo.Yaw, 0f);    
+        _destDir = Quaternion.Euler(0f, posInfo.Yaw, 0f);
         _destPos = new Vector3(posInfo.Pos.X, posInfo.Pos.Y, posInfo.Pos.Z);
         _velocity = new Vector3(posInfo.Velocity.X, posInfo.Velocity.Y, posInfo.Velocity.Z);
-        _lastMoveTime = Time.time;                           
+        _lastMoveTime = Time.time;
 
         if ((transform.position - _destPos).sqrMagnitude > TELEPORT_DIST_SQ)
+        {
             transform.position = _destPos;
+            _smoothVel = Vector3.zero;   // drop stale momentum on teleport
+        }
     }
 
     public void UpdateUIByDistance(float distSq)
