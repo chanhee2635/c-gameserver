@@ -93,6 +93,37 @@ void DbConnection::Unbind()
     SQLFreeStmt(_statement, SQL_CLOSE);
 }
 
+bool DbConnection::SetAutoCommit(bool enabled)
+{
+    SQLPOINTER value = (SQLPOINTER)(SQLULEN)(enabled ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF);
+    if (!SQL_SUCCEEDED(SQLSetConnectAttr(_connection, SQL_ATTR_AUTOCOMMIT, value, SQL_IS_UINTEGER)))
+    {
+        HandleError(SQL_HANDLE_DBC, _connection);
+        return false;
+    }
+    return true;
+}
+
+bool DbConnection::Commit()
+{
+    if (!SQL_SUCCEEDED(SQLEndTran(SQL_HANDLE_DBC, _connection, SQL_COMMIT)))
+    {
+        HandleError(SQL_HANDLE_DBC, _connection);
+        return false;
+    }
+    return true;
+}
+
+bool DbConnection::Rollback()
+{
+    if (!SQL_SUCCEEDED(SQLEndTran(SQL_HANDLE_DBC, _connection, SQL_ROLLBACK)))
+    {
+        HandleError(SQL_HANDLE_DBC, _connection);
+        return false;
+    }
+    return true;
+}
+
 void DbConnection::HandleError(SQLSMALLINT handleType, SQLHANDLE handle)
 {
     SQLWCHAR   sqlState[6];

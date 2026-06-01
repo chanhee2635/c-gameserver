@@ -29,8 +29,6 @@ public:
     void RemoveFromScene(GameScene* scene) override;
 
 protected:
-    virtual void OnDead() override;
-
     virtual void UpdateIdle();
     virtual void UpdateMoving();
     virtual void UpdateReturn();

@@ -8,11 +8,7 @@
 #include "IdGenerator.h"
 #include "GameConfig.h"
 
-namespace
-{
-    // Attack-position tolerance multiplier: beyond tolerance^2 * MULT is treated as a cheat.
-    constexpr float ATTACK_POS_TOLERANCE_MULT = 4.f;
-}
+constexpr float ATTACK_POS_TOLERANCE_MULT = 4.f;
 
 bool Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadData)
 {
@@ -26,7 +22,6 @@ bool Player::Init(const PlayerSummaryData& summary, const PlayerLoadData& loadDa
     _config = GDataManager->GetPlayerData(_templateId, _level);
     if (_config == nullptr)
     {
-        // Corrupt/missing data must not abort the whole server. Fail this entry only.
         LOG_ERROR(L"Player::Init missing data templateId=" + std::to_wstring(_templateId)
                   + L" level=" + std::to_wstring(_level));
         return false;
@@ -91,11 +86,9 @@ bool Player::IsMoveAllowed(const Vector3& dst, const Vector3& vel, uint64 nowMs)
 {
     const float maxSpeed = _speed * GameConfig::Move::SPRINT_MULT * GameConfig::Move::SPEED_TOLERANCE;
 
-    // Velocity-magnitude cap: defeats velocity-based speedhack and poisoned move prediction.
     if (vel.LengthSq() > maxSpeed * maxSpeed)
         return false;
 
-    // Distance-vs-time cap: position must be reachable at max speed since the last accepted move.
     if (_lastMoveTick != 0)
     {
         uint64 dtMs = nowMs - _lastMoveTick;
@@ -185,11 +178,6 @@ void Player::MakeStatInfo(Protocol::StatInfo& info) const
     info.set_hp(_hp);
     info.set_mp(_mp);
     info.set_exp(_exp);
-}
-
-void Player::OnDead()
-{
-    LOG_INFO(L"Player dead playerDbId=" + std::to_wstring(_playerDbId));
 }
 
 void Player::TryLevelUp()

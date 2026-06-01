@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "DBManager.h"
+#include "DataManager.h"
 
 static bool TimedQuery(std::function<bool()> fn)
 {
@@ -85,11 +86,17 @@ bool DBManager::CreatePlayer(uint64 accountDbId, int32 templateId,
 {
     wstring wName = Utils::ToWString(name);
 
+    DbConnGuard g;
+    if (!g.Valid()) return false;
+
+    // All three statements run on this one connection inside one transaction.
+    // Guard rolls back automatically on any early return below.
+    DbTxnGuard txn(g.conn);
+
+    uint64 playerId = 0;
+
     // 1) INSERT Players
     {
-        DbConnGuard g;
-        if (!g.Valid()) return false;
-
         uint64 pAccId = accountDbId;
         WCHAR  pName[100] = {};
         int32  pTmpl = templateId;
@@ -106,11 +113,10 @@ bool DBManager::CreatePlayer(uint64 accountDbId, int32 templateId,
         if (!TimedQuery([&] { return bind.Execute(); })) return false;
     }
 
-    uint64 playerId = 0;
-    {
-        DbConnGuard g;
-        if (!g.Valid()) return false;
+    g.conn->Unbind();   // reset params before reusing the statement handle
 
+    // 2) SELECT LAST_INSERT_ID() on the SAME connection (connection-scoped in MySQL)
+    {
         uint64 outId = 0;
 
         DbBind<0, 1> bind(*g.conn, L"SELECT LAST_INSERT_ID()");
@@ -121,19 +127,33 @@ bool DBManager::CreatePlayer(uint64 accountDbId, int32 templateId,
         playerId = outId;
     }
 
+    g.conn->Unbind();   // close cursor + unbind columns before the next query
+
     // 3) INSERT PlayerDetails
     {
-        DbConnGuard g;
-        if (!g.Valid()) return false;
-
         uint64 pId = playerId;
 
-        DbBind<1, 0> bind(*g.conn,
-            L"INSERT INTO PlayerDetails (player_id) VALUES (?)");
+        // Spawn pos is sourced from PlayerSpawnData id=1 (single source of truth),
+        // not from the DB column DEFAULT.
+        const SpawnData* spawn = GDataManager ? GDataManager->GetPlayerSpawnData(1) : nullptr;
+        float pPx  = spawn ? spawn->pos.x : 0.f;
+        float pPy  = spawn ? spawn->pos.y : 0.f;
+        float pPz  = spawn ? spawn->pos.z : 0.f;
+        float pYaw = spawn ? spawn->yaw   : 0.f;
+
+        DbBind<5, 0> bind(*g.conn,
+            L"INSERT INTO PlayerDetails (player_id, pos_x, pos_y, pos_z, rot_y) "
+            L"VALUES (?, ?, ?, ?, ?)");
         bind.BindParam(pId);
+        bind.BindParam(pPx);
+        bind.BindParam(pPy);
+        bind.BindParam(pPz);
+        bind.BindParam(pYaw);
 
         if (!TimedQuery([&] { return bind.Execute(); })) return false;
     }
+
+    if (!txn.Commit()) return false;
 
     summary.dbId = playerId;
     summary.name = wName;

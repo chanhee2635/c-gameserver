@@ -11,7 +11,7 @@ void QueueManager::Start()
 
 void QueueManager::Enqueue(GateSessionRef session, uint64 accountId, int32 serverId)
 {
-    // Àâ ½º·¹µå·Î ³Ñ°Ü Á÷·ÄÈ­(¶ô ºÒÇÊ¿ä)
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ñ°ï¿½ ï¿½ï¿½ï¿½ï¿½È­(ï¿½ï¿½ ï¿½ï¿½ï¿½Ê¿ï¿½)
     DoAsync([this, session, accountId, serverId]()
         {
             _queues[serverId].waiters.push_back(Waiter{ session, accountId });
@@ -21,29 +21,30 @@ void QueueManager::Enqueue(GateSessionRef session, uint64 accountId, int32 serve
 void QueueManager::Tick()
 {
     const uint64 now = ::GetTickCount64();
+    const bool sendStatus = (++_tickCounter % STATUS_EVERY == 0);   // throttle status broadcast to ~1s
 
     for (auto& [serverId, q] : _queues)
     {
-        // 1) ²÷±ä ´ë±âÀÚ Á¤¸®
+        // 1) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         std::erase_if(q.waiters, [](const Waiter& w)
             {
                 GateSessionRef s = w.session.lock();
                 return (s == nullptr) || (s->IsConnected() == false);
             });
 
-        // 2) ¸¸·áµÈ ¿¹¾à È¸¼ö
+        // 2) ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½
         std::erase_if(q.reservedExpiry, [now](uint64 exp) { return exp <= now; });
 
-        // 3) °ÔÀÓ¼­¹ö ¿ë·® Á¶È¸
+        // 3) ï¿½ï¿½ï¿½Ó¼ï¿½ï¿½ï¿½ ï¿½ë·® ï¿½ï¿½È¸
         ServerSlot slot;
         if (GGateRedis->GetServerInfo(serverId, slot) == false)
-            continue;   // ¼­¹ö ´Ù¿î/¹Ìµî·Ï ¡æ ´ÙÀ½ tick Àç½Ãµµ
+            continue;   // ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¿ï¿½/ï¿½Ìµï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ tick ï¿½ï¿½Ãµï¿½
 
         const int32 occupancy = slot.current + static_cast<int32>(q.reservedExpiry.size());
         int32 freeSlots = slot.max - occupancy;
         if (freeSlots < 0) freeSlots = 0;
 
-        // 4) ¾Õ¿¡¼­ºÎÅÍ ÀÔÀå Çã°¡
+        // 4) ï¿½Õ¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ã°¡
         const int32 admit = std::min({ freeSlots,
                                        static_cast<int32>(q.waiters.size()),
                                        BATCH_PER_TICK });
@@ -53,7 +54,7 @@ void QueueManager::Tick()
             q.waiters.pop_front();
 
             GateSessionRef s = w.session.lock();
-            if (!s || !s->IsConnected()) continue;   // ¹æ±Ý ²÷±è ¡æ ½½·Ô ³¶ºñ ¾øÀÌ ½ºÅµ
+            if (!s || !s->IsConnected()) continue;   // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Åµ
 
             const string token = GGateRedis->IssueAuthToken(w.accountId);
 
@@ -66,7 +67,8 @@ void QueueManager::Tick()
             q.reservedExpiry.push_back(now + RESERVE_TTL_MS);
         }
 
-        // 5) ³²Àº ´ë±âÀÚ¿¡°Ô ¼ø¹ø ÅëÁö
+        // 5) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        if (!sendStatus) continue;   // admit every tick, but broadcast queue position only every STATUS_EVERY ticks
         const int32 total = static_cast<int32>(q.waiters.size());
         int32 idx = 0;
         for (Waiter& w : q.waiters)
@@ -78,10 +80,10 @@ void QueueManager::Tick()
             Protocol::SQStatus st;
             st.set_position(idx);
             st.set_total(total);
-            st.set_eta_sec(0);   // TODO: µå·¹ÀÎ ¼Óµµ ±â¹Ý ÃßÁ¤
+            st.set_eta_sec(0);   // TODO: ï¿½å·¹ï¿½ï¿½ ï¿½Óµï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             s->Send(MakeSendBuffer<Protocol::S_Q_STATUS>(st));
         }
     }
 
-    DoTimer(TICK_MS, [this]() { Tick(); });   // Àç¿¹¾à
+    DoTimer(TICK_MS, [this]() { Tick(); });   // ï¿½ç¿¹ï¿½ï¿½
 }

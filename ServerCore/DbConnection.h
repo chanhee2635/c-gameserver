@@ -19,6 +19,11 @@ public:
     void        Unbind();
     void        HandleError(SQLSMALLINT handleType, SQLHANDLE handle);
 
+    // Transaction control
+    bool        SetAutoCommit(bool enabled);
+    bool        Commit();
+    bool        Rollback();
+
 
     // Input parameters
     void        BindParam(int32 idx, bool& value, SQLLEN* len);

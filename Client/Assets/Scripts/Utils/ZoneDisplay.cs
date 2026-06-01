@@ -5,7 +5,7 @@ public class ZoneDisplay : MonoBehaviour
     [Header("server.json 과 동일하게 (world)")]
     public int mapSize = 1000;   
     public int zoneSize = 20;   
-    public int sceneCount = 4;    
+    public int sceneCount = 8;    
 
     [Header("표시")]
     public float y = 0.05f;                         

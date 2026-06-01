@@ -18,12 +18,18 @@ private:
     struct ServerQueue
     {
         Deque<Waiter>  waiters;
-        Vector<uint64> reservedExpiry;   // ¹ß±ÞÇßÁö¸¸ ¾ÆÁ÷ °ÔÀÓ¼­¹ö ¹ÌÁ¢¼ÓÀÎ ¿¹¾à(¸¸·á tick)
+        Vector<uint64> reservedExpiry;   // ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ó¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ tick)
     };
 
     HashMap<int32, ServerQueue> _queues;
 
-    static constexpr uint32 TICK_MS        = 1000;   // ¼ø¹ø °»½Å ÁÖ±â
-    static constexpr uint64 RESERVE_TTL_MS = 8000;   // ÅäÅ« ¹ß±Þ ÈÄ Á¢¼Ó À¯¿¹
-    static constexpr int32  BATCH_PER_TICK = 50;     // ÃÊ´ç ÃÖ´ë ÀÔÀå(ÆøÁÖ ÆòÅºÈ­)
+    // Admission runs every TICK_MS (fine-grained) to spread player spawns evenly
+    // across game-server scene ticks instead of bursting BATCH_PER_TICK at once.
+    // Queue-position status is broadcast only every STATUS_EVERY ticks (~1s).
+    uint32 _tickCounter = 0;
+    static constexpr uint32 STATUS_EVERY = 10;   // 100ms * 10 = ~1s status cadence
+
+    static constexpr uint32 TICK_MS        = 100;   // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö±ï¿½
+    static constexpr uint64 RESERVE_TTL_MS = 8000;   // ï¿½ï¿½Å« ï¿½ß±ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    static constexpr int32  BATCH_PER_TICK = 5;     // ï¿½Ê´ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ÅºÈ­)
 };

@@ -65,7 +65,6 @@ int32 Creature::TakeDamage(int32 incomingAttack)
     {
         _hp = 0;
         SetState(Protocol::DEAD);
-        OnDead();
     }
 
     return damage;

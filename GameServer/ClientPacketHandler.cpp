@@ -74,7 +74,6 @@ bool ClientPacketHandler::OnHandle_C_CREATE_PLAYER(GameSessionRef session, const
     int32       templateId = pkt.template_id();
     const string& name    = pkt.name();
 
-    // Reject unknown class ids at the trust boundary so they never reach the DB / Player::Init.
     if (!GDataManager->IsValidPlayerTemplate(templateId))
     {
         Protocol::SCreatePlayer res;
@@ -129,7 +128,6 @@ bool ClientPacketHandler::OnHandle_C_ENTER_GAME(GameSessionRef session, const Pr
 {
     if (!IsAuthenticated(session)) return false;
 
-    // Synchronous latch: one in-flight/active enter per session (prevents ghost players).
     if (!session->TryBeginEnterGame())
     {
         LOG_WARN(L"Duplicate enter game blocked accountDbId=" + std::to_wstring(session->GetDbId()));

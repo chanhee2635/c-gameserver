@@ -12,6 +12,24 @@ struct DbConnGuard
     bool Valid() const { return conn != nullptr; }
 };
 
+// Wraps a transaction on a pooled connection. On scope exit it rolls back if
+// not committed, then restores autocommit so the connection is safe to reuse.
+struct DbTxnGuard
+{
+    DbConnection* conn = nullptr;
+    bool          committed = false;
+
+    explicit DbTxnGuard(DbConnection* c) : conn(c) { if (conn) conn->SetAutoCommit(false); }
+    ~DbTxnGuard()
+    {
+        if (!conn) return;
+        if (!committed) conn->Rollback();
+        conn->SetAutoCommit(true);   // restore before the connection returns to the pool
+    }
+
+    bool Commit() { committed = (conn && conn->Commit()); return committed; }
+};
+
 class DBManager 
 {
 public:

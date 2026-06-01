@@ -42,8 +42,6 @@ public:
     void MakeStatInfo(Protocol::StatInfo& info) const override;
 
 protected:
-    virtual void OnDead() {}
-
     const PrefabData* _prefabData = nullptr;
     Protocol::CreatureState _state = Protocol::IDLE;
     int32   _hp = 0;

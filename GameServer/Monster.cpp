@@ -84,11 +84,6 @@ void Monster::HandleGatherResult(PlayerRef player, float distSq)
     }
 }
 
-void Monster::OnDead()
-{
-    LOG_INFO(L"Monster dead templateId=" + std::to_wstring(_templateId));
-}
-
 void Monster::UpdateIdle()
 {
     if (_nowTick < _nextSearchTick) return;

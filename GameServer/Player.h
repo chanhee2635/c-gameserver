@@ -42,9 +42,6 @@ public:
     void AddToScene(GameScene* scene) override;
     void RemoveFromScene(GameScene* scene) override;
 
-protected:
-    virtual void OnDead() override;
-
 private:
     void TryLevelUp();
 
