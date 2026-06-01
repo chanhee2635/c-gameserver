@@ -292,8 +292,11 @@ void GameScene::BroadcastScene()
                 if (_broadcastPacket.spawns_size()   == 0 &&
                     _broadcastPacket.despawns_size() == 0 &&
                     _broadcastPacket.moves_size()    == 0) return;
-                OffloadBroadcast(zone, MakeSendBuffer<Protocol::MsgId::S_UPDATE_SCENE>(_broadcastPacket));
-                _broadcastPacket.Clear();
+                // Move the filled packet out (cheap) and hand it to a send-lane; the
+                // protobuf serialization then happens off the scene thread.
+                auto packet = MakeShared<Protocol::SUpdateScene>(std::move(_broadcastPacket));
+                _broadcastPacket.Clear();   // reset the moved-from packet for the next chunk
+                OffloadBroadcast(zone, std::move(packet));
             };
 
             zone->FillUpdatePacket(_broadcastPacket, flush);
@@ -315,9 +318,9 @@ void GameScene::BroadcastToZone(ZoneRef zone, SendBufferRef sendBuffer, uint64 e
 }
 
 // zone 플레이어를 스냅샷한 뒤 실제 전송은 send-lane으로 넘겨 워커가 병렬 처리한다
-void GameScene::OffloadBroadcast(const ZoneRef& zone, SendBufferRef sendBuffer)
+void GameScene::OffloadBroadcast(const ZoneRef& zone, std::shared_ptr<Protocol::SUpdateScene> packet)
 {
-    if (!sendBuffer) return;
+    if (!packet) return;
 
     const auto& players = zone->GetPlayers();
     if (players.empty()) return;
@@ -328,8 +331,11 @@ void GameScene::OffloadBroadcast(const ZoneRef& zone, SendBufferRef sendBuffer)
         targets->push_back(player);
 
     JobQueueRef lane = SendLanes()[zone->GetId() % SEND_LANE_COUNT];
-    lane->DoAsync([targets = std::move(targets), sendBuffer = std::move(sendBuffer)]()
+    lane->DoAsync([targets = std::move(targets), packet = std::move(packet)]()
     {
+        // Serialize on the lane (worker) thread. MakeSendBuffer uses a thread-local
+        // send-buffer chunk, so building it off the scene thread is safe and parallel.
+        SendBufferRef sendBuffer = MakeSendBuffer<Protocol::MsgId::S_UPDATE_SCENE>(*packet);
         for (PlayerRef& p : *targets)
             p->Send(sendBuffer);
     });

@@ -51,7 +51,8 @@ private:
     void DispatchNotices(FrameHashMap<GameScene*, Vector<MoveNotice>>& crossNotices);
     void ProcessNotices(const Vector<MoveNotice>& notices);
     void BroadcastScene();
-    void OffloadBroadcast(const ZoneRef& zone, SendBufferRef sendBuffer);
+    // Hands the filled packet to a send-lane which serializes it off the scene thread.
+    void OffloadBroadcast(const ZoneRef& zone, std::shared_ptr<Protocol::SUpdateScene> packet);
     void ApplyHitToMonster(PlayerRef attacker, MonsterRef monster, Vector3 attackPos, ZoneRef myZone);
 
     template<typename Fn>
