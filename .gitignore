@@ -57,6 +57,8 @@ MemoryCaptures/
 
 # --- [로그/기타] ---
 *.log
+# 부하 테스트 스크래치(드라이버/파서/CSV/마커 등): 로컬 전용, 추적 안 함
+.loadtest/
 server.json
 config.json
 *.zip
