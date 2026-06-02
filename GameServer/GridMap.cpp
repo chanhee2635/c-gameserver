@@ -59,6 +59,17 @@ bool GridMap::IsWalkable(const Vector3& pos) const
     return CellWalkable(cx, cz);
 }
 
+bool GridMap::IsPathWalkable(const Vector3& from, const Vector3& to) const
+{
+    if (_cells.empty()) return true;
+    int32 x0, z0, x1, z1;
+    ToCell(from, x0, z0);
+    ToCell(to,   x1, z1);
+    // LineOfSight checks every cell along the segment (incl. both endpoints) and blocks
+    // diagonal corner-cutting, so this subsumes the destination-only IsWalkable check.
+    return LineOfSight(x0, z0, x1, z1);
+}
+
 bool GridMap::LineOfSight(int32 x0, int32 z0, int32 x1, int32 z1) const
 {
     int32 dx = std::abs(x1 - x0);

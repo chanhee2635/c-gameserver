@@ -20,6 +20,8 @@ public:
     static bool OnHandle_S_CHANGE_EXP(DummySessionRef session, const Protocol::SChangeExp& pkt);
     static bool OnHandle_S_CHANGE_LEVEL(DummySessionRef session, const Protocol::SChangeLevel& pkt);
     static bool OnHandle_S_CHAT(DummySessionRef session, const Protocol::SChat& pkt);
+    static bool OnHandle_S_TIME_SYNC(DummySessionRef session, const Protocol::STimeSync& pkt);
+    static bool OnHandle_S_MOVE_CORRECTION(DummySessionRef session, const Protocol::SMoveCorrection& pkt);
 
 private:
     template<typename MsgType, bool(*OnHandle)(DummySessionRef, const MsgType&)>

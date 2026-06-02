@@ -106,3 +106,13 @@ bool ServerPacketHandler::OnHandle_S_CHAT(DummySessionRef session, const Protoco
 {
     return true;
 }
+bool ServerPacketHandler::OnHandle_S_TIME_SYNC(DummySessionRef session, const Protocol::STimeSync& pkt)
+{
+    return false;
+}
+bool ServerPacketHandler::OnHandle_S_MOVE_CORRECTION(DummySessionRef session, const Protocol::SMoveCorrection& pkt)
+{
+    // Load-test bot: server-authoritative position corrections are acknowledged but not
+    // applied (the simulator keeps driving its own path), so this is a no-op.
+    return true;
+}

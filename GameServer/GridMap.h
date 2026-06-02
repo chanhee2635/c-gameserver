@@ -8,6 +8,7 @@ public:
     bool IsLoaded() const { return !_cells.empty(); }
 
     bool IsWalkable(const Vector3& pos) const;
+    bool IsPathWalkable(const Vector3& from, const Vector3& to) const;
 
     bool FindPath(Vector3 start, Vector3 end, Vector<Vector3>& outPath) const;
 

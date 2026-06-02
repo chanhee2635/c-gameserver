@@ -78,4 +78,5 @@ struct MoveJob
     Vector3                 velocity;
     float                   yaw = 0.f;
     Protocol::CreatureState state = Protocol::IDLE;
-}; 
+    uint64                  sendServerTimeMs = 0;  
+};

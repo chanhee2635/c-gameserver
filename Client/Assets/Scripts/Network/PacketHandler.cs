@@ -28,6 +28,17 @@ public static partial class PacketHandler
     {
         if (!pkt.Success) return;
         Managers.Object.SetMyPlayerInfo(pkt.MyPlayer);
+        Managers.Network.StartClockSync();
+    }
+
+    public static void STimeSyncHandler(Protocol.STimeSync pkt)
+    {
+        Managers.Network.OnTimeSync(pkt.ClientSendMs, pkt.ServerTimeMs);
+    }
+
+    public static void SMoveCorrectionHandler(Protocol.SMoveCorrection pkt)
+    {
+        Managers.Object.MyPlayer?.OnMoveCorrection(Util.ToUnity(pkt.Pos), pkt.Yaw);
     }
 
     public static void SReadyToEnterHandler(Protocol.SReadyToEnter pkt)

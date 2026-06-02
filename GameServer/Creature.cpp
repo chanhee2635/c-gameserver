@@ -29,13 +29,13 @@ uint64 Creature::GetHitDelay(int32 comboIndex) const
 
 bool Creature::ShouldBroadcastMove(uint64 nowMs) const
 {
-    if (_state != _lastSentState)                                                  // 애니 상태 변화
+    if (_state != _lastSentState)                                              
         return true;
-    if ((_velocity - _lastSentVelocity).LengthSq() > GameConfig::Move::VEL_EPS_SQ) // 속도 변화(출발/정지/회전/sprint)
+    if ((_velocity - _lastSentVelocity).LengthSq() > GameConfig::Move::VEL_EPS_SQ) 
         return true;
-    if ((_pos - PredictPos(nowMs)).LengthSq() > GameConfig::Move::POS_EPS_SQ)       // 위치 발산(벽 등)
+    if ((_pos - PredictPos(nowMs)).LengthSq() > GameConfig::Move::POS_EPS_SQ)      
         return true;
-    if (!_velocity.IsZero() && nowMs - _lastSentTick >= GameConfig::Move::HEARTBEAT_MS) // 이동 중 하트비트
+    if (!_velocity.IsZero() && nowMs - _lastSentTick >= GameConfig::Move::HEARTBEAT_MS) 
         return true;
     return false;
 }

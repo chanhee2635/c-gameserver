@@ -44,15 +44,9 @@ struct GameMetrics {
     Atomic<int32>  activeMonsters     = 0;
     Atomic<uint64> tickCount          = 0;   
     Atomic<uint64> suspiciousPackets  = 0;
-    Atomic<uint64> tickLagTotalMs     = 0;
-    Atomic<uint64> tickLagCount       = 0;
-    Atomic<uint64> tickLagMaxMs       = 0;
-
-    // Per-tick phase cost (microseconds, summed across all scene ticks in the interval).
-    // Averaged by tickCount in RenderReport to locate what inflates a tick.
-    Atomic<uint64> tickPhaseUpdateUs    = 0;   // UpdateObjects (move + AI + dirty dispatch)
-    Atomic<uint64> tickPhaseNoticeUs    = 0;   // CollectMoveNotices + DispatchNotices (AOI/vision)
-    Atomic<uint64> tickPhaseBroadcastUs = 0;   // BroadcastScene (PosInfo serialize + offload)
+    Atomic<uint64> tickLagTotalMs     = 0;  
+    Atomic<uint64> tickLagCount       = 0;   
+    Atomic<uint64> tickLagMaxMs       = 0;   
 
     std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
     uint64 GetUptime() const {

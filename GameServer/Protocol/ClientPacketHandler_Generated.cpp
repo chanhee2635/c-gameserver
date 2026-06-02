@@ -15,6 +15,7 @@ bool ClientPacketHandler::Handle(GameSessionRef session, std::span<const BYTE> p
     case Protocol::C_ATTACK: return HandlePacket<Protocol::CAttack, OnHandle_C_ATTACK>(session, packet);
     case Protocol::C_REVIVE: return HandlePacket<Protocol::CRevive, OnHandle_C_REVIVE>(session, packet);
     case Protocol::C_CHAT: return HandlePacket<Protocol::CChat, OnHandle_C_CHAT>(session, packet);
+    case Protocol::C_TIME_SYNC: return HandlePacket<Protocol::CTimeSync, OnHandle_C_TIME_SYNC>(session, packet);
     default:
         LOG_WARN(L"Unknown packet type=" + std::to_wstring(type));
         return false;

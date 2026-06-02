@@ -84,13 +84,6 @@ void ServerStats::RenderReport()
     uint64 lagMax = game.tickLagMaxMs.exchange(0);
     uint64 avgLagMs = (lagCount > 0) ? (lagTotal / lagCount) : 0;
 
-    uint64 phaseUpdateUs    = game.tickPhaseUpdateUs.exchange(0);
-    uint64 phaseNoticeUs    = game.tickPhaseNoticeUs.exchange(0);
-    uint64 phaseBroadcastUs = game.tickPhaseBroadcastUs.exchange(0);
-    uint64 avgUpdateUs    = (ticks > 0) ? (phaseUpdateUs    / ticks) : 0;
-    uint64 avgNoticeUs    = (ticks > 0) ? (phaseNoticeUs    / ticks) : 0;
-    uint64 avgBroadcastUs = (ticks > 0) ? (phaseBroadcastUs / ticks) : 0;
-
 
     std::wstringstream ss;
 
@@ -105,8 +98,7 @@ void ServerStats::RenderReport()
     if (dropped > 0)        ss << L"  \033[31mDropped: " << dropped << L"/s\033[0m";
     ss << L"\033[K\n";
     ss << L" [ENGINE]   IOCP: " << iocpCount << L"/s (" << avgIocpUs << L"us)  Job: " << jobs << L"/s\033[K\n";
-    ss << L" [TICKS]    Scene: " << ticks << L"/s  AvgLag: " << avgLagMs << L"ms  MaxLag: " << lagMax << L"ms"
-       << L"  Phase(us) Upd/Ntc/Bcast: " << avgUpdateUs << L"/" << avgNoticeUs << L"/" << avgBroadcastUs;
+    ss << L" [TICKS]    Scene: " << ticks << L"/s  AvgLag: " << avgLagMs << L"ms  MaxLag: " << lagMax << L"ms";
     if (avgLagMs >= 30)
         ss << L"  \033[31m[WARN: tick delay]\033[0m";
     ss << L"\033[K\n";

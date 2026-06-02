@@ -29,6 +29,10 @@ enum MsgId {
 
     C_CHAT           = 21;
     S_CHAT           = 22;
+
+    C_TIME_SYNC      = 23;
+    S_TIME_SYNC      = 24;
+    S_MOVE_CORRECTION = 25;
 }
 
 enum CreatureState {
@@ -123,8 +127,13 @@ message SUpdateScene {
     repeated uint64 despawns = 2; 
     repeated PosInfo moves = 3; 
 }
-message CMove { 
-    PosInfo pos_info = 1; 
+message CMove {
+    PosInfo pos_info            = 1;
+    uint64  send_server_time_ms = 2;   // send time in server-clock estimate (0 = not yet synced)
+}
+message SMoveCorrection {
+    Vector3 pos = 1;   // server-authoritative position to roll back to
+    float   yaw = 2;
 }
 message CAttack { 
     float yaw = 1; 
@@ -166,7 +175,15 @@ message SChangeLevel {
     int64 exp = 5;
 }
 
-message CChat { 
+message CTimeSync {
+    uint64 client_send_ms = 1;   // client clock at send (t0)
+}
+message STimeSync {
+    uint64 client_send_ms = 1;   // echoed back unchanged (t0)
+    uint64 server_time_ms = 2;   // server GetTickCount64() at receive (t1)
+}
+
+message CChat {
     string chat = 1; 
     ChatType chat_type = 2;
 }

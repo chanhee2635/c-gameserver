@@ -184,16 +184,27 @@ bool ClientPacketHandler::OnHandle_C_MOVE(GameSessionRef session, const Protocol
     job.velocity = GameUtil::ToServer(pkt.pos_info().velocity());
     job.yaw      = pkt.pos_info().yaw();
     job.state    = static_cast<Protocol::CreatureState>(pkt.pos_info().state());
+    job.sendServerTimeMs = pkt.send_server_time_ms();
 
-    // Reject non-finite input (NaN/Inf) before it enters the simulation (UB in zone math, poisoned prediction).
     if (!job.pos.IsFinite() || !job.velocity.IsFinite() || !std::isfinite(job.yaw))
     {
         if (GServerStats)
             GServerStats->game.suspiciousPackets.fetch_add(1, std::memory_order_relaxed);
-        return true;  // drop malformed move
+        return true;  
     }
 
     player->SetPendingMove(job);
+    return true;
+}
+
+bool ClientPacketHandler::OnHandle_C_TIME_SYNC(GameSessionRef session, const Protocol::CTimeSync& pkt)
+{
+    if (!IsAuthenticated(session)) return false;
+
+    Protocol::STimeSync res;
+    res.set_client_send_ms(pkt.client_send_ms());
+    res.set_server_time_ms(::GetTickCount64());
+    session->Send(MakeSendBuffer<Protocol::MsgId::S_TIME_SYNC>(res));
     return true;
 }
 

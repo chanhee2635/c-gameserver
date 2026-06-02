@@ -16,19 +16,25 @@ namespace GameConfig
     }
 
     namespace Move {
-        constexpr float  POS_EPS = 0.3f;
+        constexpr float  POS_EPS = 0.5f;
         constexpr float  POS_EPS_SQ = POS_EPS * POS_EPS;
         constexpr float  VEL_EPS = 0.5f;
         constexpr float  VEL_EPS_SQ = VEL_EPS * VEL_EPS;
-        // Refresh interval for a moving entity whose path matches server prediction
-        // (no divergence). 400ms => only 2.5 updates/s to observers, so remote movement
-        // hitches as dead-reckoning corrects each sparse update. 150ms (~6.6/s) keeps
-        // remote motion smooth at typical densities.
-        // Trade-off: this ~2.6x broadcast volume is fine for normal play but, in a single
-        // scene packed with >~1000 movers, re-approaches the tick budget (load-tested).
-        // Raising the per-scene ceiling further needs AOI/broadcast-volume reduction,
-        // not a higher heartbeat.
-        constexpr uint64 HEARTBEAT_MS = 150;
+        // Heartbeat / confirm interval for a moving entity whose path still matches server
+        // prediction (divergence under POS_EPS). Real motion changes are sent immediately by
+        // the threshold checks in ShouldBroadcastMove; this is only the fallback "still here,
+        // still on course" packet for perfectly straight movement. Server-side dead reckoning
+        // plus the client's velocity-blended coasting keep straight motion smooth between
+        // these sparse updates, so 500ms is safe and keeps broadcast volume low.
+        constexpr uint64 HEARTBEAT_MS = 500;
+
+        // Dead reckoning: cap how far the server projects a reported position forward by
+        // the measured latency (network + queue), so a stalled packet cannot fling the avatar.
+        constexpr uint64 DEAD_RECKON_MAX_MS = 150;
+
+        // Reconciliation: min interval between move-correction packets to one player, so a
+        // client shoved into a wall doesn't get corrected every tick.
+        constexpr uint64 CORRECTION_MIN_INTERVAL_MS = 100;
 
         // Anti-cheat: server-authoritative move-speed gate.
         constexpr float  SPRINT_MULT     = 2.0f;   // client sprint = base speed * 2

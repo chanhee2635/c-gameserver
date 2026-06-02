@@ -18,6 +18,8 @@ public sealed partial class PacketManager
         AddHandler<Protocol.SChangeExp>((ushort)Protocol.MsgId.SChangeExp, PacketHandler.SChangeExpHandler);
         AddHandler<Protocol.SChangeLevel>((ushort)Protocol.MsgId.SChangeLevel, PacketHandler.SChangeLevelHandler);
         AddHandler<Protocol.SChat>((ushort)Protocol.MsgId.SChat, PacketHandler.SChatHandler);
+        AddHandler<Protocol.STimeSync>((ushort)Protocol.MsgId.STimeSync, PacketHandler.STimeSyncHandler);
+        AddHandler<Protocol.SMoveCorrection>((ushort)Protocol.MsgId.SMoveCorrection, PacketHandler.SMoveCorrectionHandler);
     }
 }
 
@@ -34,6 +36,7 @@ public static class PacketIdMapper
         { typeof(Protocol.CAttack), (ushort)Protocol.MsgId.CAttack },
         { typeof(Protocol.CRevive), (ushort)Protocol.MsgId.CRevive },
         { typeof(Protocol.CChat), (ushort)Protocol.MsgId.CChat },
+        { typeof(Protocol.CTimeSync), (ushort)Protocol.MsgId.CTimeSync },
     };
     public static ushort GetId(Type t) => _map.TryGetValue(t, out var id) ? id : (ushort)0;
 }

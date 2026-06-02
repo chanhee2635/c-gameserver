@@ -9,7 +9,6 @@
 #include "GridMap.h"
 #include "Protocol/PacketUtils.h"
 #include "DBManager.h"
-#include <chrono>
 
 // 브로드캐스트 전송을 분산할 send-lane 풀. zone 별로 lane 고정(zoneId % N)해 순서 보존
 namespace
@@ -84,25 +83,10 @@ void GameScene::Update()
     FrameVector<CreatureRef> movingCreatures;
     FrameHashMap<GameScene*, Vector<MoveNotice>> crossNotices;
 
-    using PhaseClock = std::chrono::steady_clock;
-    auto p0 = PhaseClock::now();
     UpdateObjects(now, deltaTimeMs, movingCreatures);
-    auto p1 = PhaseClock::now();
     CollectMoveNotices(movingCreatures, crossNotices);
     DispatchNotices(crossNotices);
-    auto p2 = PhaseClock::now();
     BroadcastScene();
-    auto p3 = PhaseClock::now();
-
-    if (GServerStats)
-    {
-        auto us = [](auto a, auto b) {
-            return (uint64)std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
-        };
-        GServerStats->game.tickPhaseUpdateUs.fetch_add(us(p0, p1), std::memory_order_relaxed);
-        GServerStats->game.tickPhaseNoticeUs.fetch_add(us(p1, p2), std::memory_order_relaxed);
-        GServerStats->game.tickPhaseBroadcastUs.fetch_add(us(p2, p3), std::memory_order_relaxed);
-    }
 }
 
 void GameScene::UpdateObjects(uint64 nowMs, uint32 deltaTimeMs, FrameVector<CreatureRef>& movingCreatures)
@@ -112,19 +96,24 @@ void GameScene::UpdateObjects(uint64 nowMs, uint32 deltaTimeMs, FrameVector<Crea
         MoveJob job;
         if (player->TakePendingMove(job))
         {
-            bool blocked = (GGridMap && GGridMap->IsLoaded() && !GGridMap->IsWalkable(job.pos));
+            // Path (not just destination) walkability: reject moves whose segment from the
+            // last accepted pos crosses a wall, so a big/laggy step can't phase through it.
+            bool blocked = (GGridMap && GGridMap->IsLoaded()
+                            && !GGridMap->IsPathWalkable(player->GetPos(), job.pos));
             bool allowed = player->IsMoveAllowed(job.pos, job.velocity, nowMs);
 
             if (!blocked && allowed)
             {
-                player->HandleMoveJob(job);
+                player->HandleMoveJob(job, nowMs);
             }
-            else if (!allowed && GServerStats)
+            else
             {
-                GServerStats->game.suspiciousPackets.fetch_add(1, std::memory_order_relaxed);
+                if (!allowed && GServerStats)
+                    GServerStats->game.suspiciousPackets.fetch_add(1, std::memory_order_relaxed);
+                // Rejected: keep the server authoritative and roll the client back so
+                // client/server positions cannot drift.
+                player->SendMoveCorrection(nowMs);
             }
-            // Rejected moves are ignored so the server stays authoritative (no teleport/speedhack).
-            // TODO: send a position-correction packet so client/server positions cannot drift.
         }
 
         if (player->ShouldBroadcastMove(nowMs))
@@ -292,11 +281,8 @@ void GameScene::BroadcastScene()
                 if (_broadcastPacket.spawns_size()   == 0 &&
                     _broadcastPacket.despawns_size() == 0 &&
                     _broadcastPacket.moves_size()    == 0) return;
-                // Move the filled packet out (cheap) and hand it to a send-lane; the
-                // protobuf serialization then happens off the scene thread.
-                auto packet = MakeShared<Protocol::SUpdateScene>(std::move(_broadcastPacket));
-                _broadcastPacket.Clear();   // reset the moved-from packet for the next chunk
-                OffloadBroadcast(zone, std::move(packet));
+                OffloadBroadcast(zone, MakeSendBuffer<Protocol::MsgId::S_UPDATE_SCENE>(_broadcastPacket));
+                _broadcastPacket.Clear();
             };
 
             zone->FillUpdatePacket(_broadcastPacket, flush);
@@ -318,9 +304,9 @@ void GameScene::BroadcastToZone(ZoneRef zone, SendBufferRef sendBuffer, uint64 e
 }
 
 // zone 플레이어를 스냅샷한 뒤 실제 전송은 send-lane으로 넘겨 워커가 병렬 처리한다
-void GameScene::OffloadBroadcast(const ZoneRef& zone, std::shared_ptr<Protocol::SUpdateScene> packet)
+void GameScene::OffloadBroadcast(const ZoneRef& zone, SendBufferRef sendBuffer)
 {
-    if (!packet) return;
+    if (!sendBuffer) return;
 
     const auto& players = zone->GetPlayers();
     if (players.empty()) return;
@@ -331,11 +317,8 @@ void GameScene::OffloadBroadcast(const ZoneRef& zone, std::shared_ptr<Protocol::
         targets->push_back(player);
 
     JobQueueRef lane = SendLanes()[zone->GetId() % SEND_LANE_COUNT];
-    lane->DoAsync([targets = std::move(targets), packet = std::move(packet)]()
+    lane->DoAsync([targets = std::move(targets), sendBuffer = std::move(sendBuffer)]()
     {
-        // Serialize on the lane (worker) thread. MakeSendBuffer uses a thread-local
-        // send-buffer chunk, so building it off the scene thread is safe and parallel.
-        SendBufferRef sendBuffer = MakeSendBuffer<Protocol::MsgId::S_UPDATE_SCENE>(*packet);
         for (PlayerRef& p : *targets)
             p->Send(sendBuffer);
     });

@@ -19,6 +19,8 @@ bool ServerPacketHandler::Handle(DummySessionRef session, std::span<const BYTE> 
     case Protocol::S_CHANGE_EXP: return HandlePacket<Protocol::SChangeExp, OnHandle_S_CHANGE_EXP>(session, packet);
     case Protocol::S_CHANGE_LEVEL: return HandlePacket<Protocol::SChangeLevel, OnHandle_S_CHANGE_LEVEL>(session, packet);
     case Protocol::S_CHAT: return HandlePacket<Protocol::SChat, OnHandle_S_CHAT>(session, packet);
+    case Protocol::S_TIME_SYNC: return HandlePacket<Protocol::STimeSync, OnHandle_S_TIME_SYNC>(session, packet);
+    case Protocol::S_MOVE_CORRECTION: return HandlePacket<Protocol::SMoveCorrection, OnHandle_S_MOVE_CORRECTION>(session, packet);
     default:
         LOG_WARN(L"Unknown packet type=" + std::to_wstring(type));
         return false;

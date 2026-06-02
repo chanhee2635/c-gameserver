@@ -6,6 +6,12 @@ public class CreatureController : BaseController
     protected int      _templateId;
     protected float    _baseSpeed;
     private bool       _initialized;
+
+    // Cached Animator parameter ids (avoid hashing the string on every call).
+    private static readonly int MoveHash       = Animator.StringToHash("Move");
+    private static readonly int ComboIndexHash = Animator.StringToHash("ComboIndex");
+    private static readonly int AttackHash     = Animator.StringToHash("Attack");
+    private static readonly int IsDeadHash     = Animator.StringToHash("IsDead");
     private Vector3    _velocity;
     private float      _lastMoveTime;
 
@@ -17,6 +23,7 @@ public class CreatureController : BaseController
     private Vector3    _renderPos;                      // continuous visual position
     private Vector3    _posError;                       // outstanding correction, bled in over time
     private const float CORRECT_RATE = 8f;              // 1/s; how fast positional error is absorbed
+    private const float CORRECT_DEADZONE_SQ = 0.25f;    // 0.5m: below this, skip correction (no twitch)
 
     public Protocol.CreatureState State { get; protected set; } = Protocol.CreatureState.Idle;
     public string Name  { get; protected set; }
@@ -29,7 +36,9 @@ public class CreatureController : BaseController
     private Quaternion _destDir;
     private float      _noUpdateTimer;
     private const float NO_UPDATE_TIMEOUT = 1.0f;
-    private const float TELEPORT_DIST_SQ  = 100.0f;
+    // Error beyond this snaps instead of blending: only true desync (network stall), not the
+    // ~1-2m extrapolation error a direction change produces. 3m => 9 squared.
+    private const float TELEPORT_DIST_SQ  = 9.0f;
 
     private Canvas     _summaryCanvas;
     private UI_Summary _summaryUI;
@@ -79,29 +88,34 @@ public class CreatureController : BaseController
     {
         float dt = Time.deltaTime;
 
-        transform.rotation = Quaternion.Slerp(transform.rotation, _destDir, dt * 20f);
+        Quaternion rot = Quaternion.Slerp(transform.rotation, _destDir, dt * 20f);
 
         // 1) Keep moving at the server-reported velocity (continuous, never stalls).
         _renderPos += _velocity * dt;
 
         // 2) Bleed the outstanding positional error in smoothly (no snap, no backward jerk).
+        //    Sub-deadzone error was already zeroed in OnMoveUpdate, so this only runs for
+        //    real divergence -- no per-packet twitching.
         float k = 1f - Mathf.Exp(-CORRECT_RATE * dt);
         _renderPos += _posError * k;
         _posError  *= (1f - k);
 
-        transform.position = _renderPos;
+        transform.SetPositionAndRotation(_renderPos, rot);
     }
 
     public void OnMoveUpdate(Protocol.PosInfo posInfo)
     {
         _noUpdateTimer = 0f;
         State = posInfo.State;
-        _destDir = Quaternion.Euler(0f, posInfo.Yaw, 0f);
-        _destPos = new Vector3(posInfo.Pos.X, posInfo.Pos.Y, posInfo.Pos.Z);
-        _velocity = new Vector3(posInfo.Velocity.X, posInfo.Velocity.Y, posInfo.Velocity.Z);
+        _destDir  = Quaternion.Euler(0f, posInfo.Yaw, 0f);
+        _destPos  = Util.ToUnity(posInfo.Pos);
+        _velocity = Util.ToUnity(posInfo.Velocity);
         _lastMoveTime = Time.time;
 
-        if ((_destPos - _renderPos).sqrMagnitude > TELEPORT_DIST_SQ)
+        Vector3 error   = _destPos - _renderPos;
+        float   errorSq = error.sqrMagnitude;
+
+        if (errorSq > TELEPORT_DIST_SQ)
         {
             // Too far to blend: snap.
             _renderPos = _destPos;
@@ -110,8 +124,9 @@ public class CreatureController : BaseController
         }
         else
         {
-            // Correct toward the authoritative position; absorbed over ~1/CORRECT_RATE seconds.
-            _posError = _destPos - _renderPos;
+            // Deadzone: ignore sub-epsilon error so the avatar doesn't twitch on every packet.
+            // Only real divergence is blended out (over ~1/CORRECT_RATE seconds).
+            _posError = errorSq > CORRECT_DEADZONE_SQ ? error : Vector3.zero;
         }
     }
 
@@ -185,7 +200,10 @@ public class CreatureController : BaseController
         _destDir       = rotation;
         _renderPos     = position;
         _posError      = Vector3.zero;
-        _velocity      = Vector3.zero;
+        // Seed velocity from the spawn packet so an entity that comes into view while moving
+        // coasts immediately instead of freezing until the next (up to HEARTBEAT_MS) move
+        // packet, which would otherwise cause a visible catch-up lurch.
+        _velocity      = Util.ToUnity(info.PosInfo.Velocity);
         _lastMoveTime  = Time.time;
         _noUpdateTimer = 0f;
 
@@ -209,7 +227,7 @@ public class CreatureController : BaseController
 
     public void OnAttack(Protocol.SAttack packet)
     {
-        Vector3 serverPos = new Vector3(packet.Pos.X, packet.Pos.Y, packet.Pos.Z);
+        Vector3 serverPos = Util.ToUnity(packet.Pos);
         if ((transform.position - serverPos).sqrMagnitude > TELEPORT_DIST_SQ)
             transform.position = serverPos;
 
@@ -223,8 +241,8 @@ public class CreatureController : BaseController
 
         if (_animator)
         {
-            _animator.SetInteger("ComboIndex", packet.ComboIndex);
-            _animator.SetTrigger("Attack");
+            _animator.SetInteger(ComboIndexHash, packet.ComboIndex);
+            _animator.SetTrigger(AttackHash);
         }
     }
 
@@ -251,8 +269,8 @@ public class CreatureController : BaseController
 
         if (_animator)
         {
-            _animator.SetBool("IsDead", true);
-            _animator.SetFloat("Move", 0f);
+            _animator.SetBool(IsDeadHash, true);
+            _animator.SetFloat(MoveHash, 0f);
         }
         ClearUI();
     }
@@ -282,7 +300,7 @@ public class CreatureController : BaseController
         float moveAnim = State == Protocol.CreatureState.Sprinting ? 1.0f
                        : State == Protocol.CreatureState.Moving    ? 0.5f
                        : 0.0f;
-        _animator.SetFloat("Move", moveAnim, 0.15f, Time.deltaTime);
+        _animator.SetFloat(MoveHash, moveAnim, 0.15f, Time.deltaTime);
     }
 
     public float GetHpRatio()

@@ -14,16 +14,15 @@ public class MyPlayerController : PlayerController
     private long _maxExp;
     private long _exp;
 
-    private bool    _isMoving;
-    private bool    _isSprinting;
+    private bool _isMoving;
+    private bool _isSprinting;
 
-    private float       _tickTimer;
-    private const float TICK_INTERVAL = 0.1f;
-    private const float FORCE_SYNC_INTERVAL = 0.5f;
-    private float       _lastSendTime;
+    private const float SEND_INTERVAL_MOVE = 0.1f;   // moving / state change: 100ms
+    private const float SEND_INTERVAL_IDLE = 0.5f;   // idle heartbeat: 500ms
     private Protocol.CreatureState _lastSendState;
-    private float _sendYaw;      
-    private float _lastSendYaw;  
+    private float _sendTimer;
+    private float _sendYaw;
+    private const float RECONCILE_TOLERANCE_SQ = 1.0f;   // 1m: ignore minor server/client diff
 
     private int _maxCombo;
     private const float COMBO_INPUT_WINDOW = 0.45f;
@@ -141,8 +140,7 @@ public class MyPlayerController : PlayerController
             Quaternion targetRot = Quaternion.LookRotation(inputDir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 20f);
 
-            _sendYaw = Mathf.Atan2(inputDir.x, inputDir.z) * Mathf.Rad2Deg;   
-            if (_sendYaw < 0f) _sendYaw += 360f;
+            _sendYaw = targetRot.eulerAngles.y;
 
             State = _isSprinting ? Protocol.CreatureState.Sprinting : Protocol.CreatureState.Moving;
         }
@@ -246,22 +244,18 @@ public class MyPlayerController : PlayerController
         if (_isAttacking) return;
 
         bool moving = (State == Protocol.CreatureState.Moving || State == Protocol.CreatureState.Sprinting);
-        if (moving && Mathf.Abs(Mathf.DeltaAngle(_lastSendYaw, _sendYaw)) > 30f)
+
+        if (_lastSendState != State)
         {
             SendMovePacket();
-            _tickTimer = 0f;
             return;
         }
 
-        _tickTimer += Time.deltaTime;
-        if (_tickTimer < TICK_INTERVAL) return;
-        _tickTimer = 0f;
+        _sendTimer += Time.deltaTime;
+        float interval = moving ? SEND_INTERVAL_MOVE : SEND_INTERVAL_IDLE;
+        if (_sendTimer < interval) return;
 
-        bool stateChanged = _lastSendState != State;
-        bool isTimeOut = Time.time - _lastSendTime >= FORCE_SYNC_INTERVAL;
-
-        if (moving || stateChanged || isTimeOut)
-            SendMovePacket();
+        SendMovePacket();
     }
 
     private void SendMovePacket()
@@ -274,12 +268,12 @@ public class MyPlayerController : PlayerController
                 Yaw = _sendYaw,
                 State = State,
                 Velocity = Util.ToProto(_sendVelocity)
-            }
+            },
+            SendServerTimeMs = Managers.Network.ServerNowMs()   // 0 until clock synced
         });
 
         _lastSendState = State;
-        _lastSendYaw = _sendYaw;
-        _lastSendTime = Time.time;
+        _sendTimer = 0f;
     }
 
     public void OnChangeExp(long exp)
@@ -310,5 +304,17 @@ public class MyPlayerController : PlayerController
 
         GameObject go = Managers.Resource.Instantiate("Effects/ReviveEffect");
         if (go != null) go.transform.position = pos + Vector3.up * 0.1f;
+    }
+
+    // Reconciliation: the server rejected our predicted move (anti-cheat / wall). Snap back
+    // to the authoritative position. No input replay -- just roll back.
+    public void OnMoveCorrection(Vector3 serverPos, float yaw)
+    {
+        if ((transform.position - serverPos).sqrMagnitude < RECONCILE_TOLERANCE_SQ)
+            return;   // close enough: don't rubber-band on minor diffs
+
+        _agent.Warp(serverPos);
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        _sendYaw = yaw;
     }
 }

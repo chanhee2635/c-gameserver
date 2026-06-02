@@ -16,6 +16,7 @@ public:
     static bool OnHandle_C_ATTACK(GameSessionRef session, const Protocol::CAttack& pkt);
     static bool OnHandle_C_REVIVE(GameSessionRef session, const Protocol::CRevive& pkt);
     static bool OnHandle_C_CHAT(GameSessionRef session, const Protocol::CChat& pkt);
+    static bool OnHandle_C_TIME_SYNC(GameSessionRef session, const Protocol::CTimeSync& pkt);
 
 private:
     static bool IsAuthenticated(const GameSessionRef& session)

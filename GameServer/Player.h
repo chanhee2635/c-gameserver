@@ -28,9 +28,11 @@ public:
     virtual int32 GetDefense()     const override { return _config ? _config->defense : 0; }
     virtual float GetAttackSpeed() const override { return _config ? _config->attackSpeed : 1.f; }
 
-    void HandleMoveJob(const MoveJob& job);
+    void HandleMoveJob(const MoveJob& job, uint64 nowMs);
     void SetPendingMove(const MoveJob& job);
     bool TakePendingMove(MoveJob& out);
+    // Reconciliation: tell the owning client to roll back to the authoritative pos (throttled).
+    void SendMoveCorrection(uint64 nowMs);
     // Server-authoritative speed gate. Updates the move clock only when the move is accepted.
     bool IsMoveAllowed(const Vector3& dst, const Vector3& vel, uint64 nowMs);
     void HandleAttack(float yaw, int32 comboIndex, Vector3 clientPos);
@@ -49,6 +51,7 @@ private:
     MoveJob  _pendingMove;
     bool     _hasPendingMove = false;
     uint64   _lastMoveTick   = 0;   // tick of last accepted move (speed gate)
+    uint64   _lastCorrectionMs = 0; // last time a correction was sent (anti-spam)
 
     uint64  _playerDbId  = 0;
     int32   _mp          = 0;
