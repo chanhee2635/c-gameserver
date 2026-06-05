@@ -44,6 +44,14 @@ void CoreGlobal::Init()
     _jobTimer = std::make_unique<JobTimer>();
     GJobTimer = _jobTimer.get();
 
+    _dbConnectionPool = std::make_unique<DbConnectionPool>();
+    GDbConnectionPool = _dbConnectionPool.get();
+
+    LOG_INFO(L"=== [Server Engine Initialization Complete] ===");
+}
+
+void CoreGlobal::EnableServerInstrumentation()
+{
     // 5. Logger — start log thread after GThread is ready
     _logger = std::make_unique<Logger>();
     GLogger = _logger.get();
@@ -53,9 +61,6 @@ void CoreGlobal::Init()
     _serverStats = std::make_unique<ServerStats>();
     GServerStats = _serverStats.get();
     GServerStats->Init();
-
-    _dbConnectionPool = std::make_unique<DbConnectionPool>();
-    GDbConnectionPool = _dbConnectionPool.get();
 
     LOG_INFO(L"=== [Server Engine Initialization Complete] ===");
 }

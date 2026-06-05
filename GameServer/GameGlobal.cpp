@@ -33,6 +33,7 @@ void GameGlobal::Init()
     timeBeginPeriod(1);
 
     CoreGlobal::Init();
+    CoreGlobal::EnableServerInstrumentation();
 
     if (!ConfigLoader::Load("server.json", _config))
         LOG_ERROR(L"Failed to load server.json : using defaults");

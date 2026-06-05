@@ -4,6 +4,9 @@
 #include "DummyNet.h"
 #include "IocpCore.h"
 
+#include <timeapi.h>
+#pragma comment(lib, "winmm.lib")
+
 ClientServiceRef                DummyGlobal::_service = nullptr;
 std::unique_ptr<DummySimulator> DummyGlobal::_simulator = nullptr;
 std::unique_ptr<DummyNet>       DummyGlobal::_net = nullptr;
@@ -13,6 +16,8 @@ DummyNet* GDummyNet = nullptr;
 
 void DummyGlobal::Init()
 {
+    timeBeginPeriod(1);
+
     CoreGlobal::Init();
 
     _simulator = std::make_unique<DummySimulator>();
@@ -46,4 +51,6 @@ void DummyGlobal::Clear()
     _service = nullptr;
 
     CoreGlobal::Clear();
+
+    timeEndPeriod(1);
 }

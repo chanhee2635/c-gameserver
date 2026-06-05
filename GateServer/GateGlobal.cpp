@@ -3,6 +3,10 @@
 #include "GateRedis.h"
 #include "QueueManager.h"
 
+
+#include <timeapi.h>
+#pragma comment(lib, "winmm.lib")
+
 GateConfig                    GateGlobal::_config = {};
 std::unique_ptr<GateRedis>    GateGlobal::_gateRedis = nullptr;
 std::shared_ptr<QueueManager> GateGlobal::_queueManager = nullptr;
@@ -12,6 +16,8 @@ QueueManager* GQueueManager = nullptr;
 
 void GateGlobal::Init()
 {
+    timeBeginPeriod(1);
+
     CoreGlobal::Init();
 
     _gateRedis = std::make_unique<GateRedis>();
@@ -33,4 +39,5 @@ void GateGlobal::Clear()
     GGateRedis = nullptr;
     _gateRedis = nullptr;
     CoreGlobal::Clear();
+    timeEndPeriod(1);
 }

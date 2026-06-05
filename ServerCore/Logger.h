@@ -42,6 +42,6 @@ private:
     Queue<LogEntry>        _logQueue;
 };
 
-#define LOG_INFO(msg)   GLogger->Write(LogLevel::INFO, msg)
-#define LOG_WARN(msg)   GLogger->Write(LogLevel::WARN, msg)
-#define LOG_ERROR(msg)  GLogger->Write(LogLevel::ERR, msg)
+#define LOG_INFO(msg)   do { if (GLogger) GLogger->Write(LogLevel::INFO, msg); } while(0)
+#define LOG_WARN(msg)   do { if (GLogger) GLogger->Write(LogLevel::WARN, msg); } while(0)
+#define LOG_ERROR(msg)  do { if (GLogger) GLogger->Write(LogLevel::ERR,  msg); } while(0)

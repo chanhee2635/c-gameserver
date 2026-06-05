@@ -16,8 +16,17 @@ void DummySession::OnDisconnected()
 
 void DummySession::OnRecvPacket(std::span<const BYTE> packet, uint16 type)
 {
-    ServerPacketHandler::Handle(
-        static_pointer_cast<DummySession>(shared_from_this()), packet, type);
+    switch (type)
+    {
+    case Protocol::S_PLAYER_LIST:
+    case Protocol::S_CREATE_PLAYER:
+    case Protocol::S_ENTER_GAME:
+    case Protocol::S_READY_TO_ENTER:
+        ServerPacketHandler::Handle(static_pointer_cast<DummySession>(shared_from_this()), packet, type);
+        break;
+    default:
+        break;   // ³ª¸ÓÁø ÆÄ½Ì X 
+    }
 }
 
 void DummySession::OnSend(uint32 len)

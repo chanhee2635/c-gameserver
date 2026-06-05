@@ -13,6 +13,7 @@ class CoreGlobal
 {
 public:
     static void Init();
+    static void EnableServerInstrumentation();
     static void Clear();
 
 private:

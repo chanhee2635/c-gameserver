@@ -298,7 +298,11 @@ public class MyPlayerController : PlayerController
         _comboQueued = false;
         _currentCombo = 0;
 
-        _agent.Warp(pos);
+        if (_agent != null)
+        {
+            _agent.updatePosition = true;
+            _agent.Warp(pos);
+        }
         _animator.SetBool("IsDead", false);
         _animator.Play("Idle"); // 기본 상태 전환
 
@@ -316,5 +320,11 @@ public class MyPlayerController : PlayerController
         _agent.Warp(serverPos);
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         _sendYaw = yaw;
+    }
+
+    public override void OnDead()
+    {
+        if (_agent != null) _agent.updatePosition = false;
+        base.OnDead();   
     }
 }

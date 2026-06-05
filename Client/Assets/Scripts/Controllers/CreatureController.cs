@@ -7,7 +7,6 @@ public class CreatureController : BaseController
     protected float    _baseSpeed;
     private bool       _initialized;
 
-    // Cached Animator parameter ids (avoid hashing the string on every call).
     private static readonly int MoveHash       = Animator.StringToHash("Move");
     private static readonly int ComboIndexHash = Animator.StringToHash("ComboIndex");
     private static readonly int AttackHash     = Animator.StringToHash("Attack");
@@ -15,15 +14,10 @@ public class CreatureController : BaseController
     private Vector3    _velocity;
     private float      _lastMoveTime;
 
-    // Projective velocity blending: the visual position advances at the server velocity every
-    // frame (so it never stalls at a waypoint, even when the next packet is late), while the
-    // positional error vs the latest server position is bled in smoothly. This decouples
-    // visible speed (constant) from error correction, so arrival jitter no longer turns into
-    // stop/overshoot - which is what made Sprinting (2x speed = 2x error) hitch.
-    private Vector3    _renderPos;                      // continuous visual position
-    private Vector3    _posError;                       // outstanding correction, bled in over time
-    private const float CORRECT_RATE = 8f;              // 1/s; how fast positional error is absorbed
-    private const float CORRECT_DEADZONE_SQ = 0.25f;    // 0.5m: below this, skip correction (no twitch)
+    private Vector3    _renderPos;                    
+    private Vector3    _posError;                     
+    private const float CORRECT_RATE = 8f;             
+    private const float CORRECT_DEADZONE_SQ = 0.25f;   
 
     public Protocol.CreatureState State { get; protected set; } = Protocol.CreatureState.Idle;
     public string Name  { get; protected set; }
@@ -36,8 +30,6 @@ public class CreatureController : BaseController
     private Quaternion _destDir;
     private float      _noUpdateTimer;
     private const float NO_UPDATE_TIMEOUT = 1.0f;
-    // Error beyond this snaps instead of blending: only true desync (network stall), not the
-    // ~1-2m extrapolation error a direction change produces. 3m => 9 squared.
     private const float TELEPORT_DIST_SQ  = 9.0f;
 
     private Canvas     _summaryCanvas;
@@ -50,10 +42,8 @@ public class CreatureController : BaseController
     {
         _animator = GetComponent<Animator>();
 
-        // Position is driven explicitly (server-authoritative dead reckoning). Animator
-        // root motion would also push the transform each frame, fighting the position
-        // writes and making remote movement stutter. Disable it for replicated entities.
-        if (_animator) _animator.applyRootMotion = false;
+        if (_animator)
+            _animator.applyRootMotion = false;
     }
 
     private void OnEnable()
@@ -63,9 +53,9 @@ public class CreatureController : BaseController
             transform.SetPositionAndRotation(_destPos, _destDir);
             _renderPos     = _destPos;
             _posError      = Vector3.zero;
-            _velocity      = Vector3.zero;
             _lastMoveTime  = Time.time;
             _noUpdateTimer = 0f;
+            SyncDeathAnim();
         }
     }
 
@@ -90,12 +80,8 @@ public class CreatureController : BaseController
 
         Quaternion rot = Quaternion.Slerp(transform.rotation, _destDir, dt * 20f);
 
-        // 1) Keep moving at the server-reported velocity (continuous, never stalls).
         _renderPos += _velocity * dt;
 
-        // 2) Bleed the outstanding positional error in smoothly (no snap, no backward jerk).
-        //    Sub-deadzone error was already zeroed in OnMoveUpdate, so this only runs for
-        //    real divergence -- no per-packet twitching.
         float k = 1f - Mathf.Exp(-CORRECT_RATE * dt);
         _renderPos += _posError * k;
         _posError  *= (1f - k);
@@ -107,6 +93,7 @@ public class CreatureController : BaseController
     {
         _noUpdateTimer = 0f;
         State = posInfo.State;
+        SyncDeathAnim();
         _destDir  = Quaternion.Euler(0f, posInfo.Yaw, 0f);
         _destPos  = Util.ToUnity(posInfo.Pos);
         _velocity = Util.ToUnity(posInfo.Velocity);
@@ -117,15 +104,12 @@ public class CreatureController : BaseController
 
         if (errorSq > TELEPORT_DIST_SQ)
         {
-            // Too far to blend: snap.
             _renderPos = _destPos;
             _posError  = Vector3.zero;
             transform.position = _renderPos;
         }
         else
         {
-            // Deadzone: ignore sub-epsilon error so the avatar doesn't twitch on every packet.
-            // Only real divergence is blended out (over ~1/CORRECT_RATE seconds).
             _posError = errorSq > CORRECT_DEADZONE_SQ ? error : Vector3.zero;
         }
     }
@@ -196,13 +180,11 @@ public class CreatureController : BaseController
         InitStatByObjectType(summary.ObjectType);
 
         State          = info.PosInfo.State;
+        SyncDeathAnim();
         _destPos       = position;
         _destDir       = rotation;
         _renderPos     = position;
         _posError      = Vector3.zero;
-        // Seed velocity from the spawn packet so an entity that comes into view while moving
-        // coasts immediately instead of freezing until the next (up to HEARTBEAT_MS) move
-        // packet, which would otherwise cause a visible catch-up lurch.
         _velocity      = Util.ToUnity(info.PosInfo.Velocity);
         _lastMoveTime  = Time.time;
         _noUpdateTimer = 0f;
@@ -262,17 +244,16 @@ public class CreatureController : BaseController
         if (_isUIShowing) _summaryUI?.RefreshInfo();
     }
 
-    public void OnDead()
+    public virtual void OnDead()
     {
         if (State == Protocol.CreatureState.Dead) return;
         State = Protocol.CreatureState.Dead;
-
-        if (_animator)
-        {
-            _animator.SetBool(IsDeadHash, true);
-            _animator.SetFloat(MoveHash, 0f);
-        }
+        SyncDeathAnim();
         ClearUI();
+    }
+    protected void SyncDeathAnim()
+    {
+        if (_animator) _animator.SetBool(IsDeadHash, State == Protocol.CreatureState.Dead);
     }
 
     private void UpdateTimeout()
@@ -282,7 +263,6 @@ public class CreatureController : BaseController
             _noUpdateTimer += Time.deltaTime;
             if (_noUpdateTimer >= NO_UPDATE_TIMEOUT)
             {
-                // No updates for a while: stop coasting so we don't drift off into the distance.
                 _velocity = Vector3.zero;
                 _posError = Vector3.zero;
                 _destPos  = _renderPos;

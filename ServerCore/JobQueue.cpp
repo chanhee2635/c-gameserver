@@ -46,7 +46,7 @@ void JobQueue::Execute()
         if (job)
         {
             job();
-            GServerStats->job.jobsExecuted.fetch_add(1, std::memory_order_relaxed);
+            if (GServerStats) GServerStats->job.jobsExecuted.fetch_add(1, std::memory_order_relaxed);
         }
     }
 

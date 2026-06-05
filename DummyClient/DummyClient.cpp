@@ -38,7 +38,7 @@ int main()
 
     ClientServiceRef service = DummyGlobal::GetService();
 
-    const int32 workerCount = std::max(2, static_cast<int32>(Thread::hardware_concurrency()));
+    const int32 workerCount = 4;
     for (int32 i = 0; i < workerCount; i++)
     {
         GThread->Launch(ThreadType::WORKER, [&service]()
@@ -48,11 +48,6 @@ int main()
     }
 
     GThread->InitMainThread(ThreadType::MONITOR);
-    GThread->Launch(ThreadType::MONITOR, []()
-    {
-        if (GServerStats)
-            GServerStats->RunUpdateLoop();
-    });
 
     Atomic<int32> nextAccountIdx = 0;
 

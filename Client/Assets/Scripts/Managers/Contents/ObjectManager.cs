@@ -135,11 +135,11 @@ public class ObjectManager
         Vector3    pos  = GetSpawnPosition(info.PosInfo);
         Quaternion rot  = Quaternion.Euler(0, info.PosInfo.Yaw, 0);
 
-        bool isDummyPlayer = info.Summary.ObjectType == Protocol.GameObjectType.Player
+       /* bool isDummyPlayer = info.Summary.ObjectType == Protocol.GameObjectType.Player
                           && info.Summary.Name.StartsWith("Dummy_")
                           && !string.IsNullOrEmpty(data.dummyPrefabPath);
-        string spawnPath = isDummyPlayer ? data.dummyPrefabPath : data.prefabPath;
-        GameObject go = Managers.Resource.Instantiate(spawnPath, pos, rot);
+        string spawnPath = isDummyPlayer ? data.dummyPrefabPath : data.prefabPath;*/
+        GameObject go = Managers.Resource.Instantiate(data.prefabPath, pos, rot);
         _objects[objectId] = go;
 
         CreatureController cc = info.Summary.ObjectType switch

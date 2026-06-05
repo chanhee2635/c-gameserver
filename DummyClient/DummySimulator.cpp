@@ -3,178 +3,179 @@
 #include "DummySession.h"
 #include "Protocol/PacketUtils.h"
 
-void DummySimulator::Start()
-{
-    _running = true;
-    GThread->Launch(ThreadType::WORKER, [this]() { Run(); });
-}
-
-void DummySimulator::Stop()
-{
-    _running = false;
-}
-
-int32 DummySimulator::GetActiveCount()
-{
-    LockGuard guard(_lock);
-    return static_cast<int32>(_agents.size());
-}
-
-void DummySimulator::RemoveN(int32 n)
-{
-    LockGuard guard(_lock);
-    int32 removeCount = std::min(n, static_cast<int32>(_agents.size()));
-    for (int32 i = 0; i < removeCount; i++)
-    {
-        if (auto session = _agents.back().session.lock())
-            session->Disconnect();
-        _agents.pop_back();
-    }
-}
-
-Vector3 DummySimulator::RandomMapPoint()
+Vector3 DummyGroup::RandomMapPoint()
 {
     std::uniform_real_distribution<float> dist(MAP_MIN, MAP_MAX);
     return { dist(_rng), 0.f, dist(_rng) };
 }
 
-uint32 DummySimulator::RandomChatDelayMs()
+uint32 DummyGroup::RandomChatDelayMs()
 {
     std::uniform_int_distribution<uint32> dist(CHAT_MIN_MS, CHAT_MAX_MS);
     return dist(_rng);
 }
 
-bool DummySimulator::RollWorldChat()
+bool DummyGroup::RollWorldChat()
 {
     std::uniform_real_distribution<float> dist(0.f, 1.f);
     return dist(_rng) < WORLD_CHAT_CHANCE;
 }
 
-void DummySimulator::AddSession(DummySessionRef session, Vector3 spawnPos)
+void DummyGroup::AddAgent(DummySessionRef session, Vector3 spawnPos)
 {
-    using clock = std::chrono::steady_clock;
+    auto now = std::chrono::steady_clock::now();
 
-    LockGuard guard(_lock);
-
-    uint32 offsetMs  = static_cast<uint32>(_agents.size()) % TICK_MS;
-    auto   now       = clock::now();
-    auto   nextMove  = s_baseTime + std::chrono::milliseconds(offsetMs);
-    while (nextMove <= now)
-        nextMove += std::chrono::milliseconds(TICK_MS);
+    uint32 offsetMs = static_cast<uint32>(_agents.size()) % TICK_MS;
 
     AgentState agent;
-    agent.session      = session;
-    agent.pos          = { spawnPos.x, 0.f, spawnPos.z };
-    agent.target       = RandomMapPoint();
-    agent.speed        = MOVE_SPEED;
-    agent.nextMoveTime = nextMove;
+    agent.session = session;
+    agent.pos = { spawnPos.x, 0.f, spawnPos.z };
+    agent.target = RandomMapPoint();
+    agent.speed = MOVE_SPEED;
+    agent.nextMoveTime = now + std::chrono::milliseconds(offsetMs);
     agent.nextChatTime = now + std::chrono::milliseconds(RandomChatDelayMs());
 
     _agents.push_back(std::move(agent));
+    _count.store(static_cast<int32>(_agents.size()), std::memory_order_relaxed);
 }
 
-void DummySimulator::Run()
+void DummyGroup::RemoveSome(int32 n)
 {
-    using clock = std::chrono::steady_clock;
-    const float tickSec = TICK_MS / 1000.f;
-    auto lastBacklogSample = clock::now();
-
-    while (_running)
+    int32 k = std::min(n, static_cast<int32>(_agents.size()));
+    for (int32 i = 0; i < k; i++)
     {
-        LEndTickCount = ::GetTickCount64() + TICK_MS;
-        auto now = clock::now();
-        bool   sampleBacklog = (now - lastBacklogSample >= std::chrono::seconds(1));  
-        u_long maxBacklog = 0;                                                    
-        if (sampleBacklog) lastBacklogSample = now;                                 
+        if (auto session = _agents.back().session.lock())
+            session->Disconnect();
+        _agents.pop_back();
+    }
+    _count.store(static_cast<int32>(_agents.size()), std::memory_order_relaxed);
+}
 
-        Vector<std::pair<DummySessionRef, SendBufferRef>> toSend;
+void DummyGroup::Tick()
+{
+    if (_stopped.load(std::memory_order_relaxed))
+        return;
+
+    DoTimer(GROUP_TICK_MS, &DummyGroup::Tick);   // 다음 틱 재예약
+
+    auto        now = std::chrono::steady_clock::now();
+    const float tickSec = TICK_MS / 1000.f;      // 이동 1회당 델타(=0.1s)
+
+    _agents.erase(
+        std::remove_if(_agents.begin(), _agents.end(),
+            [](const AgentState& a) { return a.session.expired(); }),
+        _agents.end());
+
+    for (AgentState& agent : _agents)
+    {
+        DummySessionRef session = agent.session.lock();
+        if (!session) continue;
+
+        if (now >= agent.nextMoveTime)
         {
-            LockGuard guard(_lock);
+            Vector3 toTarget = agent.target - agent.pos;
+            float   distSq = toTarget.LengthSq();
 
-            _agents.erase(
-                std::remove_if(_agents.begin(), _agents.end(),
-                    [](const AgentState& a) { return a.session.expired(); }),
-                _agents.end());
-
-            for (AgentState& agent : _agents)
+            if (distSq <= ARRIVE_DIST_SQ)
             {
-                DummySessionRef session = agent.session.lock();
-                if (!session) continue;
-
-                if (sampleBacklog)                                                    
-                {                                                                    
-                    u_long avail = 0;                                                
-                    if (::ioctlsocket(session->GetSocket(), FIONREAD, &avail) == 0)   
-                        maxBacklog = std::max(maxBacklog, avail);                     
-                }
-
-                // ---- 이동: 목표를 향해 직선 전진, 도달하면 새 목표 선택 ----
-                if (now >= agent.nextMoveTime)
-                {
-                    Vector3 toTarget = agent.target - agent.pos;
-                    float   distSq   = toTarget.LengthSq();
-
-                    if (distSq <= ARRIVE_DIST_SQ)
-                    {
-                        agent.pos    = agent.target;
-                        agent.target = RandomMapPoint();
-                        toTarget     = agent.target - agent.pos;
-                        distSq       = toTarget.LengthSq();
-                    }
-
-                    Vector3 dir  = toTarget.Normalized();
-                    float   step = agent.speed * tickSec;
-                    float   dist = sqrtf(distSq);
-
-                    if (dist <= step)              
-                        agent.pos = agent.target;
-                    else
-                        agent.pos = agent.pos + dir * step;
-
-                    float yaw = atan2f(dir.x, dir.z) * RAD2DEG;
-                    if (yaw < 0.f) yaw += 360.f;
-
-                    Vector3 vel = dir * agent.speed;
-
-                    Protocol::CMove pkt;
-                    auto* info = pkt.mutable_pos_info();
-                    info->mutable_pos()->set_x(agent.pos.x);
-                    info->mutable_pos()->set_y(agent.pos.y);
-                    info->mutable_pos()->set_z(agent.pos.z);
-                    info->set_yaw(yaw);
-                    info->set_state(Protocol::MOVING);
-                    info->mutable_velocity()->set_x(vel.x);
-                    info->mutable_velocity()->set_y(vel.y);
-                    info->mutable_velocity()->set_z(vel.z);
-
-                    toSend.emplace_back(session, MakeSendBuffer<Protocol::C_MOVE>(pkt));
-
-                    agent.nextMoveTime += std::chrono::milliseconds(TICK_MS);
-                }
-
-                // ---- 채팅: 일정 간격으로 근거리(가끔 전역) 전송 ----
-                if (now >= agent.nextChatTime)
-                {
-                    bool world = RollWorldChat();
-
-                    Protocol::CChat chatPkt;
-                    chatPkt.set_chat_type(world ? Protocol::CHAT_WORLD : Protocol::CHAT_NEAR);
-                    chatPkt.set_chat(session->GetPlayerName() + " #" + std::to_string(agent.chatSeq++));
-
-                    toSend.emplace_back(session, MakeSendBuffer<Protocol::C_CHAT>(chatPkt));
-
-                    agent.nextChatTime = now + std::chrono::milliseconds(RandomChatDelayMs());
-                }
+                agent.pos = agent.target;
+                agent.target = RandomMapPoint();
+                toTarget = agent.target - agent.pos;
+                distSq = toTarget.LengthSq();
             }
+
+            Vector3 dir = toTarget.Normalized();
+            float   step = agent.speed * tickSec;
+            float   dist = sqrtf(distSq);
+
+            if (dist <= step)
+                agent.pos = agent.target;
+            else
+                agent.pos = agent.pos + dir * step;
+
+            float yaw = atan2f(dir.x, dir.z) * RAD2DEG;
+            if (yaw < 0.f) yaw += 360.f;
+
+            Vector3 vel = dir * agent.speed;
+
+            Protocol::CMove pkt;
+            auto* info = pkt.mutable_pos_info();
+            info->mutable_pos()->set_x(agent.pos.x);
+            info->mutable_pos()->set_y(agent.pos.y);
+            info->mutable_pos()->set_z(agent.pos.z);
+            info->set_yaw(yaw);
+            info->set_state(Protocol::MOVING);
+            info->mutable_velocity()->set_x(vel.x);
+            info->mutable_velocity()->set_y(vel.y);
+            info->mutable_velocity()->set_z(vel.z);
+
+            session->Send(MakeSendBuffer<Protocol::C_MOVE>(pkt));   // 락 없으니 인라인 전송
+            agent.nextMoveTime += std::chrono::milliseconds(TICK_MS);
         }
 
-        if (sampleBacklog)                                                           
-            GServerStats->network.recvBacklogBytes.store(maxBacklog, std::memory_order_relaxed);                            
+        if (now >= agent.nextChatTime)
+        {
+            bool world = RollWorldChat();
 
-        for (auto& [session, buffer] : toSend)
-            session->Send(buffer);
+            Protocol::CChat chatPkt;
+            chatPkt.set_chat_type(world ? Protocol::CHAT_WORLD : Protocol::CHAT_NEAR);
+            chatPkt.set_chat(session->GetPlayerName() + " #" + std::to_string(agent.chatSeq++));
 
-        LFrameAllocator->Clear();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            session->Send(MakeSendBuffer<Protocol::C_CHAT>(chatPkt));
+            agent.nextChatTime = now + std::chrono::milliseconds(RandomChatDelayMs());
+        }
     }
+
+    _count.store(static_cast<int32>(_agents.size()), std::memory_order_relaxed);
+}
+
+void DummySimulator::Start()
+{
+    for (int32 i = 0; i < GROUP_COUNT; i++)
+    {
+        auto group = MakeShared<DummyGroup>();
+        _groups.push_back(group);
+
+        uint32 offset = (DummyGroup::TICK_MS * i) / GROUP_COUNT;  // 그룹별 최초 발화 스태거
+        group->DoTimer(offset, &DummyGroup::Tick);
+    }
+}
+
+void DummySimulator::Stop()
+{
+    for (auto& group : _groups)
+        group->Stop();
+}
+
+void DummySimulator::AddSession(DummySessionRef session, Vector3 spawnPos)
+{
+    if (_groups.empty()) return;
+
+    auto group = _groups[_rr.fetch_add(1, std::memory_order_relaxed) % GROUP_COUNT];
+    group->DoAsync(MakeJob([group, session, spawnPos]()      // 그룹 잡으로 안전 추가
+        {
+            group->AddAgent(session, spawnPos);
+        }));
+}
+
+void DummySimulator::RemoveN(int32 n)
+{
+    if (_groups.empty() || n <= 0) return;
+
+    int32 per = (n + GROUP_COUNT - 1) / GROUP_COUNT;
+    for (auto& group : _groups)
+    {
+        if (n <= 0) break;
+        int32 k = std::min(per, n);
+        group->DoAsync(MakeJob([group, k]() { group->RemoveSome(k); }));
+        n -= k;
+    }
+}
+
+int32 DummySimulator::GetActiveCount()
+{
+    int32 sum = 0;
+    for (auto& group : _groups)
+        sum += group->Count();
+    return sum;   // 근사치(원자 합) — 부하 툴 용도엔 충분
 }

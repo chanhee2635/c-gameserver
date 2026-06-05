@@ -60,14 +60,12 @@ void Player::RemoveFromScene(GameScene* scene)
 
 void Player::HandleMoveJob(const MoveJob& job, uint64 nowMs)
 {
+    if (IsDead()) return;
+
     _velocity = job.velocity;
     _state    = job.state;
     _yaw      = job.yaw;
 
-    // Dead reckoning: sendServerTimeMs is the send time already in the server-clock domain
-    // (via clock sync), so (nowMs - sendServerTimeMs) is the full latency (network + queue).
-    // Project the reported position forward by it so _pos reflects the current tick.
-    // 0 => client not yet synced; idle packets carry zero velocity => snap to exact pos.
     uint64 latencyMs = 0;
     if (job.sendServerTimeMs != 0 && nowMs > job.sendServerTimeMs)
         latencyMs = nowMs - job.sendServerTimeMs;
@@ -95,12 +93,11 @@ bool Player::TakePendingMove(MoveJob& out)
 
 void Player::SendMoveCorrection(uint64 nowMs)
 {
-    // Throttle: a client shoved into a wall would otherwise be corrected every tick.
     if (nowMs - _lastCorrectionMs < GameConfig::Move::CORRECTION_MIN_INTERVAL_MS) return;
     _lastCorrectionMs = nowMs;
 
     Protocol::SMoveCorrection pkt;
-    *pkt.mutable_pos() = GameUtil::ToProto(_pos);   // last accepted authoritative pos
+    *pkt.mutable_pos() = GameUtil::ToProto(_pos);   
     pkt.set_yaw(_yaw);
     Send(MakeSendBuffer<Protocol::MsgId::S_MOVE_CORRECTION>(pkt));
 }

@@ -31,7 +31,7 @@ int main()
 
     auto service = GameGlobal::GetService();
 
-    uint32_t workerThreadCount = std::thread::hardware_concurrency() - 4;
+    uint32_t workerThreadCount = 8;
     for (int32 i = 0; i < workerThreadCount; i++)
     {
         GThread->Launch(ThreadType::WORKER, [&service]() {

@@ -9,7 +9,7 @@
 ![CCU](https://img.shields.io/badge/Load%20Test-3%2C000%20CCU-orange)
 ![Tick](https://img.shields.io/badge/Tick%20Lag-1.6s%20%E2%86%92%2028ms-brightgreen)
 
-▶ **[시연 영상 (YouTube)](https://youtu.be/dGX39CQrB1o)** &nbsp;|&nbsp; 📑 [아키텍처 상세](CODEFLOW.md) &nbsp;|&nbsp; 🔧 [AOI 최적화 파이프라인](AOI_MOVEMENT_PIPELINE.md) &nbsp;|&nbsp; 📈 [성능 분석](docs/tick-performance-analysis.md)
+▶ **[시연 영상 (YouTube)](https://youtu.be/dGX39CQrB1o)** &nbsp;|&nbsp; 📑 [아키텍처 상세](CODEFLOW.md) &nbsp;|&nbsp; 🔧 [AOI 최적화 파이프라인](AOI_MOVEMENT_PIPELINE.md) &nbsp;|&nbsp; 📈 [부하 테스트 리포트](docs/loadtest-report.md) &nbsp;|&nbsp; 🐞 [트러블슈팅](docs/troubleshooting.md)
 
 <!-- TODO: 아래에 게임플레이 GIF / 부하테스트 대시보드 GIF 2개 삽입 권장
      - 영상에서 5~8초 구간을 GIF로 추출해 docs/ 에 저장 후 아래처럼 임베드:
@@ -21,10 +21,10 @@
 
 ## 📊 핵심 성과 (실측)
 
-> 단일 PC(16-logical-core), localhost. DummyClient로 100→3,000명까지 단계적 ramp-up 후 steady-state 측정.
-> 원본 데이터: [`docs/tick-performance-analysis.md`](docs/tick-performance-analysis.md), `.loadtest/` (timeline·agg CSV).
+> 단일 PC(Intel i5-1240P, 12C/16T, 16GB), localhost. Login·Gate·Game·부하기를 **한 머신에 동시 구동**한 보수적 환경.
+> DummyClient로 0→3,000명까지 단계적 ramp-up 후 steady-state 측정. 원본 데이터·방법론: [`docs/loadtest-report.md`](docs/loadtest-report.md), [`docs/tick-performance-analysis.md`](docs/tick-performance-analysis.md).
 
-**브로드캐스트 병목 최적화 (동일 2,000 CCU 조건, 게임 틱 목표 50ms)**
+**① 브로드캐스트 병목 최적화 — Before/After** *(초기 빌드: sceneCount=4, 동일 2,000 CCU, 틱 목표 80/s)*
 
 | 지표 | Before (단일 Job 직렬 전송) | After (zone별 send-lane 병렬화) | 효과 |
 |---|---|---|---|
@@ -33,13 +33,21 @@
 | Scene 틱레이트 | 28 ~ 46 /s | **43 ~ 61 /s** | 목표(80) 근접 |
 | CPU 활용 (16코어) | 17 ~ 21% (노는 코어 다수) | **26 ~ 39%** | 유휴 워커 활용 |
 
-**확장 부하 (3,000 CCU, send-lane 구성 sweep 중 최적)**
+> 핵심 발견: 2,000명에서 CPU가 21%에 불과한데 틱이 1.6초까지 밀렸다 → **CPU 부족이 아니라 "브로드캐스트 단일 Job이 워커 1개를 독점"하는 구조 병목**임을 측정으로 규명하고, zone별 송신을 send-lane 풀로 병렬화해 해결. ([상세](docs/troubleshooting.md))
 
-| 동시접속 | 평균 틱 지연 | 최악 틱 지연 | 커넥션 에러 |
-|---|---|---|---|
-| **3,000 CCU** | **약 28 ms** | 341 ms | **0** |
+**② 현재 빌드 한계 측정** *(sceneCount=8 · HEARTBEAT 500ms, 0→3,000 CCU ramp)*
 
-> 핵심 발견: 2,000명에서 CPU가 21%에 불과한데 틱이 1.6초까지 밀렸다 → **CPU 부족이 아니라 "브로드캐스트 단일 Job이 워커 1개를 독점"하는 구조 병목**임을 측정으로 규명하고, zone별 송신을 send-lane 풀로 병렬화해 해결.
+| 동시접속 | CPU (서버) | 메모리 | 평균 틱 지연 | 합산 처리량 (In+Out) | 패킷 유실 |
+|---|---|---|---|---|---|
+| 2,000 CCU | 30 % | 0.6 GB | 14.5 ms | ~37k pkt/s | **0** |
+| **~2,954 CCU** (피크) | 53 % | 0.7 GB | 17 ms | **~55k pkt/s (out 28.8 MB/s)** | **0** |
+
+> 4종 프로세스를 한 PC에 올린 보수적 환경에서 **~2,950 CCU를 패킷 유실 0 · 수신 백로그 0 · DB 실패 0**으로 수용.
+> 한계 요인을 **브로드캐스트(아웃바운드) 바운드**(품질 무릎 ~2,500)로 데이터로 특정했고, 인바운드 감소는 동일 PC **부하 생성기 한계**와 구분해 기록. → [측정 리포트](docs/loadtest-report.md)
+
+![CCU 대비 CPU·틱 지연](docs/loadtest-perf.svg)
+
+> CPU는 동접에 거의 선형, 평균 틱 지연은 ~2,000까지 평탄하다 ~2,500부터 상승(브로드캐스트 압박). 메모리는 0.5→0.7GB로 평탄.
 
 ---
 
@@ -105,7 +113,7 @@ flowchart TD
 | Web | ASP.NET Core, Entity Framework, JWT |
 | Client | Unity (C#), protobuf-net |
 | 패턴 | IOCP Proactor, Lock-Free JobQueue(Actor), Object/Memory Pool + TLS, Zone AOI, Write-Back |
-| 부하테스트 | DummyClient(3,000 동접) + ramp/sweep 스크립트(`.loadtest/`) |
+| 부하테스트 | DummyClient(3,000 동접) + ramp 드라이버·로그 파서(로컬 하네스) |
 
 **구성 (`GameServer/server.json`):** maxSessions 3,000 · sceneCount 8 · zoneSize 20 · updateTickMs 50 · DB threads 2
 
@@ -121,7 +129,7 @@ flowchart TD
 5. 실행 순서: LoginWebServer → GameServer → (GateServer) → Client/DummyClient
 ```
 
-부하 테스트 재현: `.loadtest/sweep-run.sh` (GameServer 기동 → `ramp.sh`로 100~3,000명 ramp → peak 캡처 → 정리).
+부하 테스트 재현 방법과 측정 결과는 [`docs/loadtest-report.md`](docs/loadtest-report.md) 참고 (드라이버/파서 하네스는 로컬 전용).
 
 ### 외부 라이브러리 (별도 설치)
 

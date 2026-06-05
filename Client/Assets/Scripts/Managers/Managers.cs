@@ -3,6 +3,8 @@ using UnityEngine;
 public class Managers : MonoBehaviour
 {
     private const int MaxPacketsPerFrame = 100;
+    private const int ForegroundFrameRate = 45;
+    private const int BackgroundFrameRate = 30;   
 
     private static Managers s_instance;
     private static bool s_isQuitting;
@@ -50,8 +52,9 @@ public class Managers : MonoBehaviour
 
     private void Init()
     {
-        Application.targetFrameRate = 60;
         QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = ForegroundFrameRate;
+        Screen.SetResolution(960, 540, false);
 
         _data.Init();
         _sound.Init();
@@ -65,6 +68,11 @@ public class Managers : MonoBehaviour
         _object.Update();
     }
 
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        Application.targetFrameRate = hasFocus ? ForegroundFrameRate : BackgroundFrameRate;
+    }
+
     private void OnApplicationQuit()
     {
         s_isQuitting = true;
@@ -73,7 +81,7 @@ public class Managers : MonoBehaviour
 
     public void ClearScene()
     {
-        _ui?.Clear();     // 팝업 스택·sortingOrder 초기화 (씬 전환 시 누락되면 누적됨)
+        _ui?.Clear();     
         _scene?.Clear();
         _object?.Clear();
         _sound?.Clear();
