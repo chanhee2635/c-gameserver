@@ -9,7 +9,15 @@
 ![CCU](https://img.shields.io/badge/Load%20Test-3%2C000%20CCU-orange)
 ![Tick](https://img.shields.io/badge/Tick%20Lag-1.6s%20%E2%86%92%2044ms-brightgreen)
 
-▶ **시연 영상 (YouTube 업로드 예정)** &nbsp;|&nbsp; 🔧 [AOI 최적화 파이프라인](AOI_MOVEMENT_PIPELINE.md) &nbsp;|&nbsp; 📡 [API·패킷 명세](docs/api.md) &nbsp;|&nbsp; 🗄️ [DB 설계](docs/database.md) &nbsp;|&nbsp; 📈 [부하 테스트 리포트](docs/loadtest-report.md) &nbsp;|&nbsp; 🐞 [트러블슈팅](docs/troubleshooting.md)
+▶ **[시연 영상 (YouTube)](https://youtu.be/DWxfe_81ofA)** &nbsp;|&nbsp; 🔧 [AOI 최적화 파이프라인](AOI_MOVEMENT_PIPELINE.md) &nbsp;|&nbsp; 📡 [API·패킷 명세](docs/api.md) &nbsp;|&nbsp; 🗄️ [DB 설계](docs/database.md) &nbsp;|&nbsp; 📈 [부하 테스트 리포트](docs/loadtest-report.md) &nbsp;|&nbsp; 🐞 [트러블슈팅](docs/troubleshooting.md)
+
+<p align="center">
+  <a href="https://youtu.be/DWxfe_81ofA">
+    <img src="https://img.youtube.com/vi/DWxfe_81ofA/maxresdefault.jpg" width="680" alt="시연 영상 — 클릭하면 YouTube로 이동">
+  </a>
+  <br>
+  <sub>▶ <b>클릭하면 시연 영상(YouTube)으로 이동</b> — 인게임 시연 + 0→3,000 동접 부하 테스트</sub>
+</p>
 
 ---
 

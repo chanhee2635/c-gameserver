@@ -84,6 +84,7 @@ LoginWebServer/appsettings.json
 # --- [포트폴리오 발표 자료: 로컬 보관, repo 미포함] ---
 /portfolio_deck.html
 /portfolio_deck.pdf
+/portfolio.pdf
 /docs/ppt_slides/
 /docs/ppt_assets/
 /docs/ppt_speaker_notes.md
