@@ -59,15 +59,40 @@ bool GridMap::IsWalkable(const Vector3& pos) const
     return CellWalkable(cx, cz);
 }
 
-bool GridMap::IsPathWalkable(const Vector3& from, const Vector3& to) const
+bool GridMap::IsPlayerPathClear(const Vector3& from, const Vector3& to) const
 {
     if (_cells.empty()) return true;
+
     int32 x0, z0, x1, z1;
     ToCell(from, x0, z0);
     ToCell(to,   x1, z1);
-    // LineOfSight checks every cell along the segment (incl. both endpoints) and blocks
-    // diagonal corner-cutting, so this subsumes the destination-only IsWalkable check.
-    return LineOfSight(x0, z0, x1, z1);
+
+    // Walk the segment like LineOfSight, but tuned for player anti-phase rather than
+    // pathfinding: (1) no diagonal corner-cut rejection, so a player rounding an outer wall
+    // corner isn't bounced; (2) tolerate up to PLAYER_PHASE_TOLERANCE_CELLS *consecutive*
+    // blocked cells, absorbing the ~1-cell over-block where the coarse grid disagrees with
+    // Unity's NavMesh at edges. A genuine wall (thicker than the tolerance) still blocks.
+    int32 dx = std::abs(x1 - x0);
+    int32 dz = std::abs(z1 - z0);
+    int32 sx = (x0 < x1) ? 1 : -1;
+    int32 sz = (z0 < z1) ? 1 : -1;
+    int32 err = dx - dz;
+    int32 x = x0, z = z0;
+
+    int32 blockedRun = 0;
+    while (true)
+    {
+        if (CellWalkable(x, z))
+            blockedRun = 0;
+        else if (++blockedRun > PLAYER_PHASE_TOLERANCE_CELLS)
+            return false;
+
+        if (x == x1 && z == z1) return true;
+
+        int32 e2 = 2 * err;
+        if (e2 > -dz) { err -= dz; x += sx; }
+        if (e2 <  dx) { err += dx; z += sz; }
+    }
 }
 
 bool GridMap::LineOfSight(int32 x0, int32 z0, int32 x1, int32 z1) const

@@ -71,6 +71,10 @@ void DummyGroup::Tick()
         DummySessionRef session = agent.session.lock();
         if (!session) continue;
 
+        Vector3 corr;
+        if (session->TakeCorrection(corr))
+            agent.pos = corr;
+
         if (now >= agent.nextMoveTime)
         {
             Vector3 toTarget = agent.target - agent.pos;
@@ -109,8 +113,10 @@ void DummyGroup::Tick()
             info->mutable_velocity()->set_y(vel.y);
             info->mutable_velocity()->set_z(vel.z);
 
-            session->Send(MakeSendBuffer<Protocol::C_MOVE>(pkt));   // 락 없으니 인라인 전송
+            session->Send(MakeSendBuffer<Protocol::C_MOVE>(pkt));   
             agent.nextMoveTime += std::chrono::milliseconds(TICK_MS);
+            if (agent.nextMoveTime < now)
+                agent.nextMoveTime = now + std::chrono::milliseconds(TICK_MS);
         }
 
         if (now >= agent.nextChatTime)

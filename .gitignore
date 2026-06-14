@@ -77,3 +77,15 @@ SERVERCORE_GUIDE.md
 
 # 참고: Common/(Protocol .proto, DB) 및 protobuf 생성물(*.pb.h/*.pb.cc)은
 #       클론 즉시 빌드가 가능하도록 의도적으로 추적한다.
+
+# --- [로컬 시크릿: *.example.json을 템플릿으로 사용] ---
+LoginWebServer/appsettings.json
+
+# --- [포트폴리오 발표 자료: 로컬 보관, repo 미포함] ---
+/portfolio_deck.html
+/portfolio_deck.pdf
+/docs/ppt_slides/
+/docs/ppt_assets/
+/docs/ppt_speaker_notes.md
+/docs/demo-gameplay.gif
+/docs/demo-loadtest.gif

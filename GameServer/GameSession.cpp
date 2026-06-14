@@ -10,10 +10,8 @@
 
 namespace
 {
-    // Drop connections that never authenticate, to free session slots / recv buffers (anti-slowloris).
     constexpr uint64 AUTH_HANDSHAKE_TIMEOUT_MS = 10000;
 
-    // Inbound flood guard. Normal play peaks ~10-20 pkt/s; 50/s leaves headroom while capping abuse.
     constexpr uint64 RATE_WINDOW_MS      = 1000;
     constexpr uint32 MAX_PACKETS_PER_SEC = 50;
 }
@@ -43,7 +41,6 @@ void GameSession::OnConnected()
     GServerStats->game.connectedSessions.fetch_add(1, std::memory_order_relaxed);
     GServerStats->game.totalConnections.fetch_add(1, std::memory_order_relaxed);
 
-    // Schedule a handshake deadline. If C_AUTH_TOKEN never sets _dbId, force-close.
     GameSessionWeakRef weak = std::static_pointer_cast<GameSession>(shared_from_this());
     if (GWorld)
     {
@@ -98,7 +95,7 @@ void GameSession::OnRecvPacket(std::span<const BYTE> packet, uint16 type)
 
 void GameSession::LeavePlayer()
 {
-    ResetEnterGame();           // allow a clean re-enter after leaving
+    ResetEnterGame();           
     PlayerRef player = GetPlayer();
     if (!player) return;
 

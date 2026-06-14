@@ -30,7 +30,7 @@ struct WorldConfig
 {
     int32 mapSize    = 1000;
     int32 zoneSize   = 20;
-    int32 sceneCount = 4;
+    int32 sceneCount = 8;
 };
 
 struct GameplayConfig

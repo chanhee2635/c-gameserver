@@ -38,7 +38,7 @@ int main()
 
     ClientServiceRef service = DummyGlobal::GetService();
 
-    const int32 workerCount = 4;
+    const int32 workerCount = 8;   // load-gen workers (was 4); raised to push single-PC CCU higher
     for (int32 i = 0; i < workerCount; i++)
     {
         GThread->Launch(ThreadType::WORKER, [&service]()

@@ -21,11 +21,9 @@ public:
     void      SetPlayer(PlayerRef player) { _player = player; }
     PlayerRef GetPlayer()          const  { return _player.lock(); }
 
-    // Returns true only for the first caller; blocks duplicate enter while entering/in-game.
     bool TryBeginEnterGame() { bool e = false; return _enterGameLatched.compare_exchange_strong(e, true); }
     void ResetEnterGame()    { _enterGameLatched.store(false); }
 
-    // Inbound rate limiter. Called serially per session on the IO thread, so plain members are safe.
     bool AllowRecv();                  // false => over packet-rate limit
     bool AllowChat(uint64 cooldownMs); // false => chat sent too soon
 

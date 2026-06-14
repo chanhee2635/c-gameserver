@@ -7,6 +7,7 @@
 #include "GameUtil.h"
 #include "IdGenerator.h"
 #include "GameConfig.h"
+#include "GridMap.h"
 
 constexpr float ATTACK_POS_TOLERANCE_MULT = 4.f;
 
@@ -72,7 +73,10 @@ void Player::HandleMoveJob(const MoveJob& job, uint64 nowMs)
     if (latencyMs > GameConfig::Move::DEAD_RECKON_MAX_MS)
         latencyMs = GameConfig::Move::DEAD_RECKON_MAX_MS;
 
-    _pos = job.pos + job.velocity * (latencyMs / 1000.f);
+    Vector3 reckoned = job.pos + job.velocity * (latencyMs / 1000.f);
+    if (GGridMap && GGridMap->IsLoaded() && !GGridMap->IsPlayerPathClear(job.pos, reckoned))
+        reckoned = job.pos;
+    _pos = reckoned;
 }
 
 void Player::SetPendingMove(const MoveJob& job)

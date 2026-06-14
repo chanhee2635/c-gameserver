@@ -1,0 +1,35 @@
+{
+  "database": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "CHANGE_ME",
+    "name": "portfolio",
+    "threads": 2
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379
+  },
+  "server": {
+    "id": 1,
+    "name": "Server1",
+    "ip": "127.0.0.1",
+    "port": 7777,
+    "maxSessions": 3000,
+    "acceptPool": 256
+  },
+  "world": {
+    "mapSize": 1000,
+    "zoneSize": 20,
+    "sceneCount": 8
+  },
+  "gameplay": {
+    "updateTickMs": 50,
+    "attackPosToleranceSq": 9.0,
+    "monsterSearchTickMs": 500,
+    "monsterIdleTickMs": 500,
+    "monsterRepathCooldownMs": 300,
+    "findPathFailCooldownMs": 3000
+  }
+}

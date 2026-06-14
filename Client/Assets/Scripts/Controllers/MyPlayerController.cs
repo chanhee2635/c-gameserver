@@ -134,8 +134,9 @@ public class MyPlayerController : PlayerController
         if (inputDir != Vector3.zero)
         {
             _isMoving = true;
+            Vector3 prevPos = transform.position;
             _agent.Move(inputDir * _agent.speed * Time.deltaTime);
-            _sendVelocity = inputDir * _agent.speed;
+            _sendVelocity = Time.deltaTime > 0f ? (transform.position - prevPos) / Time.deltaTime : Vector3.zero;
 
             Quaternion targetRot = Quaternion.LookRotation(inputDir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 20f);

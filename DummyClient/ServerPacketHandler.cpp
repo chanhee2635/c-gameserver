@@ -112,7 +112,7 @@ bool ServerPacketHandler::OnHandle_S_TIME_SYNC(DummySessionRef session, const Pr
 }
 bool ServerPacketHandler::OnHandle_S_MOVE_CORRECTION(DummySessionRef session, const Protocol::SMoveCorrection& pkt)
 {
-    // Load-test bot: server-authoritative position corrections are acknowledged but not
-    // applied (the simulator keeps driving its own path), so this is a no-op.
+    if (session)
+        session->SetCorrection(Vector3(pkt.pos().x(), pkt.pos().y(), pkt.pos().z()));
     return true;
 }

@@ -53,7 +53,7 @@
 
 **Result**
 - 직선 이동의 heartbeat 송신량 약 1/3로 절감(2.5→해당 구간 송신 비용 ↓), 체감 부드러움은 유지.
-- 한계 측정에서 ~2,954 CCU를 **패킷 유실 0**으로 수용, 품질 무릎을 ~2,500으로 데이터화.
+- 한계 측정에서 **3,000 CCU**를 **패킷 유실 0**으로 안정 수용.
 
 ---
 
@@ -86,8 +86,11 @@
 또 크고 지연된 한 스텝이 목적지만 검사하면 **벽을 관통**할 수 있었다.
 
 **Action**
-- 목적지뿐 아니라 **직전 위치→목적지 구간(segment)** 의 walkability를 검사(`IsPathWalkable`)해
+- 목적지뿐 아니라 **직전 위치→목적지 구간(segment)** 의 walkability를 검사(`IsPlayerPathClear`)해
   벽 관통(phase-through)을 차단.
+- 단, 격자(1m)는 NavMesh의 거친 양자화라 벽 모서리에서 ~1셀 더 보수적이다. 플레이어 검증은
+  코너 컷 차단을 빼고 **연속 1셀(`PLAYER_PHASE_TOLERANCE_CELLS`)까지 허용**해, navmesh상 유효한
+  모서리 이동이 거부·튕김(rubber-band)되지 않게 한다(몬스터 길찾기는 기존 strict 규칙 유지).
 - 거부 시 `SendMoveCorrection`으로 **클라를 서버 권위 좌표로 롤백**(최소 보정 간격으로 과도 보정 방지).
 
 **Result**

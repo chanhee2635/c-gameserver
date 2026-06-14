@@ -96,10 +96,11 @@ void GameScene::UpdateObjects(uint64 nowMs, uint32 deltaTimeMs, FrameVector<Crea
         MoveJob job;
         if (player->TakePendingMove(job))
         {
-            // Path (not just destination) walkability: reject moves whose segment from the
-            // last accepted pos crosses a wall, so a big/laggy step can't phase through it.
+            // Anti-phase: reject moves whose segment from the last accepted pos crosses a
+            // wall, so a big/laggy step can't tunnel through it. Tolerant at edges/corners
+            // (see IsPlayerPathClear) so navmesh-valid corner moves aren't rubber-banded.
             bool blocked = (GGridMap && GGridMap->IsLoaded()
-                            && !GGridMap->IsPathWalkable(player->GetPos(), job.pos));
+                            && !GGridMap->IsPlayerPathClear(player->GetPos(), job.pos));
             bool allowed = player->IsMoveAllowed(job.pos, job.velocity, nowMs);
 
             if (!blocked && allowed)
